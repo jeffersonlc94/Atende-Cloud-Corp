@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { oilChangeSchema } from "@/lib/validations";
+import { registerAudit, getRequestIp } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -31,14 +32,32 @@ export async function PUT(req: NextRequest, { params }: Params) {
     },
   });
 
+  await registerAudit({
+    userId: session.user.id,
+    acao: "update",
+    entidade: "OilChange",
+    entidadeId: item.id,
+    detalhes: { vehicleId: item.vehicleId, km: item.km },
+    ip: getRequestIp(req),
+  });
+
   return NextResponse.json(item);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   await prisma.oilChange.delete({ where: { id } });
+
+  await registerAudit({
+    userId: session.user.id,
+    acao: "delete",
+    entidade: "OilChange",
+    entidadeId: id,
+    ip: getRequestIp(req),
+  });
+
   return NextResponse.json({ ok: true });
 }

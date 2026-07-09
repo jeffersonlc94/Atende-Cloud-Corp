@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useCompanies } from "@/hooks/use-companies";
+import { canDeleteRecords } from "@/lib/permissions";
 import {
   useQuotesList,
   useDeleteQuote,
@@ -48,6 +50,8 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 
 export default function OrcamentosPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const canDelete = canDeleteRecords(session);
   const { data: companies = [] } = useCompanies();
   const [filters, setFilters] = useState<QuoteFilters>({});
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -202,12 +206,14 @@ export default function OrcamentosPage() {
                           <DropdownMenuItem onClick={() => handleDuplicate(quote.id)}>
                             <Copy className="mr-2 h-4 w-4" /> Duplicar
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => setPendingDelete(quote.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
+                          {canDelete && (
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={() => setPendingDelete(quote.id)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

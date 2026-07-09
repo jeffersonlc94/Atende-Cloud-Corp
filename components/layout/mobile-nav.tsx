@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Menu, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,10 @@ import { cn } from "@/lib/utils";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   const [open, setOpen] = useState(false);
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -34,7 +38,7 @@ export function MobileNav() {
           <SheetTitle>Atende Cloud Corp</SheetTitle>
         </SheetHeader>
         <nav className="space-y-1 p-2">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             const active = pathname.startsWith(item.href);
             const content = (

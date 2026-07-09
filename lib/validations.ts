@@ -194,3 +194,18 @@ export const calendarEventSchema = z.object({
 });
 
 export type CalendarEventFormValues = z.input<typeof calendarEventSchema>;
+
+// ---------------------------------------------------------------------------
+// Fase 3: usuários
+// ---------------------------------------------------------------------------
+
+export const roleOptions = ["ADMIN", "USER"] as const;
+
+export const userSchema = z.object({
+  name: z.string().min(1, "Nome obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  password: z.string().optional().default(""),
+  role: z.enum(roleOptions).default("USER"),
+});
+
+export type UserFormValues = z.input<typeof userSchema>;

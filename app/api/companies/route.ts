@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { companySchema } from "@/lib/validations";
+import { registerAudit, getRequestIp } from "@/lib/audit";
 
 export async function GET() {
   const session = await auth();
@@ -26,5 +27,15 @@ export async function POST(req: NextRequest) {
   }
 
   const company = await prisma.company.create({ data: parsed.data });
+
+  await registerAudit({
+    userId: session.user.id,
+    acao: "create",
+    entidade: "Company",
+    entidadeId: company.id,
+    detalhes: { razaoSocial: company.razaoSocial },
+    ip: getRequestIp(req),
+  });
+
   return NextResponse.json(company, { status: 201 });
 }

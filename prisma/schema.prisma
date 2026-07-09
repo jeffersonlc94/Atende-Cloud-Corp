@@ -28,6 +28,7 @@ model User {
   mileageLogs  MileageLog[]
   checklists   Checklist[]
   maintenances Maintenance[]
+  auditLogs    AuditLog[]
 
   @@map("users")
 }
@@ -323,4 +324,36 @@ model CalendarEvent {
   createdAt DateTime         @default(now())
 
   @@map("calendar_events")
+}
+
+// ==========================================================================
+// Fase 3: notificações, auditoria e controle de acesso
+// ==========================================================================
+
+model NotificationLog {
+  id           String   @id @default(cuid())
+  tipo         String
+  referencia   String
+  destinatario String?
+  enviadoEm    DateTime @default(now())
+
+  @@index([tipo, referencia])
+  @@map("notification_logs")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  acao       String
+  entidade   String
+  entidadeId String?
+  detalhes   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([entidade, entidadeId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

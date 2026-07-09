@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { quoteSchema } from "@/lib/validations";
+import { registerAudit, getRequestIp } from "@/lib/audit";
+import { canDeleteRecords } from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -87,14 +89,35 @@ export async function PUT(req: NextRequest, { params }: Params) {
     });
   });
 
+  await registerAudit({
+    userId: session.user.id,
+    acao: "update",
+    entidade: "Quote",
+    entidadeId: quote.id,
+    detalhes: { numero: quote.numero, total: quote.total.toString() },
+    ip: getRequestIp(req),
+  });
+
   return NextResponse.json(quote);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canDeleteRecords(session)) {
+    return NextResponse.json({ error: "Apenas administradores podem excluir orçamentos." }, { status: 403 });
+  }
 
   const { id } = await params;
   await prisma.quote.delete({ where: { id } });
+
+  await registerAudit({
+    userId: session.user.id,
+    acao: "delete",
+    entidade: "Quote",
+    entidadeId: id,
+    ip: getRequestIp(req),
+  });
+
   return NextResponse.json({ ok: true });
 }

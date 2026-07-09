@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { navItems } from "./nav-items";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,9 @@ import {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
+  const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -32,7 +36,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const active = pathname.startsWith(item.href) && item.href !== "#";
           const content = (

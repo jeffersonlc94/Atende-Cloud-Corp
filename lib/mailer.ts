@@ -1,0 +1,166 @@
+import nodemailer, { type Transporter } from "nodemailer";
+
+// ---------------------------------------------------------------------------
+// Configuração de envio de e-mail via SMTP.
+// Se as variáveis de ambiente não estiverem configuradas, o envio é
+// ignorado silenciosamente (apenas logado), sem quebrar a aplicação.
+// ---------------------------------------------------------------------------
+
+export function isSmtpConfigured(): boolean {
+  return Boolean(
+    process.env.SMTP_HOST &&
+      process.env.SMTP_PORT &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS &&
+      process.env.SMTP_FROM
+  );
+}
+
+let transporter: Transporter | null = null;
+
+function getTransporter(): Transporter | null {
+  if (!isSmtpConfigured()) return null;
+  if (transporter) return transporter;
+
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: process.env.SMTP_SECURE === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  return transporter;
+}
+
+export type SendMailInput = {
+  to: string;
+  subject: string;
+  html: string;
+};
+
+export type SendMailResult = { sent: boolean; reason?: string };
+
+export async function sendMail({ to, subject, html }: SendMailInput): Promise<SendMailResult> {
+  const t = getTransporter();
+
+  if (!t) {
+    console.warn(
+      `[mailer] SMTP não configurado — e-mail "${subject}" para ${to} não foi enviado.`
+    );
+    return { sent: false, reason: "SMTP não configurado" };
+  }
+
+  try {
+    await t.sendMail({
+      from: process.env.SMTP_FROM,
+      to,
+      subject,
+      html,
+    });
+    return { sent: true };
+  } catch (err) {
+    console.error("[mailer] Falha ao enviar e-mail:", err);
+    return { sent: false, reason: err instanceof Error ? err.message : "Erro desconhecido" };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Templates simples de e-mail (HTML)
+// ---------------------------------------------------------------------------
+
+function baseTemplate(title: string, bodyHtml: string): string {
+  return `
+    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 560px; margin: 0 auto; color: #1f2937;">
+      <div style="background:#0f172a; padding:16px 24px;">
+        <span style="color:#fff; font-size:16px; font-weight:bold;">Atende Cloud Corp</span>
+      </div>
+      <div style="padding:24px; border:1px solid #e5e7eb; border-top:none;">
+        <h2 style="margin-top:0; font-size:18px;">${title}</h2>
+        ${bodyHtml}
+      </div>
+      <p style="color:#9ca3af; font-size:12px; padding:12px 24px;">
+        Esta é uma notificação automática do módulo de Gestão de Frota. Não responda a este e-mail.
+      </p>
+    </div>
+  `;
+}
+
+export function templateChecklistNaoRealizado(params: {
+  veiculo: string;
+  dias: number;
+}): { subject: string; html: string } {
+  const { veiculo, dias } = params;
+  return {
+    subject: `Checklist pendente — ${veiculo}`,
+    html: baseTemplate(
+      "Checklist não realizado",
+      `<p>O veículo <strong>${veiculo}</strong> está há <strong>${dias} dia(s)</strong> sem checklist registrado.</p>
+       <p>Regularize o quanto antes para manter o histórico de inspeções em dia.</p>`
+    ),
+  };
+}
+
+export function templateDocumentoVencendo(params: {
+  veiculo: string;
+  tipoDocumento: string;
+  dataVencimento: string;
+}): { subject: string; html: string } {
+  const { veiculo, tipoDocumento, dataVencimento } = params;
+  return {
+    subject: `Documento vencendo em breve — ${veiculo}`,
+    html: baseTemplate(
+      "Documento próximo do vencimento",
+      `<p>O documento <strong>${tipoDocumento}</strong> do veículo <strong>${veiculo}</strong> vence em <strong>${dataVencimento}</strong>.</p>
+       <p>Providencie a renovação para evitar problemas de conformidade.</p>`
+    ),
+  };
+}
+
+export function templateDocumentoVencido(params: {
+  veiculo: string;
+  tipoDocumento: string;
+  dataVencimento: string;
+}): { subject: string; html: string } {
+  const { veiculo, tipoDocumento, dataVencimento } = params;
+  return {
+    subject: `Documento vencido — ${veiculo}`,
+    html: baseTemplate(
+      "Documento vencido",
+      `<p>O documento <strong>${tipoDocumento}</strong> do veículo <strong>${veiculo}</strong> venceu em <strong>${dataVencimento}</strong>.</p>
+       <p>Regularize imediatamente.</p>`
+    ),
+  };
+}
+
+export function templateTrocaOleoProxima(params: {
+  veiculo: string;
+  kmRestante: number;
+}): { subject: string; html: string } {
+  const { veiculo, kmRestante } = params;
+  return {
+    subject: `Troca de óleo próxima — ${veiculo}`,
+    html: baseTemplate(
+      "Troca de óleo próxima",
+      `<p>Faltam <strong>${kmRestante} km</strong> para a próxima troca de óleo do veículo <strong>${veiculo}</strong>.</p>
+       <p>Agende a manutenção preventiva.</p>`
+    ),
+  };
+}
+
+export function templateTrocaOleoVencida(params: {
+  veiculo: string;
+  kmExcedente: number;
+}): { subject: string; html: string } {
+  const { veiculo, kmExcedente } = params;
+  return {
+    subject: `Troca de óleo vencida — ${veiculo}`,
+    html: baseTemplate(
+      "Troca de óleo vencida",
+      `<p>O veículo <strong>${veiculo}</strong> já rodou <strong>${kmExcedente} km</strong> além do previsto para a troca de óleo.</p>
+       <p>Providencie a manutenção o quanto antes.</p>`
+    ),
+  };
+}

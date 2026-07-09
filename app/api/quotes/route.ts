@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { quoteSchema } from "@/lib/validations";
 import { generateNextQuoteNumber } from "@/lib/quote-number";
 import { Prisma } from "@prisma/client";
+import { registerAudit, getRequestIp } from "@/lib/audit";
 
 function computeItemTotal(quantidade: number, valorUnitario: number) {
   return Math.round(quantidade * valorUnitario * 100) / 100;
@@ -113,6 +114,15 @@ export async function POST(req: NextRequest) {
       },
       include: { itens: true, company: true, client: true },
     });
+  });
+
+  await registerAudit({
+    userId: session.user.id,
+    acao: "create",
+    entidade: "Quote",
+    entidadeId: quote.id,
+    detalhes: { numero: quote.numero, total: quote.total.toString() },
+    ip: getRequestIp(req),
   });
 
   return NextResponse.json(quote, { status: 201 });

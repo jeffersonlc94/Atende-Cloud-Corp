@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { oilChangeSchema } from "@/lib/validations";
+import { registerAudit, getRequestIp } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -40,6 +41,15 @@ export async function POST(req: NextRequest) {
       observacoes: data.observacoes || null,
       kmProximaTroca: data.kmProximaTroca ?? null,
     },
+  });
+
+  await registerAudit({
+    userId: session.user.id,
+    acao: "create",
+    entidade: "OilChange",
+    entidadeId: item.id,
+    detalhes: { vehicleId: item.vehicleId, km: item.km },
+    ip: getRequestIp(req),
   });
 
   return NextResponse.json(item, { status: 201 });

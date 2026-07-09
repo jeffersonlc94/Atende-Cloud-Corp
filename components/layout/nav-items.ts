@@ -4,6 +4,9 @@ import {
   FileText,
   Building2,
   Truck,
+  Users,
+  ShieldCheck,
+  Settings,
 } from "lucide-react";
 
 export type NavItem = {
@@ -12,6 +15,7 @@ export type NavItem = {
   icon: LucideIcon;
   disabled?: boolean;
   badge?: string;
+  adminOnly?: boolean;
 };
 
 export const navItems: NavItem[] = [
@@ -34,6 +38,23 @@ export const navItems: NavItem[] = [
     label: "Gestão de Frota",
     href: "/frota",
     icon: Truck,
+  },
+  {
+    label: "Usuários",
+    href: "/usuarios",
+    icon: Users,
+    adminOnly: true,
+  },
+  {
+    label: "Auditoria",
+    href: "/auditoria",
+    icon: ShieldCheck,
+    adminOnly: true,
+  },
+  {
+    label: "Configurações",
+    href: "/configuracoes",
+    icon: Settings,
   },
 ];
 

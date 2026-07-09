@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useVehicles, useDeleteVehicle } from "@/hooks/use-vehicles";
+import { canDeleteRecords } from "@/lib/permissions";
 import { VehicleFormDialog } from "@/components/frota/vehicle-form-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,8 @@ import {
 import { Trash2 } from "lucide-react";
 
 export default function VeiculosPage() {
+  const { data: session } = useSession();
+  const canDelete = canDeleteRecords(session);
   const [placa, setPlaca] = useState("");
   const { data: vehicles = [], isLoading } = useVehicles({ placa });
   const deleteVehicle = useDeleteVehicle();
@@ -113,9 +117,11 @@ export default function VeiculosPage() {
                     <TableCell>{v.kmAtual.toLocaleString("pt-BR")} km</TableCell>
                     <TableCell className="flex justify-end gap-1">
                       <VehicleFormDialog vehicle={v} />
-                      <Button variant="ghost" size="icon" onClick={() => setPendingDelete(v.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {canDelete && (
+                        <Button variant="ghost" size="icon" onClick={() => setPendingDelete(v.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

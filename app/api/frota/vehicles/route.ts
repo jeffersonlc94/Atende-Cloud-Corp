@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { vehicleSchema } from "@/lib/validations";
 import { Prisma } from "@prisma/client";
+import { registerAudit, getRequestIp } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -60,6 +61,15 @@ export async function POST(req: NextRequest) {
       observacoes: data.observacoes || null,
     },
     include: { company: true },
+  });
+
+  await registerAudit({
+    userId: session.user.id,
+    acao: "create",
+    entidade: "Vehicle",
+    entidadeId: vehicle.id,
+    detalhes: { placa: vehicle.placa },
+    ip: getRequestIp(req),
   });
 
   return NextResponse.json(vehicle, { status: 201 });
