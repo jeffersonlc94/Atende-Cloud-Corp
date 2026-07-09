@@ -16,15 +16,18 @@ enum Role {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  passwordHash  String
-  role          Role     @default(USER)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  quotes        Quote[]
+  quotes       Quote[]
+  mileageLogs  MileageLog[]
+  checklists   Checklist[]
+  maintenances Maintenance[]
 
   @@map("users")
 }
@@ -48,7 +51,8 @@ model Company {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  quotes            Quote[]
+  quotes   Quote[]
+  vehicles Vehicle[]
 
   @@map("companies")
 }
@@ -59,52 +63,264 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  quotes    Quote[]
+  quotes Quote[]
 
   @@map("clients")
 }
 
 model Quote {
-  id                  String      @id @default(cuid())
-  numero              String      @unique
-  companyId           String
-  company             Company     @relation(fields: [companyId], references: [id])
-  clientId            String
-  client              Client      @relation(fields: [clientId], references: [id])
-  referencia          String?
-  dataEmissao         DateTime    @default(now())
-  dataValidade         DateTime?
-  validadeDias        Int         @default(15)
-  condicoesPagamento  String?
-  prazoEntrega        String?
-  observacoes         String?
-  total               Decimal     @default(0) @db.Decimal(14, 2)
-  createdByUserId     String?
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id])
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  id                 String    @id @default(cuid())
+  numero             String    @unique
+  companyId          String
+  company            Company   @relation(fields: [companyId], references: [id])
+  clientId           String
+  client             Client    @relation(fields: [clientId], references: [id])
+  referencia         String?
+  dataEmissao        DateTime  @default(now())
+  dataValidade       DateTime?
+  validadeDias       Int       @default(15)
+  condicoesPagamento String?
+  prazoEntrega       String?
+  observacoes        String?
+  total              Decimal   @default(0) @db.Decimal(14, 2)
+  createdByUserId    String?
+  createdByUser      User?     @relation(fields: [createdByUserId], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  itens               QuoteItem[]
+  itens QuoteItem[]
 
   @@map("quotes")
 }
 
 model QuoteItem {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   quoteId       String
-  quote         Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quote         Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   ordem         Int
   descricao     String
-  quantidade    Decimal  @db.Decimal(14, 3)
-  valorUnitario Decimal  @db.Decimal(14, 2)
-  valorTotal    Decimal  @db.Decimal(14, 2)
+  quantidade    Decimal @db.Decimal(14, 3)
+  valorUnitario Decimal @db.Decimal(14, 2)
+  valorTotal    Decimal @db.Decimal(14, 2)
 
   @@map("quote_items")
 }
 
 model QuoteCounter {
-  id       String @id @default("default")
-  lastNum  Int    @default(0)
+  id      String @id @default("default")
+  lastNum Int    @default(0)
 
   @@map("quote_counter")
+}
+
+// ==========================================================================
+// Módulo: Gestão de Frota
+// ==========================================================================
+
+enum Combustivel {
+  Gasolina
+  Etanol
+  Flex
+  Diesel
+  GNV
+  Eletrico
+  Hibrido
+}
+
+enum SituacaoVeiculo {
+  Ativo
+  Inativo
+  Manutencao
+}
+
+enum TipoDocumentoVeiculo {
+  CRLV
+  Seguro
+  IPVA
+  Licenciamento
+  Outro
+}
+
+enum TipoChecklist {
+  Diario
+  Semanal
+  Mensal
+}
+
+enum ChecklistItemTipo {
+  Pneus
+  Freios
+  Luzes
+  Oleo
+  Agua
+  Motor
+  Suspensao
+  Bateria
+  Documentacao
+}
+
+enum ChecklistItemStatus {
+  OK
+  Atencao
+  NecessitaManutencao
+}
+
+enum TipoEventoAgenda {
+  Manutencao
+  TrocaOleo
+  Documento
+  Checklist
+  Outro
+}
+
+model Vehicle {
+  id            String          @id @default(cuid())
+  fotoUrl       String?
+  placa         String          @unique
+  marca         String
+  modelo        String
+  versao        String?
+  ano           Int
+  cor           String?
+  renavam       String?
+  chassi        String?
+  combustivel   Combustivel     @default(Flex)
+  companyId     String
+  company       Company         @relation(fields: [companyId], references: [id])
+  kmAtual       Int             @default(0)
+  situacao      SituacaoVeiculo @default(Ativo)
+  dataAquisicao DateTime?
+  observacoes   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  documentos   VehicleDocument[]
+  mileageLogs  MileageLog[]
+  oilChanges   OilChange[]
+  maintenances Maintenance[]
+  checklists   Checklist[]
+  fuels        Fuel[]
+  eventos      CalendarEvent[]
+
+  @@map("vehicles")
+}
+
+model VehicleDocument {
+  id             String               @id @default(cuid())
+  vehicleId      String
+  vehicle        Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  tipo           TipoDocumentoVeiculo @default(Outro)
+  arquivoUrl     String?
+  dataEmissao    DateTime?
+  dataVencimento DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@map("vehicle_documents")
+}
+
+model MileageLog {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  data      DateTime @default(now())
+  km        Int
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@map("mileage_logs")
+}
+
+model OilChange {
+  id             String   @id @default(cuid())
+  vehicleId      String
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  data           DateTime @default(now())
+  km             Int
+  tipoOleo       String?
+  quantidade     Decimal? @db.Decimal(10, 2)
+  oficina        String?
+  valor          Decimal? @db.Decimal(14, 2)
+  observacoes    String?
+  kmProximaTroca Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("oil_changes")
+}
+
+model Maintenance {
+  id                String   @id @default(cuid())
+  vehicleId         String
+  vehicle           Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  tipo              String
+  data              DateTime @default(now())
+  oficina           String?
+  valor             Decimal? @db.Decimal(14, 2)
+  km                Int?
+  responsavelUserId String?
+  responsavelUser   User?    @relation(fields: [responsavelUserId], references: [id])
+  descricao         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("maintenances")
+}
+
+model Checklist {
+  id          String        @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  tipo        TipoChecklist @default(Diario)
+  data        DateTime      @default(now())
+  hora        String?
+  km          Int?
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+  observacoes String?
+  createdAt   DateTime      @default(now())
+
+  itens ChecklistItem[]
+
+  @@map("checklists")
+}
+
+model ChecklistItem {
+  id          String              @id @default(cuid())
+  checklistId String
+  checklist   Checklist           @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  item        ChecklistItemTipo
+  status      ChecklistItemStatus @default(OK)
+
+  @@map("checklist_items")
+}
+
+model Fuel {
+  id              String      @id @default(cuid())
+  vehicleId       String
+  vehicle         Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  data            DateTime    @default(now())
+  km              Int?
+  litros          Decimal     @db.Decimal(10, 3)
+  valorLitro      Decimal     @db.Decimal(10, 3)
+  valorTotal      Decimal     @db.Decimal(14, 2)
+  posto           String?
+  tipoCombustivel Combustivel @default(Flex)
+  createdAt       DateTime    @default(now())
+
+  @@map("fuels")
+}
+
+model CalendarEvent {
+  id        String           @id @default(cuid())
+  vehicleId String?
+  vehicle   Vehicle?         @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  titulo    String
+  data      DateTime
+  descricao String?
+  tipo      TipoEventoAgenda @default(Outro)
+  createdAt DateTime         @default(now())
+
+  @@map("calendar_events")
 }
