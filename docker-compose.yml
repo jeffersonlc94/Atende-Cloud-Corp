@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-atende}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_strong_password}
+      POSTGRES_DB: ${POSTGRES_DB:-atende_cloud_corp}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-atende} -d ${POSTGRES_DB:-atende_cloud_corp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - atende_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-atende}:${POSTGRES_PASSWORD:-change_me_strong_password}@postgres:5432/${POSTGRES_DB:-atende_cloud_corp}?schema=public
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change_me_generate_with_openssl_rand_base64_32}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Administrador}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@atende.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-admin123}
+      PORT: 3000
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - app_uploads:/app/public/uploads
+    networks:
+      - atende_network
+
+volumes:
+  postgres_data:
+  app_uploads:
+
+networks:
+  atende_network:
+    driver: bridge

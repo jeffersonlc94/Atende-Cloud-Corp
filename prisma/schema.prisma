@@ -1,0 +1,110 @@
+// Atende Cloud Corp - Prisma schema
+// Sistema self-hosted, single-tenant
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quotes        Quote[]
+
+  @@map("users")
+}
+
+model Company {
+  id                String   @id @default(cuid())
+  razaoSocial       String
+  nomeFantasia      String?
+  cnpj              String?
+  inscricaoEstadual String?
+  endereco          String?
+  cidade            String?
+  estado            String?
+  cep               String?
+  telefone1         String?
+  telefone2         String?
+  email             String?
+  site              String?
+  logoUrl           String?
+  nomeResponsavel   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  quotes            Quote[]
+
+  @@map("companies")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  nome      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quotes    Quote[]
+
+  @@map("clients")
+}
+
+model Quote {
+  id                  String      @id @default(cuid())
+  numero              String      @unique
+  companyId           String
+  company             Company     @relation(fields: [companyId], references: [id])
+  clientId            String
+  client              Client      @relation(fields: [clientId], references: [id])
+  referencia          String?
+  dataEmissao         DateTime    @default(now())
+  dataValidade         DateTime?
+  validadeDias        Int         @default(15)
+  condicoesPagamento  String?
+  prazoEntrega        String?
+  observacoes         String?
+  total               Decimal     @default(0) @db.Decimal(14, 2)
+  createdByUserId     String?
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id])
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  itens               QuoteItem[]
+
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id            String   @id @default(cuid())
+  quoteId       String
+  quote         Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  ordem         Int
+  descricao     String
+  quantidade    Decimal  @db.Decimal(14, 3)
+  valorUnitario Decimal  @db.Decimal(14, 2)
+  valorTotal    Decimal  @db.Decimal(14, 2)
+
+  @@map("quote_items")
+}
+
+model QuoteCounter {
+  id       String @id @default("default")
+  lastNum  Int    @default(0)
+
+  @@map("quote_counter")
+}
