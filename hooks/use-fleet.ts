@@ -377,24 +377,47 @@ export function useDeleteVehicleDocument(vehicleId: string) {
 export type FleetDashboardStats = {
   totalVeiculos: number;
   veiculosAtivos: number;
+  veiculosEmDia: number;
   veiculosManutencao: number;
   checklistsPendentes: number;
   manutencoesPendentes: number;
   documentosVencendo: number;
+  documentosVencidos: number;
   trocasOleoProximas: number;
+  trocasOleoAteMilKm: number;
   manutencoesPorMes: { mes: string; quantidade: number; valor: number }[];
   evolucaoKm: { mes: string; km: number }[];
   checklistDonut: { status: string; quantidade: number }[];
+  documentosAVencer: {
+    id: string;
+    tipo: string;
+    placa: string;
+    veiculo: string;
+    dataVencimento: string;
+    diasRestantes: number;
+  }[];
+  proximasTrocasOleo: {
+    id: string;
+    placa: string;
+    veiculo: string;
+    kmAtual: number;
+    kmProximaTroca: number;
+    kmFalta: number;
+    percentual: number;
+  }[];
   veiculos: {
     id: string;
     placa: string;
     marca: string;
     modelo: string;
+    ano: number;
     situacao: string;
     kmAtual: number;
     empresa: string;
     ultimoChecklist: string | null;
+    checklistRealizadoSemana: boolean;
     documentoAlerta: boolean;
+    documentoStatus: "Em dia" | "Vencendo" | "Vencido";
     kmProximaTroca: number | null;
   }[];
   alertas: FleetAlertRecord[];

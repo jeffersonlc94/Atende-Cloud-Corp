@@ -2,8 +2,18 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   FileText,
+  FilePlus2,
+  ListChecks,
   Building2,
   Truck,
+  Car,
+  ClipboardList,
+  Wrench,
+  Droplet,
+  FileStack,
+  Fuel,
+  CalendarDays,
+  BarChart3,
   Users,
   ShieldCheck,
   Settings,
@@ -17,6 +27,12 @@ export type NavItem = {
   badge?: string;
   adminOnly?: boolean;
 };
+
+// Itens exibidos dentro do grupo expansível "Orçamentos" da sidebar do módulo de Orçamentos.
+export const orcamentosNavItems: NavItem[] = [
+  { label: "Novo Orçamento", href: "/orcamentos/novo", icon: FilePlus2 },
+  { label: "Listar Orçamentos", href: "/orcamentos", icon: ListChecks },
+];
 
 export const navItems: NavItem[] = [
   {
@@ -58,14 +74,21 @@ export const navItems: NavItem[] = [
   },
 ];
 
-export const frotaNavItems: { label: string; href: string }[] = [
-  { label: "Dashboard", href: "/frota/dashboard" },
-  { label: "Veículos", href: "/frota/veiculos" },
-  { label: "Checklists", href: "/frota/checklists" },
-  { label: "Manutenções", href: "/frota/manutencoes" },
-  { label: "Troca de Óleo", href: "/frota/troca-oleo" },
-  { label: "Documentos", href: "/frota/documentos" },
-  { label: "Abastecimentos", href: "/frota/abastecimentos" },
-  { label: "Agenda", href: "/frota/agenda" },
-  { label: "Relatórios", href: "/frota/relatorios" },
+export const frotaNavItems: (NavItem & { label: string; href: string })[] = [
+  { label: "Dashboard", href: "/frota/dashboard", icon: LayoutDashboard },
+  { label: "Veículos", href: "/frota/veiculos", icon: Car },
+  { label: "Checklists", href: "/frota/checklists", icon: ClipboardList },
+  { label: "Manutenções", href: "/frota/manutencoes", icon: Wrench },
+  { label: "Troca de Óleo", href: "/frota/troca-oleo", icon: Droplet },
+  { label: "Documentos", href: "/frota/documentos", icon: FileStack },
+  { label: "Abastecimentos", href: "/frota/abastecimentos", icon: Fuel },
+  { label: "Agenda", href: "/frota/agenda", icon: CalendarDays },
+  { label: "Relatórios", href: "/frota/relatorios", icon: BarChart3 },
+];
+
+// Itens comuns exibidos abaixo do grupo de veículos na sidebar do módulo de Frota.
+export const frotaCommonNavItems: NavItem[] = [
+  { label: "Empresas", href: "/empresas", icon: Building2 },
+  { label: "Usuários", href: "/usuarios", icon: Users, adminOnly: true },
+  { label: "Configurações", href: "/configuracoes", icon: Settings },
 ];

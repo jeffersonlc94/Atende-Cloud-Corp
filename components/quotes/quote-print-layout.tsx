@@ -40,9 +40,11 @@ export type QuotePrintData = {
 export function QuotePrintLayout({
   company,
   quote,
+  id = "quote-print-area",
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
+  id?: string;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -55,7 +57,7 @@ export function QuotePrintLayout({
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" | ");
 
   return (
-    <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none" id="quote-print-area">
+    <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none" id={id}>
       {/* Cabeçalho */}
       <div className="flex items-start justify-between gap-4 border-b-2 border-black pb-4">
         <div className="flex items-center gap-4">
@@ -118,7 +120,7 @@ export function QuotePrintLayout({
       {/* Tabela de itens */}
       <table className="mt-4 w-full border-collapse text-sm">
         <thead>
-          <tr className="border-y-2 border-black bg-gray-100">
+          <tr className="border-y-2 border-black bg-sky-100">
             <th className="w-12 border border-gray-400 p-1.5 text-left">ITEM</th>
             <th className="border border-gray-400 p-1.5 text-left">DESCRIÇÃO</th>
             <th className="w-20 border border-gray-400 p-1.5 text-right">QTD</th>
@@ -135,7 +137,7 @@ export function QuotePrintLayout({
             </tr>
           )}
           {quote.itens.map((item, idx) => (
-            <tr key={idx}>
+            <tr key={idx} className={idx % 2 === 1 ? "bg-gray-50" : undefined}>
               <td className="border border-gray-400 p-1.5">{idx + 1}</td>
               <td className="border border-gray-400 p-1.5">{item.descricao}</td>
               <td className="border border-gray-400 p-1.5 text-right">
@@ -151,7 +153,7 @@ export function QuotePrintLayout({
           ))}
         </tbody>
         <tfoot>
-          <tr className="font-bold">
+          <tr className="bg-gray-200 font-bold">
             <td colSpan={4} className="border border-gray-400 p-1.5 text-right">
               TOTAL
             </td>
@@ -184,13 +186,13 @@ export function QuotePrintLayout({
       </div>
 
       {/* Validade */}
-      <p className="mt-4 text-sm font-semibold text-red-600">
-        Esta proposta é válida por {quote.validadeDias} dias a partir da data de
-        emissão.
+      <p className="mt-4 text-center text-sm font-bold uppercase text-red-600">
+        Validade da proposta: este orçamento é válido por {quote.validadeDias} dias
+        corridos a partir da data de emissão.
       </p>
 
       {/* Assinatura */}
-      <div className="mt-16 flex flex-col items-center text-sm">
+      <div className="mt-16 flex flex-col items-center text-center text-sm">
         <p>
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
