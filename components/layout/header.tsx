@@ -1,11 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "./theme-toggle";
 import { MobileNav } from "./mobile-nav";
 import { useFleetAlerts } from "@/hooks/use-fleet";
-import { LogOut, Bell, Mail, AlertTriangle } from "lucide-react";
+import { LogOut, Bell, Search, HelpCircle, AlertTriangle } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -17,6 +19,7 @@ import {
 } from "@/components/ui/popover";
 
 export function Header() {
+  const router = useRouter();
   const { data: session } = useSession();
   const { data: alerts = [] } = useFleetAlerts();
   const name = session?.user?.name ?? "";
@@ -29,12 +32,33 @@ export function Header() {
 
   const alertCount = alerts.length;
 
+  function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const query = new FormData(e.currentTarget).get("q");
+    if (typeof query === "string" && query.trim()) {
+      router.push(`/orcamentos?q=${encodeURIComponent(query.trim())}`);
+    }
+  }
+
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center gap-2">
-        <MobileNav />
-      </div>
-      <div className="flex items-center gap-1">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-header px-4 backdrop-blur supports-[backdrop-filter]:bg-header/95 md:px-6">
+      <MobileNav />
+
+      <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md">
+        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          name="q"
+          type="search"
+          placeholder="Buscar orçamentos..."
+          className="rounded-full border-transparent bg-muted pr-4 pl-9 shadow-none focus-visible:border-input"
+        />
+      </form>
+
+      <div className="ml-auto flex items-center gap-1">
+        <Button variant="ghost" size="icon" aria-label="Ajuda">
+          <HelpCircle className="h-5 w-5" />
+        </Button>
+
         <Popover>
           <PopoverTrigger
             render={
@@ -70,22 +94,6 @@ export function Header() {
                 </div>
               ))}
             </div>
-          </PopoverContent>
-        </Popover>
-
-        <Popover>
-          <PopoverTrigger
-            render={
-              <Button variant="ghost" size="icon" className="relative" aria-label="Mensagens">
-                <Mail className="h-5 w-5" />
-              </Button>
-            }
-          />
-          <PopoverContent align="end" className="w-72">
-            <p className="px-1 pb-1 text-sm font-semibold">Mensagens</p>
-            <p className="px-1 py-2 text-sm text-muted-foreground">
-              Nenhuma mensagem no momento.
-            </p>
           </PopoverContent>
         </Popover>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import { useQuotesDashboard } from "@/hooks/use-quotes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard, type StatCardAccent } from "@/components/shared/stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ChartContainer,
@@ -34,26 +35,30 @@ export default function OrcamentosDashboardPage() {
     );
   }
 
-  const stats = [
+  const stats: { label: string; value: string; icon: typeof FileText; accent: StatCardAccent }[] = [
     {
       label: "Total de orçamentos",
       value: data.totalOrcamentos.toLocaleString("pt-BR"),
       icon: FileText,
+      accent: "default",
     },
     {
       label: "Valor total emitido",
       value: formatCurrencyBRL(data.valorTotal),
       icon: DollarSign,
+      accent: "info",
     },
     {
       label: "Total no mês",
       value: formatCurrencyBRL(data.totalMes),
       icon: CalendarDays,
+      accent: "teal",
     },
     {
       label: "Total no ano",
       value: formatCurrencyBRL(data.totalAno),
       icon: TrendingUp,
+      accent: "purple",
     },
   ];
 
@@ -68,15 +73,7 @@ export default function OrcamentosDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="flex items-center justify-between p-6">
-              <div>
-                <p className="text-sm text-muted-foreground">{s.label}</p>
-                <p className="mt-1 text-2xl font-bold">{s.value}</p>
-              </div>
-              <s.icon className="h-8 w-8 text-muted-foreground/50" />
-            </CardContent>
-          </Card>
+          <StatCard key={s.label} label={s.label} value={s.value} icon={s.icon} accent={s.accent} />
         ))}
       </div>
 

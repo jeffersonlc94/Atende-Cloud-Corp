@@ -20,8 +20,9 @@ import { useFleetDashboard } from "@/hooks/use-fleet";
 import { VehicleFormDialog } from "@/components/frota/vehicle-form-dialog";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard, type StatCardAccent } from "@/components/shared/stat-card";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -110,60 +111,48 @@ export default function FrotaDashboardPage() {
     );
   }
 
-  const cards = [
+  const cards: { label: string; value: number; sub: string; icon: typeof Truck; accent: StatCardAccent }[] = [
     {
       label: "Total de Veículos",
       value: data.totalVeiculos,
       sub: "veículos cadastrados",
       icon: Truck,
-      tint: "bg-blue-50 dark:bg-blue-500/10",
-      labelColor: "text-blue-700 dark:text-blue-400",
-      iconBg: "bg-blue-600",
+      accent: "info",
     },
     {
       label: "Veículos em Dia",
       value: data.veiculosEmDia,
       sub: `${formatPercent(data.veiculosEmDia, data.totalVeiculos)} da frota`,
       icon: CheckCircle2,
-      tint: "bg-emerald-50 dark:bg-emerald-500/10",
-      labelColor: "text-emerald-700 dark:text-emerald-400",
-      iconBg: "bg-emerald-600",
+      accent: "default",
     },
     {
       label: "Manutenções Pendentes",
       value: data.manutencoesPendentes,
       sub: `${formatPercent(data.manutencoesPendentes, data.totalVeiculos)} da frota`,
       icon: Wrench,
-      tint: "bg-amber-50 dark:bg-amber-500/10",
-      labelColor: "text-amber-700 dark:text-amber-400",
-      iconBg: "bg-amber-500",
+      accent: "warning",
     },
     {
       label: "Documentos Vencidos",
       value: data.documentosVencidos,
       sub: `${formatPercent(data.documentosVencidos, data.totalVeiculos)} da frota`,
       icon: FileWarning,
-      tint: "bg-red-50 dark:bg-red-500/10",
-      labelColor: "text-red-700 dark:text-red-400",
-      iconBg: "bg-red-600",
+      accent: "critical",
     },
     {
       label: "Checklists Pendentes",
       value: data.checklistsPendentes,
       sub: "esta semana",
       icon: ClipboardList,
-      tint: "bg-purple-50 dark:bg-purple-500/10",
-      labelColor: "text-purple-700 dark:text-purple-400",
-      iconBg: "bg-purple-600",
+      accent: "purple",
     },
     {
       label: "Próxima Troca de Óleo",
       value: data.trocasOleoAteMilKm,
       sub: "até 1.000 km",
       icon: Droplet,
-      tint: "bg-orange-50 dark:bg-orange-500/10",
-      labelColor: "text-orange-700 dark:text-orange-400",
-      iconBg: "bg-orange-600",
+      accent: "teal",
     },
   ];
 
@@ -184,20 +173,14 @@ export default function FrotaDashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {cards.map((c) => (
-          <Card key={c.label} className={c.tint}>
-            <CardContent className="flex items-start justify-between p-4">
-              <div>
-                <p className={`text-xs font-semibold uppercase tracking-wide ${c.labelColor}`}>
-                  {c.label}
-                </p>
-                <p className="mt-1 text-2xl font-bold">{c.value}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{c.sub}</p>
-              </div>
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${c.iconBg}`}>
-                <c.icon className="h-5 w-5 text-white" />
-              </div>
-            </CardContent>
-          </Card>
+          <StatCard
+            key={c.label}
+            label={c.label}
+            value={c.value}
+            hint={c.sub}
+            icon={c.icon}
+            accent={c.accent}
+          />
         ))}
       </div>
 
@@ -512,44 +495,34 @@ export default function FrotaDashboardPage() {
                     </TableCell>
                     <TableCell>
                       {v.checklistRealizadoSemana ? (
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                          Realizado
-                        </Badge>
+                        <StatusBadge tone="success">Realizado</StatusBadge>
                       ) : (
-                        <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
-                          Pendente
-                        </Badge>
+                        <StatusBadge tone="warning">Pendente</StatusBadge>
                       )}
                     </TableCell>
                     <TableCell>
                       {v.documentoStatus === "Em dia" && (
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                          Em dia
-                        </Badge>
+                        <StatusBadge tone="success">Em dia</StatusBadge>
                       )}
                       {v.documentoStatus === "Vencendo" && (
-                        <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
-                          Vencendo
-                        </Badge>
+                        <StatusBadge tone="warning">Vencendo</StatusBadge>
                       )}
                       {v.documentoStatus === "Vencido" && (
-                        <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
-                          Vencido
-                        </Badge>
+                        <StatusBadge tone="critical">Vencido</StatusBadge>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        className={
+                      <StatusBadge
+                        tone={
                           v.situacao === "Ativo"
-                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                            ? "success"
                             : v.situacao === "Manutencao"
-                            ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-100"
+                            ? "warning"
+                            : "neutral"
                         }
                       >
                         {v.situacao === "Manutencao" ? "Manutenção" : v.situacao}
-                      </Badge>
+                      </StatusBadge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
