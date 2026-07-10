@@ -26,11 +26,13 @@ import {
 } from "@/components/ui/table";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function AbastecimentosPage() {
   const { data: items = [], isLoading } = useFuels();
   const createFuel = useCreateFuel();
   const deleteFuel = useDeleteFuel();
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     vehicleId: "",
@@ -183,7 +185,7 @@ export default function AbastecimentosPage() {
                     <TableCell className="text-right">{formatCurrencyBRL(Number(f.valorTotal))}</TableCell>
                     <TableCell>{f.posto || "—"}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => deleteFuel.mutate(f.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => setPendingDelete(f.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
@@ -194,6 +196,16 @@ export default function AbastecimentosPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Confirma a exclusão deste abastecimento?"
+        description="Esta ação não pode ser desfeita."
+        variant="destructive"
+        confirmLabel="Excluir"
+        onConfirm={() => pendingDelete && deleteFuel.mutate(pendingDelete)}
+      />
     </div>
   );
 }

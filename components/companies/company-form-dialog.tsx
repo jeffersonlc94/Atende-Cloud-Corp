@@ -23,6 +23,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Loader2, Plus, Upload, Star } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const emptyValues: CompanyFormValues = {
   razaoSocial: "",
@@ -45,6 +46,8 @@ const emptyValues: CompanyFormValues = {
 export function CompanyFormDialog({ company }: { company?: Company }) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<CompanyFormValues | null>(null);
   const createCompany = useCreateCompany();
   const updateCompany = useUpdateCompany();
 
@@ -85,7 +88,7 @@ export function CompanyFormDialog({ company }: { company?: Company }) {
     }
   }
 
-  async function onSubmit(data: CompanyFormValues) {
+  async function persist(data: CompanyFormValues) {
     try {
       if (company) {
         await updateCompany.mutateAsync({ id: company.id, data });
@@ -98,6 +101,15 @@ export function CompanyFormDialog({ company }: { company?: Company }) {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar empresa");
     }
+  }
+
+  async function onSubmit(data: CompanyFormValues) {
+    if (company) {
+      setPendingData(data);
+      setConfirmOpen(true);
+      return;
+    }
+    await persist(data);
   }
 
   const isSaving = createCompany.isPending || updateCompany.isPending;
@@ -217,7 +229,7 @@ export function CompanyFormDialog({ company }: { company?: Company }) {
             />
             <Label htmlFor="isDefault" className="flex items-center gap-1.5 font-normal">
               <Star className="h-3.5 w-3.5 text-amber-500" />
-              Definir como empresa padrão (pré-selecionada em novos orçamentos e veículos)
+              Empresa padrão (usada na Gestão de Frota)
             </Label>
           </div>
 
@@ -232,6 +244,14 @@ export function CompanyFormDialog({ company }: { company?: Company }) {
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Deseja salvar as alterações?"
+        description="Os dados da empresa serão atualizados."
+        onConfirm={() => pendingData && persist(pendingData)}
+      />
     </Dialog>
   );
 }

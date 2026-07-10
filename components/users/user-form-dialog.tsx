@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Loader2, Plus } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const emptyValues: UserFormValues = {
   name: "",
@@ -35,6 +36,8 @@ const emptyValues: UserFormValues = {
 
 export function UserFormDialog({ user }: { user?: AppUser }) {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<UserFormValues | null>(null);
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
 
@@ -56,7 +59,7 @@ export function UserFormDialog({ user }: { user?: AppUser }) {
 
   const role = watch("role");
 
-  async function onSubmit(data: UserFormValues) {
+  async function persist(data: UserFormValues) {
     try {
       if (user) {
         await updateUser.mutateAsync({ id: user.id, data });
@@ -69,6 +72,15 @@ export function UserFormDialog({ user }: { user?: AppUser }) {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar usuário");
     }
+  }
+
+  async function onSubmit(data: UserFormValues) {
+    if (user) {
+      setPendingData(data);
+      setConfirmOpen(true);
+      return;
+    }
+    await persist(data);
   }
 
   const isSaving = createUser.isPending || updateUser.isPending;
@@ -88,11 +100,11 @@ export function UserFormDialog({ user }: { user?: AppUser }) {
           )
         }
       />
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{user ? "Editar usuário" : "Novo usuário"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Nome *</Label>
             <Input {...register("name")} />
@@ -114,7 +126,15 @@ export function UserFormDialog({ user }: { user?: AppUser }) {
             <Label>Perfil *</Label>
             <Select value={role} onValueChange={(v) => setValue("role", v as UserFormValues["role"])}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o perfil" />
+                <SelectValue placeholder="Selecione o perfil">
+                  {(value) =>
+                    value === "ADMIN"
+                      ? "Administrador"
+                      : value === "USER"
+                        ? "Usuário"
+                        : "Selecione o perfil"
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ADMIN">Administrador</SelectItem>
@@ -123,7 +143,7 @@ export function UserFormDialog({ user }: { user?: AppUser }) {
             </Select>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="sm:col-span-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
@@ -134,6 +154,14 @@ export function UserFormDialog({ user }: { user?: AppUser }) {
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Deseja salvar as alterações?"
+        description="As informações do usuário serão atualizadas."
+        onConfirm={() => pendingData && persist(pendingData)}
+      />
     </Dialog>
   );
 }

@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +45,9 @@ import {
   Trash2,
   Printer,
   Search,
+  Eye,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 
@@ -55,6 +58,7 @@ export default function OrcamentosPage() {
   const { data: companies = [] } = useCompanies();
   const [filters, setFilters] = useState<QuoteFilters>({});
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
   const { data, isLoading } = useQuotesList(filters);
   const deleteQuote = useDeleteQuote();
@@ -93,9 +97,31 @@ export default function OrcamentosPage() {
             Histórico de orçamentos emitidos
           </p>
         </div>
-        <Link href="/orcamentos/novo" className={buttonVariants()}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Orçamento
-        </Link>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-md border p-0.5">
+            <Button
+              type="button"
+              variant={viewMode === "table" ? "secondary" : "ghost"}
+              size="icon"
+              onClick={() => setViewMode("table")}
+              title="Visualizar em tabela"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="icon"
+              onClick={() => setViewMode("grid")}
+              title="Visualizar em grade"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
+          <Link href="/orcamentos/novo" className={buttonVariants()}>
+            <Plus className="mr-2 h-4 w-4" /> Novo Orçamento
+          </Link>
+        </div>
       </div>
 
       <Card>
@@ -109,12 +135,21 @@ export default function OrcamentosPage() {
             onChange={(e) => updateFilter("cliente", e.target.value)}
           />
           <Select
+            value={filters.companyId ?? "all"}
             onValueChange={(v) =>
               updateFilter("companyId", v === "all" ? undefined : (v as string))
             }
           >
             <SelectTrigger>
-              <SelectValue placeholder="Empresa" />
+              <SelectValue placeholder="Empresa">
+                {(value) =>
+                  !value || value === "all"
+                    ? "Todas as empresas"
+                    : companies.find((c) => c.id === value)?.nomeFantasia ||
+                      companies.find((c) => c.id === value)?.razaoSocial ||
+                      "Todas as empresas"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as empresas</SelectItem>
@@ -138,6 +173,77 @@ export default function OrcamentosPage() {
         </CardContent>
       </Card>
 
+      {viewMode === "grid" ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {isLoading && (
+            <p className="col-span-full py-8 text-center text-muted-foreground">Carregando...</p>
+          )}
+          {!isLoading && data?.items.length === 0 && (
+            <p className="col-span-full py-8 text-center text-muted-foreground">
+              Nenhum orçamento encontrado
+            </p>
+          )}
+          {data?.items.map((quote) => (
+            <Card key={quote.id}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between text-base">
+                  <span>Nº {quote.numero}</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {formatDateBR(quote.dataEmissao)}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p>
+                  <span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Empresa:</span>{" "}
+                  {quote.company.nomeFantasia || quote.company.razaoSocial}
+                </p>
+                <p className="text-lg font-bold">{formatCurrencyBRL(Number(quote.total))}</p>
+                <div className="flex flex-wrap items-center gap-1 pt-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Visualizar"
+                    onClick={() => window.open(`/orcamentos/${quote.id}/imprimir`, "_blank")}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Editar"
+                    onClick={() => router.push(`/orcamentos/${quote.id}`)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Duplicar"
+                    onClick={() => handleDuplicate(quote.id)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Excluir"
+                      className="text-destructive"
+                      onClick={() => setPendingDelete(quote.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -192,6 +298,13 @@ export default function OrcamentosPage() {
                         />
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
+                            onClick={() =>
+                              window.open(`/orcamentos/${quote.id}/imprimir`, "_blank")
+                            }
+                          >
+                            <Eye className="mr-2 h-4 w-4" /> Visualizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={() => router.push(`/orcamentos/${quote.id}`)}
                           >
                             <Pencil className="mr-2 h-4 w-4" /> Editar
@@ -224,6 +337,7 @@ export default function OrcamentosPage() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {pendingDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

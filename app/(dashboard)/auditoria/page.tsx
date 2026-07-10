@@ -69,9 +69,18 @@ export default function AuditoriaPage() {
 
       <Card>
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select onValueChange={(v) => updateFilter("userId", v === "all" ? undefined : (v as string))}>
+          <Select
+            value={filters.userId ?? "all"}
+            onValueChange={(v) => updateFilter("userId", v === "all" ? undefined : (v as string))}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Usuário" />
+              <SelectValue placeholder="Usuário">
+                {(value) =>
+                  !value || value === "all"
+                    ? "Todos os usuários"
+                    : users.find((u) => u.id === value)?.name ?? "Todos os usuários"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os usuários</SelectItem>
@@ -82,7 +91,10 @@ export default function AuditoriaPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select onValueChange={(v) => updateFilter("entidade", v === "all" ? undefined : (v as string))}>
+          <Select
+            value={filters.entidade ?? "all"}
+            onValueChange={(v) => updateFilter("entidade", v === "all" ? undefined : (v as string))}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Entidade" />
             </SelectTrigger>

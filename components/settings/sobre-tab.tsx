@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, User, Leaf } from "lucide-react";
@@ -9,34 +8,8 @@ import { useSystemSettings } from "@/hooks/use-settings";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
-type SystemInfo = {
-  appVersion: string;
-  dbVersion: string;
-  dockerVersion: string;
-  environment: string;
-};
-
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Erro na requisição");
-  return res.json();
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm">{value}</dd>
-    </div>
-  );
-}
-
 export function SobreTab() {
   const { data: settings } = useSystemSettings();
-  const { data: info, isLoading } = useQuery({
-    queryKey: ["system-info"],
-    queryFn: () => fetchJson<SystemInfo>("/api/system-info"),
-  });
 
   const systemName = settings?.systemName || DEFAULT_SYSTEM_NAME;
   const year = new Date().getFullYear();
@@ -87,29 +60,6 @@ export function SobreTab() {
               <Mail className="h-4 w-4 text-muted-foreground" /> {APP_AUTHOR_EMAIL}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-2xl">
-        <CardContent className="pt-5">
-          <h3 className="mb-3 text-sm font-semibold">Informações técnicas</h3>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <InfoRow label="Ambiente" value={isLoading ? "Carregando..." : (info?.environment ?? "—")} />
-            <InfoRow
-              label="Versão do banco de dados"
-              value={isLoading ? "Carregando..." : (info?.dbVersion ?? "—")}
-            />
-            <InfoRow
-              label="Versão do Docker"
-              value={isLoading ? "Carregando..." : (info?.dockerVersion ?? "—")}
-            />
-          </dl>
-          <p className="mt-4 text-xs text-muted-foreground">
-            A versão do Docker normalmente não está disponível de dentro do próprio
-            container em execução (não há acesso ao daemon do host). Para exibi-la,
-            defina a variável de ambiente <code>DOCKER_VERSION</code> no container com
-            o valor obtido via <code>docker version</code> no host.
-          </p>
         </CardContent>
       </Card>
 

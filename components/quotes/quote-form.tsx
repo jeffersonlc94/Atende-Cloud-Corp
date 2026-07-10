@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,7 @@ import {
   ListOrdered,
   MessageSquareText,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -53,7 +54,7 @@ function SectionHeader({
   return (
     <CardHeader className="border-b">
       <CardTitle className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300">
-        <Icon className="h-4 w-4 text-emerald-600" />
+        <Icon className="h-4 w-4 text-primary" />
         {title}
       </CardTitle>
     </CardHeader>
@@ -67,8 +68,8 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const createQuote = useCreateQuote();
   const updateQuote = useUpdateQuote();
   const [previewing, setPreviewing] = useState(false);
-
-  const defaultCompany = companies.find((c) => c.isDefault);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<QuoteFormValues | null>(null);
 
   const {
     register,
@@ -113,15 +114,6 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
 
   const values = watch();
 
-  // Pré-seleciona a empresa marcada como padrão em Configurações > Empresas Emissoras
-  // ao criar um novo orçamento (não afeta orçamentos já existentes/edição).
-  useEffect(() => {
-    if (!initialData && !values.companyId && defaultCompany) {
-      setValue("companyId", defaultCompany.id, { shouldValidate: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData, defaultCompany, values.companyId]);
-
   const total = useMemo(() => {
     return (values.itens ?? []).reduce(
       (acc, item) => acc + (Number(item?.quantidade) || 0) * (Number(item?.valorUnitario) || 0),
@@ -146,7 +138,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
     return created.id;
   }
 
-  async function onSubmit(data: QuoteFormValues) {
+  async function confirmAndPersist(data: QuoteFormValues) {
     try {
       await persist(data);
       toast.success(initialData ? "Orçamento atualizado com sucesso" : "Orçamento criado com sucesso");
@@ -155,6 +147,15 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar orçamento");
     }
+  }
+
+  async function onSubmit(data: QuoteFormValues) {
+    if (initialData) {
+      setPendingData(data);
+      setConfirmOpen(true);
+      return;
+    }
+    await confirmAndPersist(data);
   }
 
   // A pré-visualização, impressão e geração de PDF usam a MESMA página
@@ -232,7 +233,15 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
                 onValueChange={(v) => setValue("companyId", v as string, { shouldValidate: true })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a empresa" />
+                  <SelectValue placeholder="Selecione a empresa">
+                    {(value) =>
+                      value
+                        ? companies.find((c) => c.id === value)?.nomeFantasia ||
+                          companies.find((c) => c.id === value)?.razaoSocial ||
+                          "Selecione a empresa"
+                        : "Selecione a empresa"
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {companies.map((c) => (
@@ -329,6 +338,14 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           </span>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Deseja salvar as alterações?"
+        description="O orçamento será atualizado com os dados informados."
+        onConfirm={() => pendingData && confirmAndPersist(pendingData)}
+      />
     </form>
   );
 }

@@ -24,7 +24,6 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
 
-  const empresasItem = navItems.find((i) => i.href.startsWith("/configuracoes?tab=empresas"));
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
   const configuracoesItem = navItems.find((i) => i.href === "/configuracoes");
@@ -61,16 +60,6 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           onNavigate={onNavigate}
           isActive={(item) => pathname === item.href}
         />
-
-        {empresasItem && (
-          <NavLink
-            href={empresasItem.href}
-            label={empresasItem.label}
-            Icon={empresasItem.icon}
-            active={pathname.startsWith("/configuracoes") && pathname.includes("empresas")}
-            onNavigate={onNavigate}
-          />
-        )}
 
         {isAdmin && usuariosItem && (
           <NavLink

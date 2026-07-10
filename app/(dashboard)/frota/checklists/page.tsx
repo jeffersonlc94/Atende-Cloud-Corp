@@ -24,6 +24,7 @@ import {
 import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const statusLabels: Record<string, string> = {
   OK: "OK",
@@ -45,6 +46,7 @@ export default function ChecklistsPage() {
   const [itemStatus, setItemStatus] = useState<Record<string, string>>(
     Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"]))
   );
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   async function handleSubmit() {
     if (!vehicleId) {
@@ -141,7 +143,9 @@ export default function ChecklistsPage() {
                   onValueChange={(v) => setItemStatus((s) => ({ ...s, [item]: v ?? "OK" }))}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(value) => statusLabels[value as string] ?? "OK"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {checklistItemStatusOptions.map((s) => (
@@ -184,7 +188,7 @@ export default function ChecklistsPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">Por: {c.user?.name ?? "—"}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => deleteChecklist.mutate(c.id)}>
+                <Button variant="ghost" size="icon" onClick={() => setPendingDelete(c.id)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
@@ -208,6 +212,16 @@ export default function ChecklistsPage() {
           ))}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Confirma a exclusão deste checklist?"
+        description="Esta ação não pode ser desfeita."
+        variant="destructive"
+        confirmLabel="Excluir"
+        onConfirm={() => pendingDelete && deleteChecklist.mutate(pendingDelete)}
+      />
     </div>
   );
 }

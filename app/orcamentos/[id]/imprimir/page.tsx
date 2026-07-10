@@ -2,6 +2,7 @@
 
 import { use, useRef, useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useQuote } from "@/hooks/use-quotes";
 import { QuotePrintLayout } from "@/components/quotes/quote-print-layout";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -53,6 +54,9 @@ export default function ImprimirOrcamentoPage({
       }
 
       pdf.save(`orcamento-${quote.numero}.pdf`);
+    } catch (error) {
+      console.error("Erro ao gerar PDF do orçamento:", error);
+      toast.error("Erro ao gerar PDF. Tente novamente.");
     } finally {
       setGeneratingPdf(false);
     }

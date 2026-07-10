@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { Building2 } from "lucide-react";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 
 export type QuotePrintCompany = {
@@ -55,19 +59,25 @@ export function QuotePrintLayout({
     .join(" - ");
 
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" | ");
+  const [logoError, setLogoError] = useState(false);
 
   return (
     <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none" id={id}>
       {/* Cabeçalho */}
       <div className="flex items-start justify-between gap-4 border-b-2 border-black pb-4">
         <div className="flex items-center gap-4">
-          {company?.logoUrl ? (
+          {company?.logoUrl && !logoError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={company.logoUrl}
               alt="Logo"
               className="h-16 w-16 object-contain"
+              onError={() => setLogoError(true)}
             />
+          ) : company?.logoUrl && logoError ? (
+            <div className="flex h-16 w-16 items-center justify-center rounded border border-gray-300 bg-gray-100 text-gray-400">
+              <Building2 className="h-8 w-8" />
+            </div>
           ) : null}
           <div>
             <h1 className="text-lg font-bold uppercase leading-tight">

@@ -20,11 +20,13 @@ import {
 import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function AgendaPage() {
   const { data: events = [], isLoading } = useCalendarEvents({ futuras: true });
   const createEvent = useCreateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     vehicleId: "",
@@ -128,7 +130,7 @@ export default function AgendaPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{e.tipo}</Badge>
-                <Button variant="ghost" size="icon" onClick={() => deleteEvent.mutate(e.id)}>
+                <Button variant="ghost" size="icon" onClick={() => setPendingDelete(e.id)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
@@ -136,6 +138,16 @@ export default function AgendaPage() {
           ))}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Confirma a exclusão deste evento?"
+        description="Esta ação não pode ser desfeita."
+        variant="destructive"
+        confirmLabel="Excluir"
+        onConfirm={() => pendingDelete && deleteEvent.mutate(pendingDelete)}
+      />
     </div>
   );
 }

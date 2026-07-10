@@ -13,12 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function TrocaOleoPage() {
   const { data: vehicles = [] } = useVehicles();
   const { data: items = [], isLoading } = useOilChanges();
   const createOil = useCreateOilChange();
   const deleteOil = useDeleteOilChange();
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     vehicleId: "",
@@ -153,13 +155,23 @@ export default function TrocaOleoPage() {
               <span>{o.vehicle.placa} — {formatDateBR(o.data)} — {o.km.toLocaleString("pt-BR")} km</span>
               <span>{o.tipoOleo || "—"}</span>
               <span>{o.valor ? formatCurrencyBRL(Number(o.valor)) : "—"}</span>
-              <Button variant="ghost" size="icon" onClick={() => deleteOil.mutate(o.id)}>
+              <Button variant="ghost" size="icon" onClick={() => setPendingDelete(o.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
           ))}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Confirma a exclusão desta troca de óleo?"
+        description="Esta ação não pode ser desfeita."
+        variant="destructive"
+        confirmLabel="Excluir"
+        onConfirm={() => pendingDelete && deleteOil.mutate(pendingDelete)}
+      />
     </div>
   );
 }

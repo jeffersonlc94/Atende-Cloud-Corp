@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { tipoDocumentoOptions } from "@/lib/validations";
 import { ArrowLeft, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function VeiculoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -380,6 +381,7 @@ function DocumentsTab({ vehicleId }: { vehicleId: string }) {
   const { data: docs = [] } = useVehicleDocuments(vehicleId);
   const createDoc = useCreateVehicleDocument(vehicleId);
   const deleteDoc = useDeleteVehicleDocument(vehicleId);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [tipo, setTipo] = useState<(typeof tipoDocumentoOptions)[number]>("CRLV");
   const [dataVencimento, setDataVencimento] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -480,7 +482,7 @@ function DocumentsTab({ vehicleId }: { vehicleId: string }) {
                       Ver arquivo
                     </a>
                   )}
-                  <Button variant="ghost" size="icon" onClick={() => deleteDoc.mutate(d.id)}>
+                  <Button variant="ghost" size="icon" onClick={() => setPendingDelete(d.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -489,6 +491,16 @@ function DocumentsTab({ vehicleId }: { vehicleId: string }) {
           })}
         </div>
       </CardContent>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Confirma a exclusão deste documento?"
+        description="Esta ação não pode ser desfeita."
+        variant="destructive"
+        confirmLabel="Excluir"
+        onConfirm={() => pendingDelete && deleteDoc.mutate(pendingDelete)}
+      />
     </Card>
   );
 }

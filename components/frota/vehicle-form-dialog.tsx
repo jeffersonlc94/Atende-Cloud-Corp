@@ -32,6 +32,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Loader2, Plus, Upload } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const emptyValues: VehicleFormValues = {
   fotoUrl: "",
@@ -60,6 +61,8 @@ const situacaoLabels: Record<string, string> = {
 export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<VehicleFormValues | null>(null);
   const { data: companies = [] } = useCompanies();
   const defaultCompany = companies.find((c) => c.isDefault);
   const createVehicle = useCreateVehicle();
@@ -129,7 +132,7 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
     }
   }
 
-  async function onSubmit(data: VehicleFormValues) {
+  async function persist(data: VehicleFormValues) {
     try {
       if (vehicle) {
         await updateVehicle.mutateAsync({ id: vehicle.id, data });
@@ -142,6 +145,15 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar veículo");
     }
+  }
+
+  async function onSubmit(data: VehicleFormValues) {
+    if (vehicle) {
+      setPendingData(data);
+      setConfirmOpen(true);
+      return;
+    }
+    await persist(data);
   }
 
   const isSaving = createVehicle.isPending || updateVehicle.isPending;
@@ -210,7 +222,15 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione a empresa" />
+                    <SelectValue placeholder="Selecione a empresa">
+                      {(value) =>
+                        value
+                          ? companies.find((c) => c.id === value)?.nomeFantasia ||
+                            companies.find((c) => c.id === value)?.razaoSocial ||
+                            "Selecione a empresa"
+                          : "Selecione a empresa"
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((c) => (
@@ -291,7 +311,9 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue />
+                    <SelectValue>
+                      {(value) => situacaoLabels[value as string] ?? "Selecione..."}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {situacaoVeiculoOptions.map((s) => (
@@ -324,6 +346,14 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Deseja salvar as alterações?"
+        description="Os dados do veículo serão atualizados."
+        onConfirm={() => pendingData && persist(pendingData)}
+      />
     </Dialog>
   );
 }

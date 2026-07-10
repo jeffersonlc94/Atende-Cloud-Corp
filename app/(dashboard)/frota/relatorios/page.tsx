@@ -103,7 +103,9 @@ export default function RelatoriosFrotaPage() {
         <div className="flex items-center gap-2">
           <Select value={categoria} onValueChange={(v) => setCategoria(v as Categoria)}>
             <SelectTrigger className="w-56">
-              <SelectValue />
+              <SelectValue>
+                {(value) => categorias.find((c) => c.value === value)?.label ?? "Selecione..."}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {categorias.map((c) => (

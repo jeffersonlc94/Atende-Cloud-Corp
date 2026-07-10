@@ -189,7 +189,7 @@ export default function FrotaDashboardPage() {
           <CardHeader>
             <CardTitle>Próximas Trocas de Óleo</CardTitle>
             <CardAction>
-              <Link href="/frota/troca-oleo" className="text-xs font-medium text-emerald-600 hover:underline">
+              <Link href="/frota/troca-oleo" className="text-xs font-medium text-primary hover:underline">
                 Ver todas
               </Link>
             </CardAction>
@@ -237,7 +237,7 @@ export default function FrotaDashboardPage() {
           <CardHeader>
             <CardTitle>Evolução da Quilometragem (Km)</CardTitle>
             <CardAction>
-              <Link href="/frota/veiculos" className="text-xs font-medium text-emerald-600 hover:underline">
+              <Link href="/frota/veiculos" className="text-xs font-medium text-primary hover:underline">
                 Ver todos
               </Link>
             </CardAction>
@@ -276,7 +276,7 @@ export default function FrotaDashboardPage() {
           <CardHeader>
             <CardTitle>Alertas Recentes</CardTitle>
             <CardAction>
-              <Link href="/frota/veiculos" className="text-xs font-medium text-emerald-600 hover:underline">
+              <Link href="/frota/veiculos" className="text-xs font-medium text-primary hover:underline">
                 Ver todos
               </Link>
             </CardAction>
@@ -319,7 +319,7 @@ export default function FrotaDashboardPage() {
           <CardHeader>
             <CardTitle>Documentos a Vencer</CardTitle>
             <CardAction>
-              <Link href="/frota/documentos" className="text-xs font-medium text-emerald-600 hover:underline">
+              <Link href="/frota/documentos" className="text-xs font-medium text-primary hover:underline">
                 Ver todos
               </Link>
             </CardAction>
@@ -349,7 +349,7 @@ export default function FrotaDashboardPage() {
           <CardHeader>
             <CardTitle>Checklists da Semana</CardTitle>
             <CardAction>
-              <Link href="/frota/checklists" className="text-xs font-medium text-emerald-600 hover:underline">
+              <Link href="/frota/checklists" className="text-xs font-medium text-primary hover:underline">
                 Ver todos
               </Link>
             </CardAction>
