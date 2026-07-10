@@ -79,7 +79,7 @@ export function QuotePrintLayout({
               <Building2 className="h-10 w-10" />
             </div>
           ) : null}
-          <div className="flex-1 text-center">
+          <div className="flex-1">
             <h1 className="text-lg font-bold uppercase leading-tight">
               {company?.razaoSocial || "Empresa não selecionada"}
             </h1>
