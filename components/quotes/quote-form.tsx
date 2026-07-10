@@ -296,7 +296,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               <Label>Prazo de Entrega</Label>
               <Input placeholder="Ex: 7 dias úteis" {...register("prazoEntrega")} />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label>Condições de Pagamento</Label>
               <Input placeholder="Ex: À vista, 30 dias, etc." {...register("condicoesPagamento")} />
             </div>
