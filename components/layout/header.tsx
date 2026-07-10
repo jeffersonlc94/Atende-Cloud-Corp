@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "./theme-toggle";
 import { MobileNav } from "./mobile-nav";
@@ -55,9 +56,13 @@ export function Header() {
       </form>
 
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" aria-label="Ajuda">
+        <Link
+          href="/sobre"
+          aria-label="Ajuda"
+          className={buttonVariants({ variant: "ghost", size: "icon" })}
+        >
           <HelpCircle className="h-5 w-5" />
-        </Button>
+        </Link>
 
         <Popover>
           <PopoverTrigger

@@ -8,9 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Mail, MailCheck, MailX, Send, Settings, Building2, Info, BellRing } from "lucide-react";
+import { Loader2, Mail, MailCheck, MailX, Send, Settings, Building2, BellRing } from "lucide-react";
 import { PersonalizacaoTab } from "@/components/settings/personalizacao-tab";
-import { SobreTab } from "@/components/settings/sobre-tab";
 import { CompaniesManager } from "@/components/companies/companies-manager";
 
 type SmtpStatus = {
@@ -151,7 +150,7 @@ function ConfiguracoesContent() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
         <p className="text-sm text-muted-foreground">
-          Personalização, empresas emissoras, notificações e informações do sistema
+          Personalização, empresas emissoras e notificações do sistema
         </p>
       </div>
 
@@ -166,9 +165,6 @@ function ConfiguracoesContent() {
           <TabsTrigger value="notificacoes" className="gap-1.5">
             <BellRing className="h-4 w-4" /> Notificações
           </TabsTrigger>
-          <TabsTrigger value="sobre" className="gap-1.5">
-            <Info className="h-4 w-4" /> Sobre
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="personalizacao" className="pt-4">
@@ -179,9 +175,6 @@ function ConfiguracoesContent() {
         </TabsContent>
         <TabsContent value="notificacoes" className="pt-4">
           <NotificacoesTab />
-        </TabsContent>
-        <TabsContent value="sobre" className="pt-4">
-          <SobreTab />
         </TabsContent>
       </Tabs>
     </div>
