@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -135,13 +135,14 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   });
 
   const values = watch();
+  const itens = useWatch({ control, name: "itens" });
 
   const total = useMemo(() => {
-    return (values.itens ?? []).reduce(
+    return (itens ?? []).reduce(
       (acc, item) => acc + (Number(item?.quantidade) || 0) * (Number(item?.valorUnitario) || 0),
       0
     );
-  }, [values.itens]);
+  }, [itens]);
 
   const dataValidade = useMemo(() => {
     if (!values.dataEmissao) return "";
@@ -328,11 +329,11 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ListOrdered} title="Itens do Orçamento" description="Lista de produtos ou serviços" />
           <CardContent className="space-y-4 pt-4">
-            <QuoteItemsTable control={control} register={register} watchItems={values.itens} />
+            <QuoteItemsTable control={control} register={register} watchItems={itens} />
             {errors.itens && !Array.isArray(errors.itens) && (
               <p className="text-sm text-destructive">{errors.itens.message}</p>
             )}
-            <div className="flex items-center justify-between border-t pt-4">
+            <div className="flex items-center justify-end gap-3 border-t pt-4">
               <span className="text-sm font-medium text-muted-foreground">TOTAL</span>
               <span className="text-2xl font-bold text-primary">{formatCurrencyBRL(total)}</span>
             </div>
