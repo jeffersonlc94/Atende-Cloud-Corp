@@ -116,7 +116,21 @@ export const checklistItemTipoOptions = [
   "Suspensao",
   "Bateria",
   "Documentacao",
+  "EquipObrigatorio",
 ] as const;
+
+export const checklistItemTipoLabels: Record<(typeof checklistItemTipoOptions)[number], string> = {
+  Pneus: "Pneus",
+  Freios: "Freios",
+  Luzes: "Luzes",
+  Oleo: "Óleo",
+  Agua: "Água",
+  Motor: "Motor",
+  Suspensao: "Suspensão",
+  Bateria: "Bateria",
+  Documentacao: "Documentação",
+  EquipObrigatorio: "Equip. obrigatório",
+};
 
 export const checklistItemStatusOptions = ["OK", "Atencao", "NecessitaManutencao"] as const;
 
@@ -205,6 +219,7 @@ export const checklistSchema = z.object({
   hora: z.string().optional().default(""),
   km: z.number().int().min(1, "Informe o KM atual"),
   observacoes: z.string().optional().default(""),
+  fotos: z.array(z.string()).optional().default([]),
   itens: z.array(checklistItemInputSchema).min(1, "Adicione ao menos um item"),
 });
 

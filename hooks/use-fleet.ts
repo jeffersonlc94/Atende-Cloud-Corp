@@ -190,6 +190,7 @@ export type ChecklistRecord = {
   hora: string | null;
   km: number | null;
   observacoes: string | null;
+  fotos: string[];
   vehicle: { id: string; placa: string; marca: string; modelo: string };
   user: { id: string; name: string } | null;
   itens: ChecklistItemRecord[];

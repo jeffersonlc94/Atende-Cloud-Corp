@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
         km: data.km,
         userId: session.user.id,
         observacoes: data.observacoes || null,
+        fotos: data.fotos ?? [],
         itens: {
           createMany: {
             data: data.itens.map((i) => ({ item: i.item, status: i.status })),

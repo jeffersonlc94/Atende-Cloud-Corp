@@ -175,6 +175,7 @@ enum ChecklistItemTipo {
   Suspensao
   Bateria
   Documentacao
+  EquipObrigatorio
 }
 
 enum ChecklistItemStatus {
@@ -297,6 +298,7 @@ model Checklist {
   userId      String?
   user        User?         @relation(fields: [userId], references: [id])
   observacoes String?
+  fotos       String[]      @default([])
   createdAt   DateTime      @default(now())
 
   itens ChecklistItem[]

@@ -1,19 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { useChecklists, useCreateChecklist, useDeleteChecklist } from "@/hooks/use-fleet";
+import { useChecklists, useCreateChecklist, useDeleteChecklist, type ChecklistRecord } from "@/hooks/use-fleet";
 import {
   tipoChecklistOptions,
   checklistItemTipoOptions,
   checklistItemStatusOptions,
+  checklistItemTipoLabels,
 } from "@/lib/validations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -21,16 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VehicleSelect } from "@/components/frota/vehicle-select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { VehicleSelect, formatVehicleLabel } from "@/components/frota/vehicle-select";
+import { ChecklistItemStatusCard, checklistItemIcons, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
+import { ChecklistHistoryCard } from "@/components/frota/checklist-history-card";
 import { formatDateBR } from "@/lib/format";
-import { Trash2 } from "lucide-react";
+import { List, CalendarDays, Clock, Camera, Save, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
-const statusLabels: Record<string, string> = {
-  OK: "OK",
-  Atencao: "Atenção",
-  NecessitaManutencao: "Necessita manutenção",
-};
+const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
 export default function ChecklistsPage() {
   const { data: checklists = [], isLoading } = useChecklists();
@@ -43,11 +48,31 @@ export default function ChecklistsPage() {
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [hora, setHora] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
+
   const [itemStatus, setItemStatus] = useState<Record<string, string>>(
     Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"]))
   );
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [viewing, setViewing] = useState<ChecklistRecord | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  function resetForm() {
+    setVehicleId("");
+    setKm("");
+    setTipo("Diario");
+    setData(new Date().toISOString().slice(0, 10));
+    setHora("");
+    setObservacoes("");
+    setFotos([]);
+    setItemStatus(Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"])));
+  }
 
   function validate() {
     if (!vehicleId) {
@@ -72,54 +97,96 @@ export default function ChecklistsPage() {
         data,
         hora,
         observacoes,
+        fotos,
         itens: checklistItemTipoOptions.map((item) => ({
           item,
           status: itemStatus[item] as (typeof checklistItemStatusOptions)[number],
         })),
       });
       toast.success("Checklist registrado");
-      setVehicleId("");
-      setKm("");
-      setObservacoes("");
-      setItemStatus(Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"])));
+      resetForm();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao registrar checklist");
     }
   }
 
+  async function handleUploadFoto(file: File) {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || "Erro ao enviar foto");
+      }
+      setFotos((prev) => [...prev, body.url]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar foto");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const totalPages = Math.max(1, Math.ceil(checklists.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = checklists.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const rangeStart = checklists.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const rangeEnd = Math.min(currentPage * pageSize, checklists.length);
+
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Checklists</h1>
-        <p className="text-sm text-muted-foreground">Inspeções diárias, semanais e mensais da frota</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Checklist do Veículo</h1>
+          <p className="text-sm text-muted-foreground">
+            Registre as inspeções do veículo e mantenha a frota sempre segura
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => historyRef.current?.scrollIntoView({ behavior: "smooth" })}
+        >
+          <List className="h-4 w-4" />
+          Ver checklists
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Novo checklist</CardTitle>
-          <CardDescription>Informe o veículo e o KM atual antes de preencher os itens de inspeção</CardDescription>
+          <CardDescription>Informe os dados abaixo e avalie os itens de inspeção.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-1">
               <Label>Veículo *</Label>
               <VehicleSelect value={vehicleId} onChange={setVehicleId} />
             </div>
             <div className="space-y-1">
-              <Label>KM Atual *</Label>
-              <Input
-                type="number"
-                min={1}
-                placeholder="Ex: 45000"
-                value={km}
-                onChange={(e) => setKm(e.target.value)}
-              />
+              <Label>KM atual *</Label>
+              <div className="relative">
+                <Input
+                  type="number"
+                  min={1}
+                  placeholder="Ex: 45000"
+                  value={km}
+                  onChange={(e) => setKm(e.target.value)}
+                  className="pr-9"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  km
+                </span>
+              </div>
             </div>
             <div className="space-y-1">
-              <Label>Tipo</Label>
+              <Label>Tipo de checklist</Label>
               <Select value={tipo} onValueChange={(v) => setTipo(v as typeof tipo)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue />
+                  <span className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <SelectValue />
+                  </span>
                 </SelectTrigger>
                 <SelectContent>
                   {tipoChecklistOptions.map((t) => (
@@ -131,93 +198,222 @@ export default function ChecklistsPage() {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Data</Label>
+              <Label>Data *</Label>
               <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>Hora</Label>
-              <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
+              <div className="relative">
+                <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className="pl-9" />
+                <Clock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {checklistItemTipoOptions.map((item) => (
-              <div key={item} className="space-y-1">
-                <Label>{item}</Label>
-                <Select
-                  value={itemStatus[item]}
-                  onValueChange={(v) => setItemStatus((s) => ({ ...s, [item]: v ?? "OK" }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {(value) => statusLabels[value as string] ?? "OK"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {checklistItemStatusOptions.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {statusLabels[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <ChecklistItemStatusCard
+                key={item}
+                item={item}
+                status={itemStatus[item]}
+                onChange={(v) => setItemStatus((s) => ({ ...s, [item]: v }))}
+                statusOptions={checklistItemStatusOptions}
+              />
             ))}
           </div>
 
-          <div className="space-y-1">
-            <Label>Observações</Label>
-            <Textarea rows={2} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label>Observações</Label>
+              <Textarea
+                rows={3}
+                placeholder="Adicione observações sobre o veículo (opcional)..."
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Fotos (opcional)</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadFoto(file);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera className="h-4 w-4" />
+                {uploading ? "Enviando..." : "Enviar fotos"}
+              </Button>
+              {fotos.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {fotos.map((url, idx) => (
+                    <div key={url} className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Foto ${idx + 1}`} className="h-14 w-14 rounded-md border object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setFotos((prev) => prev.filter((u) => u !== url))}
+                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                        title="Remover foto"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <Button onClick={() => validate() && setConfirmOpen(true)} disabled={createChecklist.isPending}>
-            Registrar checklist
-          </Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={resetForm}>
+              Limpar
+            </Button>
+            <Button
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => validate() && setConfirmOpen(true)}
+              disabled={createChecklist.isPending}
+            >
+              <Save className="h-4 w-4" />
+              Salvar checklist
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-          {!isLoading && checklists.length === 0 && (
-            <p className="text-sm text-muted-foreground">Nenhum checklist registrado ainda.</p>
-          )}
-          {checklists.map((c) => (
-            <div key={c.id} className="rounded-md border p-3 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium">
-                    {c.vehicle.placa} — {c.tipo} — {formatDateBR(c.data)} {c.hora || ""}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Por: {c.user?.name ?? "—"}</p>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setPendingDelete(c.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+      <div ref={historyRef} className="space-y-3">
+        <h2 className="text-lg font-semibold tracking-tight">Histórico de checklists</h2>
+
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!isLoading && checklists.length === 0 && (
+          <p className="text-sm text-muted-foreground">Nenhum checklist registrado ainda.</p>
+        )}
+
+        <div className="space-y-3">
+          {paginated.map((c) => (
+            <ChecklistHistoryCard
+              key={c.id}
+              checklist={c}
+              onView={() => setViewing(c)}
+              onDelete={() => setPendingDelete(c.id)}
+            />
+          ))}
+        </div>
+
+        {checklists.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-sm text-muted-foreground">
+            <p>
+              Mostrando {rangeStart} a {rangeEnd} de {checklists.length} checklists
+            </p>
+            <div className="flex items-center gap-3">
+              <Select
+                value={String(pageSize)}
+                onValueChange={(v) => {
+                  setPageSize(Number(v));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-28 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n} / página
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Anterior
+                </Button>
+                <span>
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Próxima
                 </Button>
               </div>
-              <div className="mt-2 flex flex-wrap gap-1">
-                {c.itens.map((i) => (
-                  <Badge
-                    key={i.id}
-                    variant={
-                      i.status === "OK"
-                        ? "secondary"
-                        : i.status === "Atencao"
-                        ? "outline"
-                        : "destructive"
-                    }
-                  >
-                    {i.item}: {statusLabels[i.status]}
-                  </Badge>
-                ))}
-              </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="max-w-lg">
+          {viewing && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Checklist {viewing.tipo}</DialogTitle>
+                <DialogDescription>
+                  {formatVehicleLabel(viewing.vehicle)} — {formatDateBR(viewing.data)} {viewing.hora || ""}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <span className="font-medium">KM atual:</span> {viewing.km?.toLocaleString("pt-BR") ?? "—"}
+                </p>
+                <p>
+                  <span className="font-medium">Por:</span> {viewing.user?.name ?? "—"}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {viewing.itens.map((i) => {
+                    const Icon = checklistItemIcons[i.item as keyof typeof checklistItemIcons];
+                    return (
+                      <div key={i.id} className="flex items-center gap-2 rounded-md border p-2">
+                        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+                        <span className="flex-1 truncate">
+                          {checklistItemTipoLabels[i.item as keyof typeof checklistItemTipoLabels] ?? i.item}
+                        </span>
+                        <span className={`h-2 w-2 rounded-full ${statusDotClasses[i.status]}`} />
+                        <span className="text-xs text-muted-foreground">{statusLabels[i.status]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {viewing.observacoes && (
+                  <p>
+                    <span className="font-medium">Observações:</span> {viewing.observacoes}
+                  </p>
+                )}
+                {viewing.fotos?.length > 0 && (
+                  <div>
+                    <p className="mb-1 font-medium">Fotos:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {viewing.fotos.map((url) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={url} src={url} alt="Foto do checklist" className="h-20 w-20 rounded-md border object-cover" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!pendingDelete}
@@ -232,7 +428,7 @@ export default function ChecklistsPage() {
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Confirma o registro deste checklist?"
-        confirmLabel="Registrar"
+        confirmLabel="Salvar"
         onConfirm={handleSubmit}
       />
     </div>
