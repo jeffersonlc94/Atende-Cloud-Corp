@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Palette, RotateCcw, Save, Upload } from "lucide-react";
+import { Check, Loader2, Palette, RotateCcw, Save, Upload } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -18,16 +18,26 @@ const COLOR_FIELDS: {
   hint: string;
 }[] = [
   { key: "primaryColor", label: "Cor principal", fallback: "#16a34a", hint: "Usada em destaques e itens ativos" },
-  { key: "sidebarColor", label: "Cor da barra lateral", fallback: "#ffffff", hint: "Fundo da sidebar" },
+  { key: "sidebarColor", label: "Cor da barra lateral", fallback: "#132a21", hint: "Fundo da sidebar" },
   { key: "buttonColor", label: "Cor dos botões", fallback: "#16a34a", hint: "Cor de fundo dos botões principais" },
-  { key: "accentColor", label: "Cor de destaque", fallback: "#dcfce7", hint: "Usada em fundos de destaque/realce" },
+  { key: "accentColor", label: "Cor de destaque", fallback: "#f3e8c8", hint: "Usada em fundos de destaque/realce" },
 ];
 
+// Cores originais do sistema (definidas em app/globals.css). "Restaurar padrão"
+// limpa os overrides (envia "") para o app voltar a usar esses valores nativos
+// do tema, em vez de gravar uma cópia fixa em hexadecimal.
 const DEFAULT_COLORS = {
   primaryColor: "#16a34a",
-  sidebarColor: "#ffffff",
+  sidebarColor: "#132a21",
   buttonColor: "#16a34a",
-  accentColor: "#dcfce7",
+  accentColor: "#f3e8c8",
+};
+
+const CLEARED_COLORS = {
+  primaryColor: "",
+  sidebarColor: "",
+  buttonColor: "",
+  accentColor: "",
 };
 
 const COLOR_PRESETS: { name: string; colors: Record<string, string> }[] = [
@@ -138,6 +148,33 @@ export function PersonalizacaoTab() {
     }
   }
 
+  // Temas prontos e "restaurar padrão" aplicam e já salvam na hora, sem
+  // precisar clicar em "Salvar personalização" — diferente da edição manual
+  // de uma cor individual, que só é persistida ao salvar.
+  async function applyColors(nextColors: Record<string, string>) {
+    setColors(nextColors);
+    try {
+      await update.mutateAsync({
+        systemName,
+        logoUrl,
+        faviconUrl,
+        primaryColor: nextColors.primaryColor,
+        sidebarColor: nextColors.sidebarColor,
+        buttonColor: nextColors.buttonColor,
+        accentColor: nextColors.accentColor,
+      });
+      toast.success("Tema aplicado com sucesso");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao aplicar tema");
+    }
+  }
+
+  function isPresetActive(preset: Record<string, string>) {
+    return COLOR_FIELDS.every(
+      (f) => (colors[f.key] || f.fallback).toLowerCase() === preset[f.key].toLowerCase()
+    );
+  }
+
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Carregando...</p>;
   }
@@ -242,26 +279,35 @@ export function PersonalizacaoTab() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setColors({ ...DEFAULT_COLORS })}
+                disabled={update.isPending}
+                onClick={() => applyColors({ ...CLEARED_COLORS })}
               >
                 <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Restaurar padrão original
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {COLOR_PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => setColors({ ...preset.colors })}
-                  className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent"
-                >
-                  <span className="flex h-5 w-5 overflow-hidden rounded-full border">
-                    <span className="h-full w-1/2" style={{ backgroundColor: preset.colors.primaryColor }} />
-                    <span className="h-full w-1/2" style={{ backgroundColor: preset.colors.sidebarColor }} />
-                  </span>
-                  {preset.name}
-                </button>
-              ))}
+              {COLOR_PRESETS.map((preset) => {
+                const active = isPresetActive(preset.colors);
+                return (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    disabled={update.isPending}
+                    onClick={() => applyColors({ ...preset.colors })}
+                    aria-pressed={active}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-accent ${
+                      active ? "border-primary ring-2 ring-primary/30" : ""
+                    }`}
+                  >
+                    <span className="flex h-5 w-5 overflow-hidden rounded-full border">
+                      <span className="h-full w-1/2" style={{ backgroundColor: preset.colors.primaryColor }} />
+                      <span className="h-full w-1/2" style={{ backgroundColor: preset.colors.sidebarColor }} />
+                    </span>
+                    {preset.name}
+                    {active && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
