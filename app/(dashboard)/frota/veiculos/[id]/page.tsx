@@ -32,12 +32,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { tipoDocumentoOptions } from "@/lib/validations";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Car, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function VeiculoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: vehicle, isLoading } = useVehicle(id);
+  const [fotoError, setFotoError] = useState(false);
 
   if (isLoading || !vehicle) {
     return (
@@ -89,12 +90,17 @@ export default function VeiculoDetailPage({ params }: { params: Promise<{ id: st
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-4 p-4">
-            {vehicle.fotoUrl ? (
+            {vehicle.fotoUrl && !fotoError ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={vehicle.fotoUrl} alt="" className="h-16 w-16 rounded object-cover border" />
+              <img
+                src={vehicle.fotoUrl}
+                alt={vehicle.placa}
+                className="h-16 w-16 rounded object-cover border"
+                onError={() => setFotoError(true)}
+              />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded border text-xs text-muted-foreground">
-                Sem foto
+                {vehicle.fotoUrl ? <Car className="h-6 w-6" /> : "Sem foto"}
               </div>
             )}
             <div className="text-sm">
