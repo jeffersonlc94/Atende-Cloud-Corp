@@ -95,7 +95,7 @@ model Quote {
   referencia         String?
   dataEmissao        DateTime     @default(now())
   dataValidade       DateTime?
-  validadeDias       Int          @default(15)
+  validadeDias       Int?
   condicoesPagamento String?
   prazoEntrega       String?
   observacoes        String?

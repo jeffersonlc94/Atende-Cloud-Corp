@@ -33,8 +33,11 @@ export async function POST(_req: NextRequest, { params }: Params) {
   const duplicated = await prisma.$transaction(async (tx) => {
     const numero = await generateNextQuoteNumber(tx);
     const dataEmissao = new Date();
-    const dataValidade = new Date(dataEmissao);
-    dataValidade.setDate(dataValidade.getDate() + original.validadeDias);
+    let dataValidade: Date | null = null;
+    if (original.validadeDias) {
+      dataValidade = new Date(dataEmissao);
+      dataValidade.setDate(dataValidade.getDate() + original.validadeDias);
+    }
 
     return tx.quote.create({
       data: {

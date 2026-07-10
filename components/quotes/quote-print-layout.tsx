@@ -33,7 +33,7 @@ export type QuotePrintData = {
   clienteNome: string;
   referencia?: string | null;
   dataEmissao: string | Date;
-  validadeDias: number;
+  validadeDias?: number | null;
   condicoesPagamento?: string | null;
   prazoEntrega?: string | null;
   observacoes?: string | null;
@@ -197,10 +197,12 @@ export function QuotePrintLayout({
       </div>
 
       {/* Validade */}
-      <p className="mt-4 text-center text-sm font-bold uppercase text-red-600">
-        Validade da proposta: este orçamento é válido por {quote.validadeDias} dias
-        corridos a partir da data de emissão.
-      </p>
+      {quote.validadeDias ? (
+        <p className="mt-4 text-center text-sm font-bold uppercase text-red-600">
+          Validade da proposta: este orçamento é válido por {quote.validadeDias} dias
+          corridos a partir da data de emissão.
+        </p>
+      ) : null}
 
       {/* Assinatura */}
       <div className="mt-16 flex flex-col items-center text-center text-sm">

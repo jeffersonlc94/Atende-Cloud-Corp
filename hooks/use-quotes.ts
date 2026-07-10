@@ -20,7 +20,7 @@ export type QuoteRecord = {
   referencia: string | null;
   dataEmissao: string;
   dataValidade: string | null;
-  validadeDias: number;
+  validadeDias: number | null;
   condicoesPagamento: string | null;
   prazoEntrega: string | null;
   observacoes: string | null;

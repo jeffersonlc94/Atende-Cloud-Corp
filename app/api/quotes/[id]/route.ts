@@ -92,8 +92,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const total = itensComputados.reduce((acc, i) => acc + i.valorTotal, 0);
 
   const dataEmissao = new Date(data.dataEmissao);
-  const dataValidade = new Date(dataEmissao);
-  dataValidade.setDate(dataValidade.getDate() + data.validadeDias);
+  let dataValidade: Date | null = null;
+  if (data.validadeDias) {
+    dataValidade = new Date(dataEmissao);
+    dataValidade.setDate(dataValidade.getDate() + data.validadeDias);
+  }
 
   const quote = await prisma.$transaction(async (tx) => {
     await tx.quoteItem.deleteMany({ where: { quoteId: id } });
@@ -107,7 +110,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         referencia: data.referencia,
         dataEmissao,
         dataValidade,
-        validadeDias: data.validadeDias,
+        validadeDias: data.validadeDias ?? null,
         condicoesPagamento: data.condicoesPagamento,
         prazoEntrega: data.prazoEntrega,
         observacoes: data.observacoes,

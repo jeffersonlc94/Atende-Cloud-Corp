@@ -111,7 +111,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           clientNome: initialData.client.nome,
           referencia: initialData.referencia ?? "",
           dataEmissao: initialData.dataEmissao.slice(0, 10),
-          validadeDias: initialData.validadeDias,
+          validadeDias: initialData.validadeDias ?? undefined,
           condicoesPagamento: initialData.condicoesPagamento ?? "",
           prazoEntrega: initialData.prazoEntrega ?? "",
           observacoes: initialData.observacoes ?? "",
@@ -129,7 +129,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           clientNome: "",
           referencia: "",
           dataEmissao: todayISO(),
-          validadeDias: 15,
+          validadeDias: undefined,
           condicoesPagamento: "",
           prazoEntrega: "",
           observacoes: "",
@@ -149,10 +149,10 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   }, [itens]);
 
   const dataValidade = useMemo(() => {
-    if (!values.dataEmissao) return "";
+    if (!values.dataEmissao || !values.validadeDias) return "";
     const base = new Date(`${values.dataEmissao}T00:00:00`);
     if (Number.isNaN(base.getTime())) return "";
-    base.setDate(base.getDate() + (Number(values.validadeDias) || 0));
+    base.setDate(base.getDate() + Number(values.validadeDias));
     return base.toLocaleDateString("pt-BR");
   }, [values.dataEmissao, values.validadeDias]);
 
@@ -312,6 +312,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               <Input
                 type="number"
                 min={1}
+                placeholder="Ex: 15"
                 {...register("validadeDias", { valueAsNumber: true })}
               />
             </div>

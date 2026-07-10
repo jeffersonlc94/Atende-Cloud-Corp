@@ -19,7 +19,10 @@ export const quoteSchema = z.object({
   clientNome: z.string().min(1, "Informe o cliente"),
   referencia: z.string().optional().default(""),
   dataEmissao: z.string().min(1, "Informe a data de emissão"),
-  validadeDias: z.number().int().positive().default(15),
+  validadeDias: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().int().positive().optional()
+  ),
   condicoesPagamento: z.string().optional().default(""),
   prazoEntrega: z.string().optional().default(""),
   observacoes: z.string().optional().default(""),
