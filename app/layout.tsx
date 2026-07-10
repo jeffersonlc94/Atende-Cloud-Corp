@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { getSystemSettingsForSSR } from "@/lib/system-settings.server";
+import { auth } from "@/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +44,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings = await getSystemSettingsForSSR();
+  const [settings, session] = await Promise.all([getSystemSettingsForSSR(), auth()]);
 
   const rootVars = [
     settings?.primaryColor && `--primary:${settings.primaryColor};--ring:${settings.primaryColor};--sidebar-primary:${settings.primaryColor};`,
@@ -64,7 +65,12 @@ export default async function RootLayout({
         {rootVars && <style dangerouslySetInnerHTML={{ __html: `:root{${rootVars}}` }} />}
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <Providers>{children}</Providers>
+        <Providers
+          session={session}
+          systemSettings={settings ? JSON.parse(JSON.stringify(settings)) : undefined}
+        >
+          {children}
+        </Providers>
       </body>
     </html>
   );
