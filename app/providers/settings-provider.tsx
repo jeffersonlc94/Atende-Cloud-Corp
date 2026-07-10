@@ -15,6 +15,24 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useSystemSettings();
 
   useEffect(() => {
+    if (!settings) return;
+    try {
+      localStorage.setItem(
+        "atende-theme-colors",
+        JSON.stringify({
+          primaryColor: settings.primaryColor || "",
+          sidebarColor: settings.sidebarColor || "",
+          buttonColor: settings.buttonColor || "",
+          accentColor: settings.accentColor || "",
+        })
+      );
+    } catch {
+      // localStorage indisponível (modo privado, etc.) — sem problema, apenas
+      // perde a otimização de evitar o flash no próximo reload.
+    }
+  }, [settings]);
+
+  useEffect(() => {
     const root = document.documentElement;
 
     if (settings?.primaryColor) {

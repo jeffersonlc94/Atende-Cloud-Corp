@@ -29,6 +29,16 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Aplica as cores de personalização salvas ANTES da primeira pintura,
+            evitando o "flash" de volta às cores padrão ao recarregar a página
+            enquanto as configurações ainda não terminaram de ser buscadas. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=JSON.parse(localStorage.getItem("atende-theme-colors")||"null");if(!s)return;var r=document.documentElement.style;if(s.primaryColor){r.setProperty("--primary",s.primaryColor);r.setProperty("--ring",s.primaryColor);r.setProperty("--sidebar-primary",s.primaryColor);}if(s.sidebarColor){r.setProperty("--sidebar",s.sidebarColor);}if(s.buttonColor){r.setProperty("--button-color",s.buttonColor);}if(s.accentColor){r.setProperty("--accent",s.accentColor);r.setProperty("--sidebar-accent",s.accentColor);}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
       </body>
