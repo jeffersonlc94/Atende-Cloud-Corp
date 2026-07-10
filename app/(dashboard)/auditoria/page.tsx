@@ -25,14 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ShieldAlert } from "lucide-react";
-
-const entidades = ["Company", "Quote", "Vehicle", "Maintenance", "OilChange", "Checklist", "User"];
-
-const acaoLabel: Record<string, string> = {
-  create: "Criação",
-  update: "Edição",
-  delete: "Exclusão",
-};
+import { entidadeOptions, labelForEntidade, labelForAcao } from "@/lib/audit-labels";
 
 export default function AuditoriaPage() {
   const { data: session } = useSession();
@@ -100,9 +93,9 @@ export default function AuditoriaPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as entidades</SelectItem>
-              {entidades.map((e) => (
+              {entidadeOptions.map((e) => (
                 <SelectItem key={e} value={e}>
-                  {e}
+                  {labelForEntidade(e)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -157,10 +150,10 @@ export default function AuditoriaPage() {
                             : "secondary"
                         }
                       >
-                        {acaoLabel[log.acao] ?? log.acao}
+                        {labelForAcao(log.acao)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{log.entidade}</TableCell>
+                    <TableCell>{labelForEntidade(log.entidade)}</TableCell>
                     <TableCell className="font-mono text-xs">{log.entidadeId ?? "—"}</TableCell>
                     <TableCell>{log.ip ?? "—"}</TableCell>
                   </TableRow>

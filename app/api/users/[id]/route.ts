@@ -40,9 +40,23 @@ export async function PUT(req: NextRequest, { params }: Params) {
       name: data.name,
       email,
       role: data.role,
+      cargo: data.cargo ?? null,
+      canAccessOrcamentos: data.canAccessOrcamentos ?? true,
+      canAccessFrota: data.canAccessFrota ?? true,
       ...(data.password ? { passwordHash: await bcrypt.hash(data.password, 10) } : {}),
     },
-    select: { id: true, name: true, email: true, role: true, createdAt: true, updatedAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      cargo: true,
+      canAccessOrcamentos: true,
+      canAccessFrota: true,
+      avatarUrl: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   await registerAudit({

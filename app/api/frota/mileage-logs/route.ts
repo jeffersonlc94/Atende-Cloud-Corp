@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { mileageLogSchema } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const vehicleId = req.nextUrl.searchParams.get("vehicleId")?.trim();
   const logs = await prisma.mileageLog.findMany({
@@ -24,6 +28,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const body = await req.json();
   const parsed = mileageLogSchema.safeParse(body);

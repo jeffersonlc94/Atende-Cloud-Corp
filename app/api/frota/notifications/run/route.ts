@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { computeFleetAlerts, type FleetAlert } from "@/lib/frota-alerts";
+import {
+  alertToNotificationTipo,
+  isNotificationAllowedForCargo,
+  type NotificationCargoPrefs,
+} from "@/lib/notification-prefs";
 import {
   isSmtpConfigured,
   sendMail,
@@ -28,6 +34,32 @@ function destinationEmails(): string[] {
     .split(",")
     .map((e) => e.trim())
     .filter(Boolean);
+}
+
+/**
+ * Monta a lista de destinatários para um alerta, combinando os e-mails fixos
+ * (FROTA_NOTIFICATION_EMAILS) com os e-mails de usuários cadastrados,
+ * filtrados pelas preferências de notificação por cargo (Configurações >
+ * Notificações). Usuários sem cargo definido sempre recebem (compatibilidade
+ * com o comportamento anterior).
+ */
+async function recipientsForAlert(
+  alert: FleetAlert,
+  envRecipients: string[],
+  prefs: NotificationCargoPrefs | null
+): Promise<string[]> {
+  const tipoNotificacao = alertToNotificationTipo(alert.tipo, alert.severidade);
+  if (!tipoNotificacao) return envRecipients;
+
+  const users = await prisma.user.findMany({
+    select: { email: true, cargo: true },
+  });
+
+  const userEmails = users
+    .filter((u) => isNotificationAllowedForCargo(prefs, u.cargo, tipoNotificacao))
+    .map((u) => u.email);
+
+  return Array.from(new Set([...envRecipients, ...userEmails]));
 }
 
 function relevantAlerts(alerts: FleetAlert[]): FleetAlert[] {
@@ -74,9 +106,15 @@ function buildEmail(alert: FleetAlert): { subject: string; html: string } | null
 export async function POST() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const smtpConfigured = isSmtpConfigured();
-  const recipients = destinationEmails();
+  const envRecipients = destinationEmails();
+
+  const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
+  const prefs = (settings?.notificationCargoPrefs as NotificationCargoPrefs | null) ?? null;
 
   const alerts = relevantAlerts(await computeFleetAlerts());
 
@@ -85,6 +123,7 @@ export async function POST() {
   let skippedDuplicate = 0;
   let skippedNoSmtp = 0;
   const errors: string[] = [];
+  const allRecipientsUsed = new Set<string>();
 
   for (const alert of alerts) {
     processed++;
@@ -98,12 +137,15 @@ export async function POST() {
     const email = buildEmail(alert);
     if (!email) continue;
 
+    const recipients = await recipientsForAlert(alert, envRecipients, prefs);
+
     if (!smtpConfigured || recipients.length === 0) {
       skippedNoSmtp++;
       continue;
     }
 
     for (const to of recipients) {
+      allRecipientsUsed.add(to);
       const result = await sendMail({ to, subject: email.subject, html: email.html });
       if (result.sent) {
         sent++;
@@ -124,7 +166,7 @@ export async function POST() {
   return NextResponse.json({
     ok: true,
     smtpConfigured,
-    recipients,
+    recipients: Array.from(allRecipientsUsed),
     processed,
     sent,
     skippedDuplicate,

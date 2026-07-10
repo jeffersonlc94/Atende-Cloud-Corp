@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useVehicles, useDeleteVehicle } from "@/hooks/use-vehicles";
@@ -20,11 +21,12 @@ import {
 } from "@/components/ui/table";
 import { Car, Plus, Trash2 } from "lucide-react";
 
-export default function VeiculosPage() {
+function VeiculosPageContent() {
   const { data: session } = useSession();
   const canDelete = canDeleteRecords(session);
-  const [placa, setPlaca] = useState("");
-  const { data: vehicles = [], isLoading } = useVehicles({ placa });
+  const searchParams = useSearchParams();
+  const [placa, setPlaca] = useState(searchParams.get("q") ?? "");
+  const { data: vehicles = [], isLoading } = useVehicles({ q: placa });
   const deleteVehicle = useDeleteVehicle();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
@@ -54,7 +56,7 @@ export default function VeiculosPage() {
       <Card>
         <CardContent className="p-4">
           <Input
-            placeholder="Buscar por placa"
+            placeholder="Buscar por placa, marca ou modelo"
             value={placa}
             onChange={(e) => setPlaca(e.target.value)}
             className="max-w-xs"
@@ -173,5 +175,13 @@ export default function VeiculosPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function VeiculosPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-muted-foreground">Carregando...</p>}>
+      <VeiculosPageContent />
+    </Suspense>
   );
 }

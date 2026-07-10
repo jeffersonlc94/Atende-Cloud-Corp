@@ -12,6 +12,8 @@ export type SystemSettings = {
   sidebarColor: string | null;
   buttonColor: string | null;
   accentColor: string | null;
+  autoLogoutMinutes: number | null;
+  notificationCargoPrefs: Record<string, Record<string, boolean>> | null;
   createdAt: string;
   updatedAt: string;
 };

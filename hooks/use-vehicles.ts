@@ -42,7 +42,12 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
-export function useVehicles(filters?: { placa?: string; situacao?: string; companyId?: string }) {
+export function useVehicles(filters?: {
+  placa?: string;
+  q?: string;
+  situacao?: string;
+  companyId?: string;
+}) {
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([k, v]) => {

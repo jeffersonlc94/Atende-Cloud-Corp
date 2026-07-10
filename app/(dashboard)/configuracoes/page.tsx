@@ -1,16 +1,39 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Mail, MailCheck, MailX, Send, Settings, Building2, BellRing } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  MailCheck,
+  MailX,
+  Send,
+  Settings,
+  Building2,
+  BellRing,
+  ShieldCheck,
+  Save,
+} from "lucide-react";
 import { PersonalizacaoTab } from "@/components/settings/personalizacao-tab";
 import { CompaniesManager } from "@/components/companies/companies-manager";
+import { useSystemSettings, useUpdateSystemSettings } from "@/hooks/use-settings";
+import { notificationTipoOptions } from "@/lib/validations";
+import {
+  cargoLabels,
+  notificationTipoLabels,
+  type NotificationCargoPrefs,
+  type CargoValue,
+} from "@/lib/notification-prefs";
 
 type SmtpStatus = {
   configured: boolean;
@@ -141,9 +164,171 @@ function NotificacoesTab() {
   );
 }
 
+function NotificacoesTabWrapper() {
+  return (
+    <div className="space-y-4">
+      <NotificacoesTab />
+      <NotificationCargoPrefsCard />
+    </div>
+  );
+}
+
+const CARGOS: CargoValue[] = ["TECNICO", "VENDEDOR"];
+
+function NotificationCargoPrefsCard() {
+  const { data: settings, isLoading } = useSystemSettings();
+  const updateSettings = useUpdateSystemSettings();
+  const [prefs, setPrefs] = useState<NotificationCargoPrefs>({});
+
+  useEffect(() => {
+    if (settings) {
+      setPrefs((settings.notificationCargoPrefs as NotificationCargoPrefs | null) ?? {});
+    }
+  }, [settings]);
+
+  function isChecked(tipo: string, cargo: CargoValue) {
+    const value = prefs[tipo as keyof NotificationCargoPrefs]?.[cargo];
+    return value !== false;
+  }
+
+  function toggle(tipo: string, cargo: CargoValue) {
+    setPrefs((prev) => {
+      const tipoPrefs = { ...(prev[tipo as keyof NotificationCargoPrefs] ?? {}) };
+      tipoPrefs[cargo] = !isChecked(tipo, cargo);
+      return { ...prev, [tipo]: tipoPrefs };
+    });
+  }
+
+  async function handleSave() {
+    try {
+      await updateSettings.mutateAsync({ notificationCargoPrefs: prefs });
+      toast.success("Preferências de notificação salvas");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar preferências");
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <ShieldCheck className="h-4 w-4" /> Notificações por cargo
+        </CardTitle>
+        <CardDescription>
+          Escolha quais tipos de notificação são enviados para cada cargo. Usuários sem cargo
+          definido recebem todas as notificações.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4 pb-5">
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!isLoading && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left">
+                  <th className="py-2 pr-4 font-medium">Tipo de notificação</th>
+                  {CARGOS.map((cargo) => (
+                    <th key={cargo} className="py-2 px-4 font-medium">
+                      {cargoLabels[cargo]}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {notificationTipoOptions.map((tipo) => (
+                  <tr key={tipo} className="border-b last:border-0">
+                    <td className="py-2 pr-4">{notificationTipoLabels[tipo]}</td>
+                    {CARGOS.map((cargo) => (
+                      <td key={cargo} className="py-2 px-4">
+                        <Checkbox
+                          checked={isChecked(tipo, cargo)}
+                          onCheckedChange={() => toggle(tipo, cargo)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <Button onClick={handleSave} disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Salvar preferências
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SegurancaTab() {
+  const { data: settings, isLoading } = useSystemSettings();
+  const updateSettings = useUpdateSystemSettings();
+  const [minutes, setMinutes] = useState<string>("");
+
+  useEffect(() => {
+    if (settings) {
+      setMinutes(settings.autoLogoutMinutes ? String(settings.autoLogoutMinutes) : "");
+    }
+  }, [settings]);
+
+  async function handleSave() {
+    try {
+      const parsed = minutes.trim() ? parseInt(minutes, 10) : undefined;
+      await updateSettings.mutateAsync({ autoLogoutMinutes: parsed });
+      toast.success("Configuração de segurança salva");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar configuração");
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <ShieldCheck className="h-4 w-4" /> Auto logout por inatividade
+        </CardTitle>
+        <CardDescription>
+          Desconecta automaticamente usuários inativos após o tempo definido. Deixe em branco ou
+          zero para desabilitar.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4 pb-5">
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!isLoading && (
+          <div className="max-w-xs space-y-2">
+            <Label>Tempo de inatividade (minutos)</Label>
+            <Input
+              type="number"
+              min={0}
+              placeholder="Ex: 30"
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value)}
+            />
+          </div>
+        )}
+        <Button onClick={handleSave} disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Salvar
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ConfiguracoesContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "personalizacao";
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
 
   return (
     <div className="space-y-4">
@@ -165,6 +350,11 @@ function ConfiguracoesContent() {
           <TabsTrigger value="notificacoes" className="gap-1.5">
             <BellRing className="h-4 w-4" /> Notificações
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="seguranca" className="gap-1.5">
+              <ShieldCheck className="h-4 w-4" /> Segurança
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="personalizacao" className="pt-4">
@@ -174,8 +364,13 @@ function ConfiguracoesContent() {
           <CompaniesManager />
         </TabsContent>
         <TabsContent value="notificacoes" className="pt-4">
-          <NotificacoesTab />
+          <NotificacoesTabWrapper />
         </TabsContent>
+        {isAdmin && (
+          <TabsContent value="seguranca" className="pt-4">
+            <SegurancaTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

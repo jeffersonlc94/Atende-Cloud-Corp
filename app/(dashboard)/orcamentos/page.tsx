@@ -31,6 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,8 +57,9 @@ export default function OrcamentosPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const canDelete = canDeleteRecords(session);
+  const isAdmin = session?.user?.role === "ADMIN";
   const { data: companies = [] } = useCompanies();
-  const [filters, setFilters] = useState<QuoteFilters>({});
+  const [filters, setFilters] = useState<QuoteFilters>({ scope: "mine" });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
@@ -98,6 +101,17 @@ export default function OrcamentosPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Tabs
+            value={filters.scope ?? "mine"}
+            onValueChange={(v) => setFilters((f) => ({ ...f, scope: v as "mine" | "global" }))}
+          >
+            <TabsList>
+              <TabsTrigger value="mine">
+                {isAdmin ? "Todos os Orçamentos" : "Meus Orçamentos"}
+              </TabsTrigger>
+              <TabsTrigger value="global">Orçamentos Globais</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <div className="flex items-center rounded-md border p-0.5">
             <Button
               type="button"
@@ -194,6 +208,9 @@ export default function OrcamentosPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
+                <Badge variant={quote.visibilidade === "Privado" ? "secondary" : "outline"}>
+                  {quote.visibilidade === "Privado" ? "Privado" : "Global"}
+                </Badge>
                 <p>
                   <span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
                 </p>
@@ -255,6 +272,7 @@ export default function OrcamentosPage() {
                   <TableHead>Empresa</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Criado por</TableHead>
+                  <TableHead>Visibilidade</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
@@ -262,7 +280,7 @@ export default function OrcamentosPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                       <Search className="mx-auto mb-2 h-5 w-5" />
                       Carregando...
                     </TableCell>
@@ -270,7 +288,7 @@ export default function OrcamentosPage() {
                 )}
                 {!isLoading && data?.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                       Nenhum orçamento encontrado
                     </TableCell>
                   </TableRow>
@@ -284,6 +302,11 @@ export default function OrcamentosPage() {
                     </TableCell>
                     <TableCell>{formatDateBR(quote.dataEmissao)}</TableCell>
                     <TableCell>{quote.createdByUser?.name ?? "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={quote.visibilidade === "Privado" ? "secondary" : "outline"}>
+                        {quote.visibilidade === "Privado" ? "Privado" : "Global"}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right">
                       {formatCurrencyBRL(Number(quote.total))}
                     </TableCell>

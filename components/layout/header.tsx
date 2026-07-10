@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -8,19 +8,28 @@ import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "./theme-toggle";
 import { MobileNav } from "./mobile-nav";
 import { useFleetAlerts } from "@/hooks/use-fleet";
-import { LogOut, Bell, Search, HelpCircle, AlertTriangle } from "lucide-react";
+import { LogOut, Bell, Search, HelpCircle, AlertTriangle, UserCircle } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
+  AvatarImage,
 } from "@/components/ui/avatar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session } = useSession();
   const { data: alerts = [] } = useFleetAlerts();
   const name = session?.user?.name ?? "";
@@ -32,12 +41,16 @@ export function Header() {
     .toUpperCase();
 
   const alertCount = alerts.length;
+  const isFrota = pathname?.startsWith("/frota");
 
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const query = new FormData(e.currentTarget).get("q");
     if (typeof query === "string" && query.trim()) {
-      router.push(`/orcamentos?q=${encodeURIComponent(query.trim())}`);
+      const destination = isFrota
+        ? `/frota/veiculos?q=${encodeURIComponent(query.trim())}`
+        : `/orcamentos?q=${encodeURIComponent(query.trim())}`;
+      router.push(destination);
     }
   }
 
@@ -48,9 +61,10 @@ export function Header() {
       <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md">
         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          key={isFrota ? "frota" : "orcamentos"}
           name="q"
           type="search"
-          placeholder="Buscar orçamentos..."
+          placeholder={isFrota ? "Buscar veículos..." : "Buscar orçamentos..."}
           className="rounded-full border-transparent bg-muted pr-4 pl-9 shadow-none focus-visible:border-input"
         />
       </form>
@@ -103,25 +117,36 @@ export function Header() {
         </Popover>
 
         <ThemeToggle />
-        <div className="flex items-center gap-2 pl-2">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{initials || "U"}</AvatarFallback>
-          </Avatar>
-          <div className="hidden text-sm sm:block">
-            <p className="font-medium leading-tight">{name}</p>
-            <p className="text-xs leading-tight text-muted-foreground">
-              {session?.user?.role === "ADMIN" ? "Administrador" : "Usuário"}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            aria-label="Sair"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-md pl-2 outline-none"
+              >
+                <Avatar className="h-8 w-8">
+                  {session?.user?.image && <AvatarImage src={session.user.image} alt={name} />}
+                  <AvatarFallback>{initials || "U"}</AvatarFallback>
+                </Avatar>
+                <div className="hidden text-sm sm:block">
+                  <p className="font-medium leading-tight">{name}</p>
+                  <p className="text-xs leading-tight text-muted-foreground">
+                    {session?.user?.role === "ADMIN" ? "Administrador" : "Usuário"}
+                  </p>
+                </div>
+              </button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => router.push("/perfil")}>
+              <UserCircle className="mr-2 h-4 w-4" /> Meu Perfil
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
+              <LogOut className="mr-2 h-4 w-4" /> Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

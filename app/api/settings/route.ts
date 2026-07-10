@@ -32,27 +32,32 @@ export async function PUT(req: NextRequest) {
   }
 
   const data = parsed.data;
+
+  // Cada aba de Configurações (Personalização, Notificações, Segurança) envia
+  // apenas os campos que edita. Para não sobrescrever os demais campos com os
+  // defaults do schema (ex: string vazia), aplicamos somente as chaves que
+  // vieram de fato no corpo da requisição.
+  const hasKey = (key: string) => Object.prototype.hasOwnProperty.call(body, key);
+
+  const updateData: Record<string, unknown> = {};
+  if (hasKey("systemName")) updateData.systemName = data.systemName || null;
+  if (hasKey("logoUrl")) updateData.logoUrl = data.logoUrl || null;
+  if (hasKey("faviconUrl")) updateData.faviconUrl = data.faviconUrl || null;
+  if (hasKey("primaryColor")) updateData.primaryColor = data.primaryColor || null;
+  if (hasKey("sidebarColor")) updateData.sidebarColor = data.sidebarColor || null;
+  if (hasKey("buttonColor")) updateData.buttonColor = data.buttonColor || null;
+  if (hasKey("accentColor")) updateData.accentColor = data.accentColor || null;
+  if (hasKey("autoLogoutMinutes")) {
+    updateData.autoLogoutMinutes = data.autoLogoutMinutes || null;
+  }
+  if (hasKey("notificationCargoPrefs")) {
+    updateData.notificationCargoPrefs = data.notificationCargoPrefs ?? {};
+  }
+
   const settings = await prisma.systemSettings.upsert({
     where: { id: SETTINGS_ID },
-    update: {
-      systemName: data.systemName || null,
-      logoUrl: data.logoUrl || null,
-      faviconUrl: data.faviconUrl || null,
-      primaryColor: data.primaryColor || null,
-      sidebarColor: data.sidebarColor || null,
-      buttonColor: data.buttonColor || null,
-      accentColor: data.accentColor || null,
-    },
-    create: {
-      id: SETTINGS_ID,
-      systemName: data.systemName || null,
-      logoUrl: data.logoUrl || null,
-      faviconUrl: data.faviconUrl || null,
-      primaryColor: data.primaryColor || null,
-      sidebarColor: data.sidebarColor || null,
-      buttonColor: data.buttonColor || null,
-      accentColor: data.accentColor || null,
-    },
+    update: updateData,
+    create: { id: SETTINGS_ID, ...updateData },
   });
 
   await registerAudit({

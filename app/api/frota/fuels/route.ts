@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { fuelSchema } from "@/lib/validations";
 
@@ -10,6 +11,9 @@ function computeTotal(litros: number, valorLitro: number) {
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const vehicleId = req.nextUrl.searchParams.get("vehicleId")?.trim();
   const items = await prisma.fuel.findMany({
@@ -24,6 +28,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const body = await req.json();
   const parsed = fuelSchema.safeParse(body);

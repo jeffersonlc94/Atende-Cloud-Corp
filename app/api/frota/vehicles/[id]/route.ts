@@ -3,13 +3,16 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { vehicleSchema } from "@/lib/validations";
 import { registerAudit, getRequestIp } from "@/lib/audit";
-import { canDeleteRecords } from "@/lib/permissions";
+import {canDeleteRecords, canAccessModule} from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const { id } = await params;
   const vehicle = await prisma.vehicle.findUnique({
@@ -32,6 +35,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
 export async function PUT(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const { id } = await params;
   const body = await req.json();
@@ -78,6 +84,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
   if (!canDeleteRecords(session)) {
     return NextResponse.json({ error: "Apenas administradores podem excluir veículos." }, { status: 403 });
   }

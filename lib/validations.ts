@@ -11,6 +11,8 @@ export const quoteItemSchema = z.object({
   ),
 });
 
+export const visibilidadeOptions = ["Global", "Privado"] as const;
+
 export const quoteSchema = z.object({
   numero: z.string().trim().optional().default(""),
   companyId: z.string().min(1, "Selecione a empresa emissora"),
@@ -21,6 +23,7 @@ export const quoteSchema = z.object({
   condicoesPagamento: z.string().optional().default(""),
   prazoEntrega: z.string().optional().default(""),
   observacoes: z.string().optional().default(""),
+  visibilidade: z.enum(visibilidadeOptions).default("Global"),
   itens: z.array(quoteItemSchema).min(1, "Adicione ao menos um item"),
 });
 
@@ -47,6 +50,19 @@ export const companySchema = z.object({
 
 export type CompanyFormValues = z.input<typeof companySchema>;
 
+export const notificationTipoOptions = [
+  "checklist",
+  "documento_vencendo",
+  "documento_vencido",
+  "troca_oleo_proxima",
+  "troca_oleo_vencida",
+] as const;
+
+export const notificationCargoPrefsSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.boolean())
+);
+
 export const systemSettingsSchema = z.object({
   systemName: z.string().optional().default(""),
   logoUrl: z.string().optional().default(""),
@@ -55,6 +71,8 @@ export const systemSettingsSchema = z.object({
   sidebarColor: z.string().optional().default(""),
   buttonColor: z.string().optional().default(""),
   accentColor: z.string().optional().default(""),
+  autoLogoutMinutes: z.number().int().nonnegative().optional(),
+  notificationCargoPrefs: notificationCargoPrefsSchema.optional(),
 });
 
 export type SystemSettingsFormValues = z.input<typeof systemSettingsSchema>;
@@ -216,12 +234,26 @@ export type CalendarEventFormValues = z.input<typeof calendarEventSchema>;
 // ---------------------------------------------------------------------------
 
 export const roleOptions = ["ADMIN", "USER"] as const;
+export const cargoOptions = ["TECNICO", "VENDEDOR"] as const;
 
 export const userSchema = z.object({
   name: z.string().min(1, "Nome obrigatório"),
   email: z.string().email("E-mail inválido"),
   password: z.string().optional().default(""),
   role: z.enum(roleOptions).default("USER"),
+  cargo: z.enum(cargoOptions).optional(),
+  canAccessOrcamentos: z.boolean().optional().default(true),
+  canAccessFrota: z.boolean().optional().default(true),
 });
 
 export type UserFormValues = z.input<typeof userSchema>;
+
+export const profileSchema = z.object({
+  name: z.string().min(1, "Nome obrigatório"),
+  email: z.string().email("E-mail inválido"),
+  avatarUrl: z.string().optional().default(""),
+  password: z.string().optional().default(""),
+  confirmPassword: z.string().optional().default(""),
+});
+
+export type ProfileFormValues = z.input<typeof profileSchema>;

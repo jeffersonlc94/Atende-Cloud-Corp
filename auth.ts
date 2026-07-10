@@ -35,16 +35,46 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
+          image: user.avatarUrl,
           role: user.role,
+          cargo: user.cargo,
+          canAccessOrcamentos: user.canAccessOrcamentos,
+          canAccessFrota: user.canAccessFrota,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // Disparado por `update()` no client (ex: após editar o próprio perfil
+      // em /perfil) — recarrega os dados atuais do usuário no token.
+      if (trigger === "update" && token.id) {
+        const fresh = await prisma.user.findUnique({ where: { id: token.id as string } });
+        if (fresh) {
+          token.role = fresh.role;
+          token.cargo = fresh.cargo ?? null;
+          token.canAccessOrcamentos = fresh.canAccessOrcamentos;
+          token.canAccessFrota = fresh.canAccessFrota;
+          token.picture = fresh.avatarUrl ?? null;
+          token.name = fresh.name;
+          token.email = fresh.email;
+        }
+        return token;
+      }
+
       if (user) {
-        token.role = (user as { role?: string }).role;
+        const u = user as {
+          role?: string;
+          cargo?: string | null;
+          canAccessOrcamentos?: boolean;
+          canAccessFrota?: boolean;
+        };
+        token.role = u.role;
+        token.cargo = u.cargo ?? null;
+        token.canAccessOrcamentos = u.canAccessOrcamentos ?? true;
+        token.canAccessFrota = u.canAccessFrota ?? true;
         token.id = user.id;
+        token.picture = user.image ?? null;
       }
       return token;
     },
@@ -52,6 +82,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.cargo = (token.cargo as string | null | undefined) ?? null;
+        session.user.canAccessOrcamentos = (token.canAccessOrcamentos as boolean | undefined) ?? true;
+        session.user.canAccessFrota = (token.canAccessFrota as boolean | undefined) ?? true;
+        session.user.image = (token.picture as string | null) ?? null;
       }
       return session;
     },

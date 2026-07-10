@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { vehicleSchema } from "@/lib/validations";
 import { Prisma } from "@prisma/client";
@@ -8,14 +9,25 @@ import { registerAudit, getRequestIp } from "@/lib/audit";
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const sp = req.nextUrl.searchParams;
   const placa = sp.get("placa")?.trim();
+  const q = sp.get("q")?.trim();
   const situacao = sp.get("situacao")?.trim();
   const companyId = sp.get("companyId")?.trim();
 
   const where: Prisma.VehicleWhereInput = {};
   if (placa) where.placa = { contains: placa, mode: "insensitive" };
+  if (q) {
+    where.OR = [
+      { placa: { contains: q, mode: "insensitive" } },
+      { marca: { contains: q, mode: "insensitive" } },
+      { modelo: { contains: q, mode: "insensitive" } },
+    ];
+  }
   if (situacao) where.situacao = situacao as Prisma.EnumSituacaoVeiculoFilter["equals"];
   if (companyId) where.companyId = companyId;
 
@@ -34,6 +46,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "frota")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const body = await req.json();
   const parsed = vehicleSchema.safeParse(body);

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "orcamentos")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

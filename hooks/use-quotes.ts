@@ -25,6 +25,8 @@ export type QuoteRecord = {
   prazoEntrega: string | null;
   observacoes: string | null;
   total: string;
+  visibilidade: "Global" | "Privado";
+  createdByUserId: string | null;
   createdAt: string;
   company: { id: string; razaoSocial: string; nomeFantasia: string | null } & Record<string, unknown>;
   client: { id: string; nome: string };
@@ -40,6 +42,7 @@ export type QuoteFilters = {
   dataInicial?: string;
   dataFinal?: string;
   page?: number;
+  scope?: "mine" | "global";
 };
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {

@@ -14,7 +14,7 @@ export async function GET() {
   }
 
   const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, avatarUrl: true, createdAt: true, updatedAt: true },
     orderBy: { name: "asc" },
   });
 
@@ -55,8 +55,11 @@ export async function POST(req: NextRequest) {
       email,
       passwordHash,
       role: data.role,
+      cargo: data.cargo ?? null,
+      canAccessOrcamentos: data.canAccessOrcamentos ?? true,
+      canAccessFrota: data.canAccessFrota ?? true,
     },
-    select: { id: true, name: true, email: true, role: true, createdAt: true, updatedAt: true },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, avatarUrl: true, createdAt: true, updatedAt: true },
   });
 
   await registerAudit({

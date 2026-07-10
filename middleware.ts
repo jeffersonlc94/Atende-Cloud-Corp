@@ -17,6 +17,17 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
+  const user = req.auth.user;
+  const isAdmin = user?.role === "ADMIN";
+
+  if (!isAdmin && nextUrl.pathname.startsWith("/orcamentos") && user?.canAccessOrcamentos === false) {
+    return NextResponse.redirect(new URL("/acesso-negado", nextUrl.origin));
+  }
+
+  if (!isAdmin && nextUrl.pathname.startsWith("/frota") && user?.canAccessFrota === false) {
+    return NextResponse.redirect(new URL("/acesso-negado", nextUrl.origin));
+  }
+
   return NextResponse.next();
 });
 

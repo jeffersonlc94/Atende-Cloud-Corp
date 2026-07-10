@@ -1,9 +1,12 @@
 export type UserRole = "ADMIN" | "USER";
+export type ModuleName = "orcamentos" | "frota";
 
 type SessionLike =
   | {
       user?: {
         role?: string | null;
+        canAccessOrcamentos?: boolean | null;
+        canAccessFrota?: boolean | null;
       } | null;
     }
   | null
@@ -11,6 +14,17 @@ type SessionLike =
 
 function isAdmin(session: SessionLike): boolean {
   return session?.user?.role === "ADMIN";
+}
+
+/**
+ * Admin sempre tem acesso a todos os módulos. Para os demais usuários,
+ * respeita os campos canAccessOrcamentos/canAccessFrota da sessão.
+ */
+export function canAccessModule(session: SessionLike, module: ModuleName): boolean {
+  if (isAdmin(session)) return true;
+  if (module === "orcamentos") return session?.user?.canAccessOrcamentos !== false;
+  if (module === "frota") return session?.user?.canAccessFrota !== false;
+  return false;
 }
 
 /** Apenas Admin pode gerenciar usuários (CRUD na tela de Usuários). */

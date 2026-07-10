@@ -7,6 +7,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { SettingsProvider } from "./providers/settings-provider";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
+
+function IdleLogoutWatcher() {
+  useIdleLogout();
+  return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -27,6 +33,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <SettingsProvider>{children}</SettingsProvider>
+            <IdleLogoutWatcher />
             <Toaster />
           </TooltipProvider>
         </QueryClientProvider>

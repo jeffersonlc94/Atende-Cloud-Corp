@@ -46,6 +46,8 @@ import {
   Clock,
   CreditCard,
   Truck,
+  Globe2,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -113,6 +115,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           condicoesPagamento: initialData.condicoesPagamento ?? "",
           prazoEntrega: initialData.prazoEntrega ?? "",
           observacoes: initialData.observacoes ?? "",
+          visibilidade: initialData.visibilidade ?? "Global",
           itens: initialData.itens.map((i) => ({
             ordem: i.ordem,
             descricao: i.descricao,
@@ -130,6 +133,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           condicoesPagamento: "",
           prazoEntrega: "",
           observacoes: "",
+          visibilidade: "Global",
           itens: [{ ordem: 0, descricao: "", quantidade: 1, valorUnitario: undefined }],
         },
   });
@@ -319,9 +323,32 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               <FieldLabel icon={Truck}>Prazo de Entrega</FieldLabel>
               <Input placeholder="Ex: 7 dias úteis" {...register("prazoEntrega")} />
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
               <FieldLabel icon={CreditCard}>Condições de Pagamento</FieldLabel>
               <Input placeholder="Ex: À vista, 30 dias, etc." {...register("condicoesPagamento")} />
+            </div>
+            <div className="space-y-2">
+              <FieldLabel icon={values.visibilidade === "Privado" ? Lock : Globe2}>
+                Visibilidade
+              </FieldLabel>
+              <Select
+                value={values.visibilidade ?? "Global"}
+                onValueChange={(v) =>
+                  setValue("visibilidade", v as QuoteFormValues["visibilidade"], {
+                    shouldValidate: true,
+                  })
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione a visibilidade">
+                    {(value) => (value === "Privado" ? "Privado" : "Global")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Global">Global (visível para todos)</SelectItem>
+                  <SelectItem value="Privado">Privado (visível só para mim)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

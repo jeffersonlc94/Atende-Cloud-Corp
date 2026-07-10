@@ -71,20 +71,21 @@ export default function UsuariosPage() {
                   <TableHead>Nome</TableHead>
                   <TableHead>E-mail</TableHead>
                   <TableHead>Perfil</TableHead>
+                  <TableHead>Cargo</TableHead>
                   <TableHead className="w-32" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && users.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                       Nenhum usuário cadastrado
                     </TableCell>
                   </TableRow>
@@ -97,6 +98,13 @@ export default function UsuariosPage() {
                       <Badge variant={u.role === "ADMIN" ? "default" : "secondary"}>
                         {u.role === "ADMIN" ? "Administrador" : "Usuário"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {u.cargo === "TECNICO"
+                        ? "Técnico"
+                        : u.cargo === "VENDEDOR"
+                          ? "Vendedor"
+                          : "—"}
                     </TableCell>
                     <TableCell className="flex justify-end gap-1">
                       <Link

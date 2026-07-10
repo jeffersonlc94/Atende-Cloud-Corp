@@ -23,6 +23,8 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
+  const canOrcamentos = isAdmin || session?.user?.canAccessOrcamentos !== false;
+  const canFrota = isAdmin || session?.user?.canAccessFrota !== false;
 
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
@@ -32,34 +34,40 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <SidebarBrand />
       <nav className="scrollbar-none flex-1 space-y-1 overflow-y-auto px-3 pb-4">
-        <NavLink
-          href="/orcamentos/dashboard"
-          label="Dashboard"
-          Icon={navItems[0].icon}
-          active={pathname === "/orcamentos/dashboard"}
-          onNavigate={onNavigate}
-        />
+        {canOrcamentos && (
+          <NavLink
+            href="/orcamentos/dashboard"
+            label="Dashboard"
+            Icon={navItems[0].icon}
+            active={pathname === "/orcamentos/dashboard"}
+            onNavigate={onNavigate}
+          />
+        )}
 
-        <NavGroup
-          label="Orçamentos"
-          Icon={FileText}
-          items={orcamentosNavItems}
-          onNavigate={onNavigate}
-          isActive={(item) =>
-            item.href === "/orcamentos"
-              ? pathname === "/orcamentos" ||
-                (/^\/orcamentos\/[^/]+$/.test(pathname) && pathname !== "/orcamentos/novo")
-              : pathname === item.href
-          }
-        />
+        {canOrcamentos && (
+          <NavGroup
+            label="Orçamentos"
+            Icon={FileText}
+            items={orcamentosNavItems}
+            onNavigate={onNavigate}
+            isActive={(item) =>
+              item.href === "/orcamentos"
+                ? pathname === "/orcamentos" ||
+                  (/^\/orcamentos\/[^/]+$/.test(pathname) && pathname !== "/orcamentos/novo")
+                : pathname === item.href
+            }
+          />
+        )}
 
-        <NavGroup
-          label="Gestão de Frota"
-          Icon={Truck}
-          items={frotaNavItems}
-          onNavigate={onNavigate}
-          isActive={(item) => pathname === item.href}
-        />
+        {canFrota && (
+          <NavGroup
+            label="Gestão de Frota"
+            Icon={Truck}
+            items={frotaNavItems}
+            onNavigate={onNavigate}
+            isActive={(item) => pathname === item.href}
+          />
+        )}
 
         {isAdmin && usuariosItem && (
           <NavLink

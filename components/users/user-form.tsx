@@ -10,6 +10,7 @@ import { useCreateUser, useUpdateUser, type AppUser } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -32,6 +33,9 @@ import {
   Mail,
   Lock,
   ShieldCheck,
+  Briefcase,
+  FileText,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -70,6 +74,9 @@ const emptyValues: UserFormValues = {
   email: "",
   password: "",
   role: "USER",
+  cargo: undefined,
+  canAccessOrcamentos: true,
+  canAccessFrota: true,
 };
 
 export function UserForm({ initialData }: { initialData?: AppUser }) {
@@ -87,10 +94,15 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
     formState: { errors },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: initialData ? { ...initialData, password: "" } : emptyValues,
+    defaultValues: initialData
+      ? { ...initialData, password: "", cargo: initialData.cargo ?? undefined }
+      : emptyValues,
   });
 
   const role = watch("role");
+  const cargo = watch("cargo");
+  const canAccessOrcamentos = watch("canAccessOrcamentos");
+  const canAccessFrota = watch("canAccessFrota");
   const isEditing = !!initialData;
 
   async function persist(data: UserFormValues) {
@@ -190,6 +202,58 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <FieldLabel icon={Briefcase}>Cargo</FieldLabel>
+              <Select
+                value={cargo ?? "none"}
+                onValueChange={(v) =>
+                  setValue("cargo", v === "none" ? undefined : (v as UserFormValues["cargo"]))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione o cargo">
+                    {(value) =>
+                      value === "TECNICO"
+                        ? "Técnico"
+                        : value === "VENDEDOR"
+                          ? "Vendedor"
+                          : "Não definido"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não definido</SelectItem>
+                  <SelectItem value="TECNICO">Técnico</SelectItem>
+                  <SelectItem value="VENDEDOR">Vendedor</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="py-0 gap-0 rounded-2xl">
+          <SectionHeader
+            icon={ShieldCheck}
+            title="Permissões de Módulo"
+            description="Controle quais módulos este usuário pode acessar (administradores sempre têm acesso total)"
+          />
+          <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
+            <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium">
+              <Checkbox
+                checked={!!canAccessOrcamentos}
+                onCheckedChange={(v) => setValue("canAccessOrcamentos", v === true)}
+              />
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Orçamentos
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium">
+              <Checkbox
+                checked={!!canAccessFrota}
+                onCheckedChange={(v) => setValue("canAccessFrota", v === true)}
+              />
+              <Truck className="h-4 w-4 text-muted-foreground" />
+              Controle de Veículos
+            </label>
           </CardContent>
         </Card>
       </div>

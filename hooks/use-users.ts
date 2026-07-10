@@ -8,6 +8,10 @@ export type AppUser = {
   name: string;
   email: string;
   role: "ADMIN" | "USER";
+  cargo: "TECNICO" | "VENDEDOR" | null;
+  canAccessOrcamentos: boolean;
+  canAccessFrota: boolean;
+  avatarUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 };

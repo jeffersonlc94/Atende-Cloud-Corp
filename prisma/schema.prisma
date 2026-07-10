@@ -15,14 +15,23 @@ enum Role {
   USER
 }
 
+enum Cargo {
+  TECNICO
+  VENDEDOR
+}
+
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  passwordHash        String
+  role                Role     @default(USER)
+  cargo               Cargo?
+  avatarUrl           String?
+  canAccessOrcamentos Boolean  @default(true)
+  canAccessFrota      Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   quotes       Quote[]
   mileageLogs  MileageLog[]
@@ -70,25 +79,31 @@ model Client {
   @@map("clients")
 }
 
+enum Visibilidade {
+  Global
+  Privado
+}
+
 model Quote {
-  id                 String    @id @default(cuid())
-  numero             String    @unique
+  id                 String       @id @default(cuid())
+  numero             String       @unique
   companyId          String
-  company            Company   @relation(fields: [companyId], references: [id])
+  company            Company      @relation(fields: [companyId], references: [id])
   clientId           String
-  client             Client    @relation(fields: [clientId], references: [id])
+  client             Client       @relation(fields: [clientId], references: [id])
   referencia         String?
-  dataEmissao        DateTime  @default(now())
+  dataEmissao        DateTime     @default(now())
   dataValidade       DateTime?
-  validadeDias       Int       @default(15)
+  validadeDias       Int          @default(15)
   condicoesPagamento String?
   prazoEntrega       String?
   observacoes        String?
-  total              Decimal   @default(0) @db.Decimal(14, 2)
+  total              Decimal      @default(0) @db.Decimal(14, 2)
+  visibilidade       Visibilidade @default(Global)
   createdByUserId    String?
-  createdByUser      User?     @relation(fields: [createdByUserId], references: [id])
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdByUser      User?        @relation(fields: [createdByUserId], references: [id])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   itens QuoteItem[]
 
@@ -364,16 +379,18 @@ model AuditLog {
 // ==========================================================================
 
 model SystemSettings {
-  id            String   @id @default("default")
-  systemName    String?
-  logoUrl       String?
-  faviconUrl    String?
-  primaryColor  String?
-  sidebarColor  String?
-  buttonColor   String?
-  accentColor   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                     String   @id @default("default")
+  systemName             String?
+  logoUrl                String?
+  faviconUrl             String?
+  primaryColor           String?
+  sidebarColor           String?
+  buttonColor            String?
+  accentColor            String?
+  autoLogoutMinutes      Int?
+  notificationCargoPrefs Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   @@map("system_settings")
 }
