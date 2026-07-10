@@ -46,6 +46,7 @@ import {
   ClipboardCheck,
   MessageSquareText,
   ImageIcon,
+  ImageOff,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -106,6 +107,7 @@ const situacaoLabels: Record<string, string> = {
 export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  const [fotoError, setFotoError] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingData, setPendingData] = useState<VehicleFormValues | null>(null);
   const { data: companies = [] } = useCompanies();
@@ -149,6 +151,7 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error();
       const { url } = await res.json();
+      setFotoError(false);
       setValue("fotoUrl", url, { shouldValidate: true });
     } catch {
       toast.error("Erro ao enviar foto");
@@ -218,12 +221,17 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
             <div className="space-y-2 sm:col-span-2">
               <FieldLabel icon={ImageIcon}>Foto</FieldLabel>
               <div className="flex items-center gap-3">
-                {fotoUrl ? (
+                {fotoUrl && !fotoError ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={fotoUrl} alt="Veículo" className="h-14 w-14 rounded object-cover border" />
+                  <img
+                    src={fotoUrl}
+                    alt="Veículo"
+                    className="h-14 w-14 rounded object-cover border"
+                    onError={() => setFotoError(true)}
+                  />
                 ) : (
                   <div className="flex h-14 w-14 items-center justify-center rounded border text-xs text-muted-foreground">
-                    Sem foto
+                    {fotoUrl ? <ImageOff className="h-5 w-5" /> : "Sem foto"}
                   </div>
                 )}
                 <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">

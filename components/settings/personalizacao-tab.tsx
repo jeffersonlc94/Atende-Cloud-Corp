@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Loader2, Palette, RotateCcw, Save, Upload } from "lucide-react";
+import { Check, ImageOff, Loader2, Palette, RotateCcw, Save, Upload } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -99,6 +99,8 @@ export function PersonalizacaoTab() {
   const [colors, setColors] = useState<Record<string, string>>({});
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+  const [faviconError, setFaviconError] = useState(false);
 
   useEffect(() => {
     if (!settings) return;
@@ -122,8 +124,13 @@ export function PersonalizacaoTab() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error();
       const { url } = await res.json();
-      if (kind === "logo") setLogoUrl(url);
-      else setFaviconUrl(url);
+      if (kind === "logo") {
+        setLogoError(false);
+        setLogoUrl(url);
+      } else {
+        setFaviconError(false);
+        setFaviconUrl(url);
+      }
     } catch {
       toast.error("Erro ao enviar arquivo");
     } finally {
@@ -202,12 +209,17 @@ export function PersonalizacaoTab() {
           <div className="space-y-2">
             <Label>Logo</Label>
             <div className="flex items-center gap-3">
-              {logoUrl ? (
+              {logoUrl && !logoError ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="Logo" className="h-14 w-14 rounded object-contain border" />
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="h-14 w-14 rounded object-contain border"
+                  onError={() => setLogoError(true)}
+                />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded border text-xs text-muted-foreground">
-                  Sem logo
+                  {logoUrl ? <ImageOff className="h-5 w-5" /> : "Sem logo"}
                 </div>
               )}
               <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
@@ -229,12 +241,17 @@ export function PersonalizacaoTab() {
           <div className="space-y-2">
             <Label>Favicon</Label>
             <div className="flex items-center gap-3">
-              {faviconUrl ? (
+              {faviconUrl && !faviconError ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={faviconUrl} alt="Favicon" className="h-14 w-14 rounded object-contain border" />
+                <img
+                  src={faviconUrl}
+                  alt="Favicon"
+                  className="h-14 w-14 rounded object-contain border"
+                  onError={() => setFaviconError(true)}
+                />
               ) : (
                 <div className="flex h-14 w-14 items-center justify-center rounded border text-xs text-muted-foreground">
-                  Sem favicon
+                  {faviconUrl ? <ImageOff className="h-5 w-5" /> : "Sem favicon"}
                 </div>
               )}
               <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">

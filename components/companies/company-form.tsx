@@ -34,6 +34,7 @@ import {
   Mail,
   Globe,
   User,
+  ImageOff,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -88,6 +89,7 @@ const emptyValues: CompanyFormValues = {
 export function CompanyForm({ initialData }: { initialData?: Company }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingData, setPendingData] = useState<CompanyFormValues | null>(null);
   const createCompany = useCreateCompany();
@@ -122,6 +124,7 @@ export function CompanyForm({ initialData }: { initialData?: Company }) {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error();
       const { url } = await res.json();
+      setLogoError(false);
       setValue("logoUrl", url, { shouldValidate: true });
     } catch {
       toast.error("Erro ao enviar logo");
@@ -191,12 +194,17 @@ export function CompanyForm({ initialData }: { initialData?: Company }) {
             <div className="space-y-2 sm:col-span-2">
               <FieldLabel icon={Building2}>Logo</FieldLabel>
               <div className="flex items-center gap-3">
-                {logoUrl ? (
+                {logoUrl && !logoError ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={logoUrl} alt="Logo" className="h-14 w-14 rounded object-contain border" />
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
+                    className="h-14 w-14 rounded object-contain border"
+                    onError={() => setLogoError(true)}
+                  />
                 ) : (
                   <div className="flex h-14 w-14 items-center justify-center rounded border text-xs text-muted-foreground">
-                    Sem logo
+                    {logoUrl ? <ImageOff className="h-5 w-5" /> : "Sem logo"}
                   </div>
                 )}
                 <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
