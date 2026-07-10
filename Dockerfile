@@ -44,6 +44,7 @@ COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN mkdir -p ./public/uploads \
   && chown -R nextjs:nodejs ./public/uploads \
+  && sed -i 's/\r$//' ./docker-entrypoint.sh \
   && chmod +x ./docker-entrypoint.sh
 
 USER nextjs
