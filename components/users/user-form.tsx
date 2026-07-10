@@ -122,12 +122,8 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
   }
 
   async function onSubmit(data: UserFormValues) {
-    if (initialData) {
-      setPendingData(data);
-      setConfirmOpen(true);
-      return;
-    }
-    await persist(data);
+    setPendingData(data);
+    setConfirmOpen(true);
   }
 
   const isSaving = createUser.isPending || updateUser.isPending;
@@ -261,8 +257,8 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Deseja salvar as alterações?"
-        description="As informações do usuário serão atualizadas."
+        title={isEditing ? "Deseja salvar as alterações?" : "Confirma o cadastro deste usuário?"}
+        description={isEditing ? "As informações do usuário serão atualizadas." : "Um novo usuário será cadastrado."}
         onConfirm={() => pendingData && persist(pendingData)}
       />
     </form>

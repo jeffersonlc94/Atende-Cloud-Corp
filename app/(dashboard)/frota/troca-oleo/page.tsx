@@ -21,6 +21,7 @@ export default function TrocaOleoPage() {
   const createOil = useCreateOilChange();
   const deleteOil = useDeleteOilChange();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [confirmAddOpen, setConfirmAddOpen] = useState(false);
 
   const [form, setForm] = useState({
     vehicleId: "",
@@ -135,7 +136,16 @@ export default function TrocaOleoPage() {
               <Input type="number" value={form.kmProximaTroca} onChange={(e) => setForm({ ...form, kmProximaTroca: e.target.value })} />
             </div>
           </div>
-          <Button onClick={handleAdd} disabled={createOil.isPending}>
+          <Button
+            onClick={() => {
+              if (!form.vehicleId || !form.km) {
+                toast.error("Selecione o veículo e informe o KM");
+                return;
+              }
+              setConfirmAddOpen(true);
+            }}
+            disabled={createOil.isPending}
+          >
             Registrar
           </Button>
         </CardContent>
@@ -171,6 +181,13 @@ export default function TrocaOleoPage() {
         variant="destructive"
         confirmLabel="Excluir"
         onConfirm={() => pendingDelete && deleteOil.mutate(pendingDelete)}
+      />
+      <ConfirmDialog
+        open={confirmAddOpen}
+        onOpenChange={setConfirmAddOpen}
+        title="Confirma o registro desta troca de óleo?"
+        confirmLabel="Registrar"
+        onConfirm={handleAdd}
       />
     </div>
   );

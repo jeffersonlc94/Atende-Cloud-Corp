@@ -150,12 +150,8 @@ export function CompanyForm({ initialData }: { initialData?: Company }) {
   }
 
   async function onSubmit(data: CompanyFormValues) {
-    if (initialData) {
-      setPendingData(data);
-      setConfirmOpen(true);
-      return;
-    }
-    await persist(data);
+    setPendingData(data);
+    setConfirmOpen(true);
   }
 
   const isSaving = createCompany.isPending || updateCompany.isPending;
@@ -303,8 +299,8 @@ export function CompanyForm({ initialData }: { initialData?: Company }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Deseja salvar as alterações?"
-        description="Os dados da empresa serão atualizados."
+        title={isEditing ? "Deseja salvar as alterações?" : "Confirma o cadastro desta empresa?"}
+        description={isEditing ? "Os dados da empresa serão atualizados." : "Uma nova empresa será cadastrada."}
         onConfirm={() => pendingData && persist(pendingData)}
       />
     </form>

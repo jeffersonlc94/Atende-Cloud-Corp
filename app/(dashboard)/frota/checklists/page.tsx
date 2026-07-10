@@ -47,17 +47,23 @@ export default function ChecklistsPage() {
     Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"]))
   );
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  async function handleSubmit() {
+  function validate() {
     if (!vehicleId) {
       toast.error("Selecione um veículo");
-      return;
+      return false;
     }
     const kmNumber = parseInt(km, 10);
     if (!km || Number.isNaN(kmNumber) || kmNumber <= 0) {
       toast.error("Informe o KM atual do veículo (maior que zero)");
-      return;
+      return false;
     }
+    return true;
+  }
+
+  async function handleSubmit() {
+    const kmNumber = parseInt(km, 10);
     try {
       await createChecklist.mutateAsync({
         vehicleId,
@@ -164,7 +170,7 @@ export default function ChecklistsPage() {
             <Textarea rows={2} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
           </div>
 
-          <Button onClick={handleSubmit} disabled={createChecklist.isPending}>
+          <Button onClick={() => validate() && setConfirmOpen(true)} disabled={createChecklist.isPending}>
             Registrar checklist
           </Button>
         </CardContent>
@@ -221,6 +227,13 @@ export default function ChecklistsPage() {
         variant="destructive"
         confirmLabel="Excluir"
         onConfirm={() => pendingDelete && deleteChecklist.mutate(pendingDelete)}
+      />
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma o registro deste checklist?"
+        confirmLabel="Registrar"
+        onConfirm={handleSubmit}
       />
     </div>
   );

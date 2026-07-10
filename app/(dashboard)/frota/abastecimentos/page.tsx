@@ -33,6 +33,7 @@ export default function AbastecimentosPage() {
   const createFuel = useCreateFuel();
   const deleteFuel = useDeleteFuel();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [confirmAddOpen, setConfirmAddOpen] = useState(false);
 
   const [form, setForm] = useState({
     vehicleId: "",
@@ -140,7 +141,16 @@ export default function AbastecimentosPage() {
           <p className="text-sm text-muted-foreground">
             Valor total: <span className="font-medium text-foreground">{formatCurrencyBRL(valorTotal)}</span>
           </p>
-          <Button onClick={handleAdd} disabled={createFuel.isPending}>
+          <Button
+            onClick={() => {
+              if (!form.vehicleId || !form.litros || !form.valorLitro) {
+                toast.error("Preencha veículo, litros e valor por litro");
+                return;
+              }
+              setConfirmAddOpen(true);
+            }}
+            disabled={createFuel.isPending}
+          >
             Registrar
           </Button>
         </CardContent>
@@ -205,6 +215,13 @@ export default function AbastecimentosPage() {
         variant="destructive"
         confirmLabel="Excluir"
         onConfirm={() => pendingDelete && deleteFuel.mutate(pendingDelete)}
+      />
+      <ConfirmDialog
+        open={confirmAddOpen}
+        onOpenChange={setConfirmAddOpen}
+        title="Confirma o registro deste abastecimento?"
+        confirmLabel="Registrar"
+        onConfirm={handleAdd}
       />
     </div>
   );

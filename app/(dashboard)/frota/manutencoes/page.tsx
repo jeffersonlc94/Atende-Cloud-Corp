@@ -26,6 +26,7 @@ export default function ManutencoesPage() {
   const createMaintenance = useCreateMaintenance();
   const deleteMaintenance = useDeleteMaintenance();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [confirmAddOpen, setConfirmAddOpen] = useState(false);
 
   const [form, setForm] = useState({
     vehicleId: "",
@@ -105,7 +106,16 @@ export default function ManutencoesPage() {
             <Label>Descrição</Label>
             <Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </div>
-          <Button onClick={handleAdd} disabled={createMaintenance.isPending}>
+          <Button
+            onClick={() => {
+              if (!form.vehicleId || !form.tipo) {
+                toast.error("Selecione o veículo e informe o tipo");
+                return;
+              }
+              setConfirmAddOpen(true);
+            }}
+            disabled={createMaintenance.isPending}
+          >
             Registrar
           </Button>
         </CardContent>
@@ -170,6 +180,13 @@ export default function ManutencoesPage() {
         variant="destructive"
         confirmLabel="Excluir"
         onConfirm={() => pendingDelete && deleteMaintenance.mutate(pendingDelete)}
+      />
+      <ConfirmDialog
+        open={confirmAddOpen}
+        onOpenChange={setConfirmAddOpen}
+        title="Confirma o registro desta manutenção?"
+        confirmLabel="Registrar"
+        onConfirm={handleAdd}
       />
     </div>
   );

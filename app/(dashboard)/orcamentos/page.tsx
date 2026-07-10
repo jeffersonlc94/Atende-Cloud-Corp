@@ -52,6 +52,7 @@ import {
   List,
 } from "lucide-react";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function OrcamentosPage() {
   const router = useRouter();
@@ -61,6 +62,7 @@ export default function OrcamentosPage() {
   const { data: companies = [] } = useCompanies();
   const [filters, setFilters] = useState<QuoteFilters>({ scope: "mine" });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [pendingDuplicate, setPendingDuplicate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
   const { data, isLoading } = useQuotesList(filters);
@@ -88,6 +90,8 @@ export default function OrcamentosPage() {
       toast.success(`Orçamento duplicado como nº ${created.numero}`);
     } catch {
       toast.error("Erro ao duplicar orçamento");
+    } finally {
+      setPendingDuplicate(null);
     }
   }
 
@@ -240,7 +244,7 @@ export default function OrcamentosPage() {
                     variant="ghost"
                     size="icon"
                     title="Duplicar"
-                    onClick={() => handleDuplicate(quote.id)}
+                    onClick={() => setPendingDuplicate(quote.id)}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -337,7 +341,7 @@ export default function OrcamentosPage() {
                           >
                             <Printer className="mr-2 h-4 w-4" /> Reimprimir
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDuplicate(quote.id)}>
+                          <DropdownMenuItem onClick={() => setPendingDuplicate(quote.id)}>
                             <Copy className="mr-2 h-4 w-4" /> Duplicar
                           </DropdownMenuItem>
                           {canDelete && (
@@ -380,6 +384,15 @@ export default function OrcamentosPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDuplicate}
+        onOpenChange={(o) => !o && setPendingDuplicate(null)}
+        title="Confirma a duplicação deste orçamento?"
+        description="Um novo orçamento será criado a partir deste."
+        confirmLabel="Duplicar"
+        onConfirm={() => pendingDuplicate && handleDuplicate(pendingDuplicate)}
+      />
     </div>
   );
 }

@@ -177,12 +177,8 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
   }
 
   async function onSubmit(data: VehicleFormValues) {
-    if (initialData) {
-      setPendingData(data);
-      setConfirmOpen(true);
-      return;
-    }
-    await persist(data);
+    setPendingData(data);
+    setConfirmOpen(true);
   }
 
   const isSaving = createVehicle.isPending || updateVehicle.isPending;
@@ -391,8 +387,8 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Deseja salvar as alterações?"
-        description="Os dados do veículo serão atualizados."
+        title={isEditing ? "Deseja salvar as alterações?" : "Confirma o cadastro deste veículo?"}
+        description={isEditing ? "Os dados do veículo serão atualizados." : "Um novo veículo será cadastrado."}
         onConfirm={() => pendingData && persist(pendingData)}
       />
     </form>

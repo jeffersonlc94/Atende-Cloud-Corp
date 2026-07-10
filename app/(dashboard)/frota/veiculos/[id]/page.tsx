@@ -171,6 +171,7 @@ function MileageTab({ vehicleId }: { vehicleId: string }) {
   const createLog = useCreateMileageLog();
   const [km, setKm] = useState("");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleAdd() {
     if (!km) return;
@@ -198,7 +199,7 @@ function MileageTab({ vehicleId }: { vehicleId: string }) {
             <Label>KM</Label>
             <Input type="number" value={km} onChange={(e) => setKm(e.target.value)} className="w-32" />
           </div>
-          <Button onClick={handleAdd} disabled={createLog.isPending}>
+          <Button onClick={() => km && setConfirmOpen(true)} disabled={createLog.isPending}>
             Registrar
           </Button>
         </div>
@@ -214,6 +215,14 @@ function MileageTab({ vehicleId }: { vehicleId: string }) {
           ))}
         </div>
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma o registro desta quilometragem?"
+        confirmLabel="Registrar"
+        onConfirm={handleAdd}
+      />
     </Card>
   );
 }
@@ -229,6 +238,7 @@ function OilTab({ vehicleId }: { vehicleId: string }) {
     valor: "",
     kmProximaTroca: "",
   });
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleAdd() {
     if (!form.km) return;
@@ -281,7 +291,7 @@ function OilTab({ vehicleId }: { vehicleId: string }) {
             <Input type="number" value={form.kmProximaTroca} onChange={(e) => setForm({ ...form, kmProximaTroca: e.target.value })} />
           </div>
         </div>
-        <Button onClick={handleAdd} disabled={createOil.isPending}>
+        <Button onClick={() => form.km && setConfirmOpen(true)} disabled={createOil.isPending}>
           Registrar troca
         </Button>
 
@@ -299,6 +309,14 @@ function OilTab({ vehicleId }: { vehicleId: string }) {
           ))}
         </div>
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma o registro desta troca de óleo?"
+        confirmLabel="Registrar"
+        onConfirm={handleAdd}
+      />
     </Card>
   );
 }
@@ -314,6 +332,7 @@ function MaintenanceTab({ vehicleId }: { vehicleId: string }) {
     km: "",
     descricao: "",
   });
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleAdd() {
     if (!form.tipo) return;
@@ -362,7 +381,7 @@ function MaintenanceTab({ vehicleId }: { vehicleId: string }) {
             <Input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
           </div>
         </div>
-        <Button onClick={handleAdd} disabled={createMaintenance.isPending}>
+        <Button onClick={() => form.tipo && setConfirmOpen(true)} disabled={createMaintenance.isPending}>
           Registrar manutenção
         </Button>
 
@@ -379,6 +398,14 @@ function MaintenanceTab({ vehicleId }: { vehicleId: string }) {
           ))}
         </div>
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma o registro desta manutenção?"
+        confirmLabel="Registrar"
+        onConfirm={handleAdd}
+      />
     </Card>
   );
 }
@@ -388,6 +415,7 @@ function DocumentsTab({ vehicleId }: { vehicleId: string }) {
   const createDoc = useCreateVehicleDocument(vehicleId);
   const deleteDoc = useDeleteVehicleDocument(vehicleId);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [confirmAddOpen, setConfirmAddOpen] = useState(false);
   const [tipo, setTipo] = useState<(typeof tipoDocumentoOptions)[number]>("CRLV");
   const [dataVencimento, setDataVencimento] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -455,7 +483,7 @@ function DocumentsTab({ vehicleId }: { vehicleId: string }) {
             <Input type="file" onChange={handleFileChange} disabled={uploading} />
           </div>
         </div>
-        <Button onClick={handleAdd} disabled={createDoc.isPending}>
+        <Button onClick={() => setConfirmAddOpen(true)} disabled={createDoc.isPending}>
           Adicionar documento
         </Button>
 
@@ -506,6 +534,13 @@ function DocumentsTab({ vehicleId }: { vehicleId: string }) {
         variant="destructive"
         confirmLabel="Excluir"
         onConfirm={() => pendingDelete && deleteDoc.mutate(pendingDelete)}
+      />
+      <ConfirmDialog
+        open={confirmAddOpen}
+        onOpenChange={setConfirmAddOpen}
+        title="Confirma a inclusão deste documento?"
+        confirmLabel="Adicionar"
+        onConfirm={handleAdd}
       />
     </Card>
   );

@@ -34,6 +34,7 @@ import {
   type NotificationCargoPrefs,
   type CargoValue,
 } from "@/lib/notification-prefs";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 type SmtpStatus = {
   configured: boolean;
@@ -179,6 +180,7 @@ function NotificationCargoPrefsCard() {
   const { data: settings, isLoading } = useSystemSettings();
   const updateSettings = useUpdateSystemSettings();
   const [prefs, setPrefs] = useState<NotificationCargoPrefs>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -252,7 +254,7 @@ function NotificationCargoPrefsCard() {
             </table>
           </div>
         )}
-        <Button onClick={handleSave} disabled={updateSettings.isPending}>
+        <Button onClick={() => setConfirmOpen(true)} disabled={updateSettings.isPending}>
           {updateSettings.isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -261,6 +263,14 @@ function NotificationCargoPrefsCard() {
           Salvar preferências
         </Button>
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma salvar as preferências de notificação?"
+        confirmLabel="Salvar"
+        onConfirm={handleSave}
+      />
     </Card>
   );
 }
@@ -269,6 +279,7 @@ function SegurancaTab() {
   const { data: settings, isLoading } = useSystemSettings();
   const updateSettings = useUpdateSystemSettings();
   const [minutes, setMinutes] = useState<string>("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -311,7 +322,7 @@ function SegurancaTab() {
             />
           </div>
         )}
-        <Button onClick={handleSave} disabled={updateSettings.isPending}>
+        <Button onClick={() => setConfirmOpen(true)} disabled={updateSettings.isPending}>
           {updateSettings.isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -320,6 +331,14 @@ function SegurancaTab() {
           Salvar
         </Button>
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma salvar esta configuração de segurança?"
+        confirmLabel="Salvar"
+        onConfirm={handleSave}
+      />
     </Card>
   );
 }

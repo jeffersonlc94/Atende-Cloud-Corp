@@ -177,12 +177,8 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   }
 
   async function onSubmit(data: QuoteFormValues) {
-    if (initialData) {
-      setPendingData(data);
-      setConfirmOpen(true);
-      return;
-    }
-    await confirmAndPersist(data);
+    setPendingData(data);
+    setConfirmOpen(true);
   }
 
   // A pré-visualização, impressão e geração de PDF usam a MESMA página
@@ -393,8 +389,8 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Deseja salvar as alterações?"
-        description="O orçamento será atualizado com os dados informados."
+        title={isEditing ? "Deseja salvar as alterações?" : "Confirma a criação deste orçamento?"}
+        description={isEditing ? "O orçamento será atualizado com os dados informados." : "Um novo orçamento será criado com os dados informados."}
         onConfirm={() => pendingData && confirmAndPersist(pendingData)}
       />
     </form>

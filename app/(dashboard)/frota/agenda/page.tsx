@@ -27,6 +27,7 @@ export default function AgendaPage() {
   const createEvent = useCreateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [confirmAddOpen, setConfirmAddOpen] = useState(false);
 
   const [form, setForm] = useState({
     vehicleId: "",
@@ -102,7 +103,16 @@ export default function AgendaPage() {
             <Label>Descrição</Label>
             <Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </div>
-          <Button onClick={handleAdd} disabled={createEvent.isPending}>
+          <Button
+            onClick={() => {
+              if (!form.titulo) {
+                toast.error("Informe o título do evento");
+                return;
+              }
+              setConfirmAddOpen(true);
+            }}
+            disabled={createEvent.isPending}
+          >
             Adicionar evento
           </Button>
         </CardContent>
@@ -147,6 +157,13 @@ export default function AgendaPage() {
         variant="destructive"
         confirmLabel="Excluir"
         onConfirm={() => pendingDelete && deleteEvent.mutate(pendingDelete)}
+      />
+      <ConfirmDialog
+        open={confirmAddOpen}
+        onOpenChange={setConfirmAddOpen}
+        title="Confirma a inclusão deste evento na agenda?"
+        confirmLabel="Adicionar"
+        onConfirm={handleAdd}
       />
     </div>
   );

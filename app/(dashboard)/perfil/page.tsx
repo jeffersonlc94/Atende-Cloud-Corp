@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Save, Upload, User, Mail, Lock } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function PerfilPage() {
   const { data: session } = useSession();
@@ -21,6 +22,7 @@ export default function PerfilPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -53,7 +55,7 @@ export default function PerfilPage() {
     }
   }
 
-  async function handleSave(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (password && password !== confirmPassword) {
@@ -61,6 +63,10 @@ export default function PerfilPage() {
       return;
     }
 
+    setConfirmOpen(true);
+  }
+
+  async function handleSave() {
     try {
       await updateProfile.mutateAsync({
         name,
@@ -78,7 +84,7 @@ export default function PerfilPage() {
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Meu Perfil</h1>
         <p className="text-sm text-muted-foreground">
@@ -178,6 +184,14 @@ export default function PerfilPage() {
           Salvar
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Deseja salvar as alterações do seu perfil?"
+        confirmLabel="Salvar"
+        onConfirm={handleSave}
+      />
     </form>
   );
 }
