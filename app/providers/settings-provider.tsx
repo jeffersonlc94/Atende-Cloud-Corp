@@ -14,24 +14,10 @@ import { useSystemSettings } from "@/hooks/use-settings";
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const { data: settings } = useSystemSettings();
 
-  useEffect(() => {
-    if (!settings) return;
-    try {
-      localStorage.setItem(
-        "atende-theme-colors",
-        JSON.stringify({
-          primaryColor: settings.primaryColor || "",
-          sidebarColor: settings.sidebarColor || "",
-          buttonColor: settings.buttonColor || "",
-          accentColor: settings.accentColor || "",
-        })
-      );
-    } catch {
-      // localStorage indisponível (modo privado, etc.) — sem problema, apenas
-      // perde a otimização de evitar o flash no próximo reload.
-    }
-  }, [settings]);
-
+  // O primeiro carregamento/F5 já vem correto via SSR (app/layout.tsx lê o
+  // SystemSettings direto do banco). Este provider só existe para refletir
+  // mudanças em tempo real quando o admin salva uma alteração em
+  // Configurações, sem precisar recarregar a página inteira.
   useEffect(() => {
     const root = document.documentElement;
 
@@ -67,15 +53,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, [settings]);
 
   useEffect(() => {
-    if (settings?.faviconUrl) {
-      let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement("link");
-        link.rel = "icon";
-        document.head.appendChild(link);
-      }
-      link.href = settings.faviconUrl;
-    }
+    if (!settings?.faviconUrl) return;
+    // Remove todos os <link rel="icon"> existentes (incluindo o estático
+    // gerado pelo Next a partir de app/favicon.ico) e cria um elemento NOVO
+    // — trocar apenas o href de um link já existente é frequentemente
+    // ignorado pelo cache de favicon dos navegadores, que só reage de forma
+    // confiável a um elemento recém-inserido no DOM.
+    document.querySelectorAll<HTMLLinkElement>("link[rel~='icon']").forEach((el) => el.remove());
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.href = settings.faviconUrl;
+    document.head.appendChild(link);
   }, [settings?.faviconUrl]);
 
   useEffect(() => {

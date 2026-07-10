@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { getSystemSettingsForSSR } from "@/lib/system-settings.server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,16 +14,46 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Atende Cloud Corp",
-  description: "Sistema de gestão - Orçamentos e Frota",
-};
+const DEFAULT_TITLE = "Atende Cloud Corp";
 
-export default function RootLayout({
+// Força renderização por requisição (nunca estática no build). O Dockerfile
+// roda "npm run build" com um DATABASE_URL fictício só para o "prisma
+// generate" funcionar — sem isso, uma página estática prerenderizada nesse
+// momento congelaria os valores padrão (sem banco real) para sempre, mesmo
+// depois do banco de verdade estar disponível em produção.
+export const dynamic = "force-dynamic";
+
+// Título e favicon são resolvidos no servidor (a partir do SystemSettings
+// salvo no banco) para que já saiam corretos no HTML inicial — depender só
+// de um efeito no client (rodando depois do primeiro paint) é o motivo do
+// favicon não "grudar" (navegadores cacheiam favicon de forma agressiva e
+// só respeitam bem o que já vem no <head> do primeiro carregamento) e do
+// "flash" de volta ao padrão a cada F5.
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSystemSettingsForSSR();
+  return {
+    title: settings?.systemName || DEFAULT_TITLE,
+    description: "Sistema de gestão - Orçamentos e Frota",
+    icons: settings?.faviconUrl ? { icon: settings.faviconUrl } : undefined,
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getSystemSettingsForSSR();
+
+  const rootVars = [
+    settings?.primaryColor && `--primary:${settings.primaryColor};--ring:${settings.primaryColor};--sidebar-primary:${settings.primaryColor};`,
+    settings?.sidebarColor && `--sidebar:${settings.sidebarColor};`,
+    settings?.buttonColor && `--button-color:${settings.buttonColor};`,
+    settings?.accentColor && `--accent:${settings.accentColor};--sidebar-accent:${settings.accentColor};`,
+  ]
+    .filter(Boolean)
+    .join("");
+
   return (
     <html
       lang="pt-BR"
@@ -30,14 +61,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {/* Aplica as cores de personalização salvas ANTES da primeira pintura,
-            evitando o "flash" de volta às cores padrão ao recarregar a página
-            enquanto as configurações ainda não terminaram de ser buscadas. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=JSON.parse(localStorage.getItem("atende-theme-colors")||"null");if(!s)return;var r=document.documentElement.style;if(s.primaryColor){r.setProperty("--primary",s.primaryColor);r.setProperty("--ring",s.primaryColor);r.setProperty("--sidebar-primary",s.primaryColor);}if(s.sidebarColor){r.setProperty("--sidebar",s.sidebarColor);}if(s.buttonColor){r.setProperty("--button-color",s.buttonColor);}if(s.accentColor){r.setProperty("--accent",s.accentColor);r.setProperty("--sidebar-accent",s.accentColor);}}catch(e){}})();`,
-          }}
-        />
+        {rootVars && <style dangerouslySetInnerHTML={{ __html: `:root{${rootVars}}` }} />}
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
