@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Palette, Save, Upload } from "lucide-react";
+import { Loader2, Palette, RotateCcw, Save, Upload } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -21,6 +21,62 @@ const COLOR_FIELDS: {
   { key: "sidebarColor", label: "Cor da barra lateral", fallback: "#ffffff", hint: "Fundo da sidebar" },
   { key: "buttonColor", label: "Cor dos botões", fallback: "#16a34a", hint: "Cor de fundo dos botões principais" },
   { key: "accentColor", label: "Cor de destaque", fallback: "#dcfce7", hint: "Usada em fundos de destaque/realce" },
+];
+
+const DEFAULT_COLORS = {
+  primaryColor: "#16a34a",
+  sidebarColor: "#ffffff",
+  buttonColor: "#16a34a",
+  accentColor: "#dcfce7",
+};
+
+const COLOR_PRESETS: { name: string; colors: Record<string, string> }[] = [
+  { name: "Verde (padrão)", colors: DEFAULT_COLORS },
+  {
+    name: "Azul",
+    colors: {
+      primaryColor: "#2563eb",
+      sidebarColor: "#0f172a",
+      buttonColor: "#2563eb",
+      accentColor: "#dbeafe",
+    },
+  },
+  {
+    name: "Roxo",
+    colors: {
+      primaryColor: "#7c3aed",
+      sidebarColor: "#1e1b3a",
+      buttonColor: "#7c3aed",
+      accentColor: "#ede9fe",
+    },
+  },
+  {
+    name: "Laranja",
+    colors: {
+      primaryColor: "#ea580c",
+      sidebarColor: "#1c1917",
+      buttonColor: "#ea580c",
+      accentColor: "#ffedd5",
+    },
+  },
+  {
+    name: "Vermelho",
+    colors: {
+      primaryColor: "#dc2626",
+      sidebarColor: "#1c1917",
+      buttonColor: "#dc2626",
+      accentColor: "#fee2e2",
+    },
+  },
+  {
+    name: "Cinza escuro",
+    colors: {
+      primaryColor: "#475569",
+      sidebarColor: "#0f172a",
+      buttonColor: "#475569",
+      accentColor: "#e2e8f0",
+    },
+  },
 ];
 
 export function PersonalizacaoTab() {
@@ -178,26 +234,58 @@ export function PersonalizacaoTab() {
             destaques) assim que salvas.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-5 pt-4 pb-5 sm:grid-cols-2 lg:grid-cols-4">
-          {COLOR_FIELDS.map((field) => (
-            <div key={field.key} className="space-y-2">
-              <Label>{field.label}</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={colors[field.key] || field.fallback}
-                  onChange={(e) => setColors((c) => ({ ...c, [field.key]: e.target.value }))}
-                  className="h-9 w-12 cursor-pointer rounded border"
-                />
-                <Input
-                  value={colors[field.key] || ""}
-                  placeholder={field.fallback}
-                  onChange={(e) => setColors((c) => ({ ...c, [field.key]: e.target.value }))}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">{field.hint}</p>
+        <CardContent className="space-y-5 pt-4 pb-5">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Temas prontos</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setColors({ ...DEFAULT_COLORS })}
+              >
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Restaurar padrão original
+              </Button>
             </div>
-          ))}
+            <div className="flex flex-wrap gap-2">
+              {COLOR_PRESETS.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => setColors({ ...preset.colors })}
+                  className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm hover:bg-accent"
+                >
+                  <span className="flex h-5 w-5 overflow-hidden rounded-full border">
+                    <span className="h-full w-1/2" style={{ backgroundColor: preset.colors.primaryColor }} />
+                    <span className="h-full w-1/2" style={{ backgroundColor: preset.colors.sidebarColor }} />
+                  </span>
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {COLOR_FIELDS.map((field) => (
+              <div key={field.key} className="space-y-2">
+                <Label>{field.label}</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={colors[field.key] || field.fallback}
+                    onChange={(e) => setColors((c) => ({ ...c, [field.key]: e.target.value }))}
+                    className="h-9 w-12 cursor-pointer rounded border"
+                  />
+                  <Input
+                    value={colors[field.key] || ""}
+                    placeholder={field.fallback}
+                    onChange={(e) => setColors((c) => ({ ...c, [field.key]: e.target.value }))}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">{field.hint}</p>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
