@@ -34,7 +34,7 @@ export function QuoteItemsTable({
       ordem: fields.length,
       descricao: "",
       quantidade: 1,
-      valorUnitario: 0,
+      valorUnitario: undefined,
     });
   }
 

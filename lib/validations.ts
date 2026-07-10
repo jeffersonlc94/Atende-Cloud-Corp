@@ -5,7 +5,10 @@ export const quoteItemSchema = z.object({
   ordem: z.number().int().nonnegative(),
   descricao: z.string().min(1, "Descrição obrigatória"),
   quantidade: z.number().positive("Quantidade deve ser maior que zero"),
-  valorUnitario: z.number().nonnegative("Valor unitário não pode ser negativo"),
+  valorUnitario: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? 0 : v),
+    z.number().nonnegative("Valor unitário não pode ser negativo")
+  ),
 });
 
 export const quoteSchema = z.object({

@@ -25,6 +25,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { ClientCombobox } from "@/components/clients/client-combobox";
 import { QuoteItemsTable } from "./quote-items-table";
@@ -37,6 +38,15 @@ import {
   ClipboardList,
   ListOrdered,
   MessageSquareText,
+  Building2,
+  Hash,
+  User,
+  FileText,
+  CalendarDays,
+  Clock,
+  CreditCard,
+  Truck,
+  type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
@@ -47,9 +57,11 @@ function todayISO() {
 function SectionHeader({
   icon: Icon,
   title,
+  description,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
+  description?: string;
 }) {
   return (
     <CardHeader className="border-b">
@@ -57,7 +69,17 @@ function SectionHeader({
         <Icon className="h-4 w-4 text-primary" />
         {title}
       </CardTitle>
+      {description && <CardDescription>{description}</CardDescription>}
     </CardHeader>
+  );
+}
+
+function FieldLabel({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
+  return (
+    <Label className="flex items-center gap-1.5">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      {children}
+    </Label>
   );
 }
 
@@ -108,7 +130,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           condicoesPagamento: "",
           prazoEntrega: "",
           observacoes: "",
-          itens: [{ ordem: 0, descricao: "", quantidade: 1, valorUnitario: 0 }],
+          itens: [{ ordem: 0, descricao: "", quantidade: 1, valorUnitario: undefined }],
         },
   });
 
@@ -224,10 +246,10 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
 
       <div className="space-y-6">
         <Card className="py-0 gap-0 rounded-2xl">
-          <SectionHeader icon={ClipboardList} title="Dados do Orçamento" />
+          <SectionHeader icon={ClipboardList} title="Dados do Orçamento" description="Informações gerais do orçamento" />
           <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Empresa Emissora *</Label>
+              <FieldLabel icon={Building2}>Empresa Emissora *</FieldLabel>
               <Select
                 value={values.companyId}
                 onValueChange={(v) => setValue("companyId", v as string, { shouldValidate: true })}
@@ -256,14 +278,14 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               )}
             </div>
             <div className="space-y-2">
-              <Label>Nº do Orçamento</Label>
+              <FieldLabel icon={Hash}>Nº do Orçamento</FieldLabel>
               <Input
                 placeholder="Deixe em branco para gerar automático"
                 {...register("numero")}
               />
             </div>
             <div className="space-y-2">
-              <Label>Cliente *</Label>
+              <FieldLabel icon={User}>Cliente *</FieldLabel>
               <ClientCombobox
                 value={values.clientNome}
                 onChange={(nome) => setValue("clientNome", nome, { shouldValidate: true })}
@@ -273,15 +295,15 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               )}
             </div>
             <div className="space-y-2">
-              <Label>Referência / Assunto *</Label>
+              <FieldLabel icon={FileText}>Referência / Assunto *</FieldLabel>
               <Input placeholder="Ex: Proposta comercial" {...register("referencia")} />
             </div>
             <div className="space-y-2">
-              <Label>Data de Emissão *</Label>
+              <FieldLabel icon={CalendarDays}>Data de Emissão *</FieldLabel>
               <Input type="date" {...register("dataEmissao")} />
             </div>
             <div className="space-y-2">
-              <Label>Validade da Proposta (dias)</Label>
+              <FieldLabel icon={Clock}>Validade da Proposta (dias)</FieldLabel>
               <Input
                 type="number"
                 min={1}
@@ -289,22 +311,22 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Data de Validade</Label>
+              <FieldLabel icon={CalendarDays}>Data de Validade</FieldLabel>
               <Input value={dataValidade} disabled placeholder="Calculada automaticamente" />
             </div>
             <div className="space-y-2">
-              <Label>Prazo de Entrega</Label>
+              <FieldLabel icon={Truck}>Prazo de Entrega</FieldLabel>
               <Input placeholder="Ex: 7 dias úteis" {...register("prazoEntrega")} />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label>Condições de Pagamento</Label>
+              <FieldLabel icon={CreditCard}>Condições de Pagamento</FieldLabel>
               <Input placeholder="Ex: À vista, 30 dias, etc." {...register("condicoesPagamento")} />
             </div>
           </CardContent>
         </Card>
 
         <Card className="py-0 gap-0 rounded-2xl">
-          <SectionHeader icon={ListOrdered} title="Itens do Orçamento" />
+          <SectionHeader icon={ListOrdered} title="Itens do Orçamento" description="Lista de produtos ou serviços" />
           <CardContent className="space-y-4 pt-4">
             <QuoteItemsTable control={control} register={register} watchItems={values.itens} />
             {errors.itens && !Array.isArray(errors.itens) && (
@@ -312,13 +334,13 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             )}
             <div className="flex items-center justify-between border-t pt-4">
               <span className="text-sm font-medium text-muted-foreground">TOTAL</span>
-              <span className="text-2xl font-bold">{formatCurrencyBRL(total)}</span>
+              <span className="text-2xl font-bold text-primary">{formatCurrencyBRL(total)}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="py-0 gap-0 rounded-2xl">
-          <SectionHeader icon={MessageSquareText} title="Observações" />
+          <SectionHeader icon={MessageSquareText} title="Observações" description="Observações gerais sobre o orçamento" />
           <CardContent className="pt-4">
             <Textarea
               rows={4}
