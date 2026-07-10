@@ -199,7 +199,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           toast.success("Orçamento salvo como rascunho para pré-visualização");
           router.refresh();
         }
-        window.open(`/orcamentos/${id}/imprimir`, "_blank", "noopener,noreferrer");
+        router.push(`/orcamentos/${id}/imprimir`);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro ao salvar orçamento para pré-visualização");
       } finally {

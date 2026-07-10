@@ -224,7 +224,7 @@ export default function OrcamentosPage() {
                     variant="ghost"
                     size="icon"
                     title="Visualizar"
-                    onClick={() => window.open(`/orcamentos/${quote.id}/imprimir`, "_blank")}
+                    onClick={() => router.push(`/orcamentos/${quote.id}/imprimir`)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -321,9 +321,7 @@ export default function OrcamentosPage() {
                         />
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            onClick={() =>
-                              window.open(`/orcamentos/${quote.id}/imprimir`, "_blank")
-                            }
+                            onClick={() => router.push(`/orcamentos/${quote.id}/imprimir`)}
                           >
                             <Eye className="mr-2 h-4 w-4" /> Visualizar
                           </DropdownMenuItem>

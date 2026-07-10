@@ -65,50 +65,47 @@ export function QuotePrintLayout({
     <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none" id={id}>
       {/* Cabeçalho */}
       <div className="border-b-2 border-black pb-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {company?.logoUrl && !logoError ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={company.logoUrl}
-                alt="Logo"
-                className="h-16 w-16 object-contain"
-                onError={() => setLogoError(true)}
-              />
-            ) : company?.logoUrl && logoError ? (
-              <div className="flex h-16 w-16 items-center justify-center rounded border border-gray-300 bg-gray-100 text-gray-400">
-                <Building2 className="h-8 w-8" />
-              </div>
-            ) : null}
-            <div>
-              <h1 className="text-lg font-bold uppercase leading-tight">
-                {company?.razaoSocial || "Empresa não selecionada"}
-              </h1>
-              {company?.nomeFantasia && (
-                <p className="text-xs text-gray-700">{company.nomeFantasia}</p>
-              )}
-              {company?.cnpj && (
-                <p className="text-xs text-gray-700">CNPJ: {company.cnpj}</p>
-              )}
-              {company?.inscricaoEstadual && (
-                <p className="text-xs text-gray-700">
-                  Inscrição Estadual: {company.inscricaoEstadual}
-                </p>
-              )}
-              {enderecoCompleto && (
-                <p className="text-xs text-gray-700">{enderecoCompleto}</p>
-              )}
-              {(telefones || company?.email) && (
-                <p className="text-xs text-gray-700">
-                  {telefones}
-                  {telefones && company?.email ? " | " : ""}
-                  {company?.email}
-                </p>
-              )}
-              {company?.site && <p className="text-xs text-gray-700">{company.site}</p>}
+        <div className="flex items-center gap-4">
+          {company?.logoUrl && !logoError ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={company.logoUrl}
+              alt="Logo"
+              className="h-24 w-24 shrink-0 object-contain"
+              onError={() => setLogoError(true)}
+            />
+          ) : company?.logoUrl && logoError ? (
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded border border-gray-300 bg-gray-100 text-gray-400">
+              <Building2 className="h-10 w-10" />
             </div>
+          ) : null}
+          <div className="flex-1 text-center">
+            <h1 className="text-lg font-bold uppercase leading-tight">
+              {company?.razaoSocial || "Empresa não selecionada"}
+            </h1>
+            {company?.nomeFantasia && (
+              <p className="text-xs italic text-gray-700">{company.nomeFantasia}</p>
+            )}
+            {(company?.cnpj || company?.inscricaoEstadual) && (
+              <p className="text-xs italic text-gray-700">
+                {company?.cnpj && `CNPJ: ${company.cnpj}`}
+                {company?.cnpj && company?.inscricaoEstadual ? " " : ""}
+                {company?.inscricaoEstadual && `INSC: ${company.inscricaoEstadual}`}
+              </p>
+            )}
+            {enderecoCompleto && (
+              <p className="text-xs italic text-gray-700">{enderecoCompleto}</p>
+            )}
+            {(telefones || company?.email) && (
+              <p className="text-xs italic text-gray-700">
+                {telefones}
+                {telefones && company?.email ? " | " : ""}
+                {company?.email}
+              </p>
+            )}
+            {company?.site && <p className="text-xs italic text-gray-700">{company.site}</p>}
           </div>
-          <div className="text-right">
+          <div className="shrink-0 text-right">
             <p className="text-2xl font-bold">Nº {quote.numero || "------"}</p>
             <p className="text-xs text-gray-700">
               Data: {formatDateBR(quote.dataEmissao)}
