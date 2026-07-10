@@ -147,7 +147,7 @@
 @media print {
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 0;
   }
 
   html,
@@ -163,6 +163,6 @@
     box-shadow: none !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 12mm !important;
   }
 }
