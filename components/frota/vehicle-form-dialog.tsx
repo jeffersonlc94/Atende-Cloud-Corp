@@ -61,6 +61,7 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { data: companies = [] } = useCompanies();
+  const defaultCompany = companies.find((c) => c.isDefault);
   const createVehicle = useCreateVehicle();
   const updateVehicle = useUpdateVehicle();
 
@@ -102,9 +103,10 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
               chassi: vehicle.chassi ?? "",
               observacoes: vehicle.observacoes ?? "",
             }
-          : emptyValues
+          : { ...emptyValues, companyId: defaultCompany?.id ?? "" }
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, vehicle, reset]);
 
   const fotoUrl = watch("fotoUrl");
@@ -159,11 +161,14 @@ export function VehicleFormDialog({ vehicle }: { vehicle?: VehicleRecord }) {
           )
         }
       />
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle>{vehicle ? "Editar veículo" : "Novo veículo"}</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Dados cadastrais, empresa responsável e situação atual do veículo
+          </p>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 pt-2 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label>Foto</Label>
             <div className="flex items-center gap-3">

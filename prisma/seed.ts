@@ -46,6 +46,7 @@ async function main() {
         telefone1: "(11) 0000-0000",
         email: "contato@minhaempresa.com.br",
         nomeResponsavel: adminName,
+        isDefault: true,
       },
     });
     console.log("Empresa emissora de exemplo criada.");

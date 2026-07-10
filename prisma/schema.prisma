@@ -49,6 +49,7 @@ model Company {
   site              String?
   logoUrl           String?
   nomeResponsavel   String?
+  isDefault         Boolean  @default(false)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -356,4 +357,23 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ==========================================================================
+// Configurações do sistema (personalização) — registro único (singleton)
+// ==========================================================================
+
+model SystemSettings {
+  id            String   @id @default("default")
+  systemName    String?
+  logoUrl       String?
+  faviconUrl    String?
+  primaryColor  String?
+  sidebarColor  String?
+  buttonColor   String?
+  accentColor   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("system_settings")
 }

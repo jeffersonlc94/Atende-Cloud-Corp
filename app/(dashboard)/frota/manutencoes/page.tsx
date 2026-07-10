@@ -2,20 +2,13 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useVehicles } from "@/hooks/use-vehicles";
 import { useMaintenances, useCreateMaintenance, useDeleteMaintenance } from "@/hooks/use-fleet";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { VehicleSelect } from "@/components/frota/vehicle-select";
 import {
   Table,
   TableBody,
@@ -28,7 +21,6 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
 export default function ManutencoesPage() {
-  const { data: vehicles = [] } = useVehicles();
   const { data: items = [], isLoading } = useMaintenances();
   const createMaintenance = useCreateMaintenance();
   const deleteMaintenance = useDeleteMaintenance();
@@ -75,23 +67,16 @@ export default function ManutencoesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Nova manutenção</CardTitle>
+          <CardDescription>Registre serviços realizados na frota</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-1">
               <Label>Veículo *</Label>
-              <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v ?? "" })}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicles.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.placa}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <VehicleSelect
+                value={form.vehicleId}
+                onChange={(v) => setForm({ ...form, vehicleId: v })}
+              />
             </div>
             <div className="space-y-1">
               <Label>Tipo *</Label>

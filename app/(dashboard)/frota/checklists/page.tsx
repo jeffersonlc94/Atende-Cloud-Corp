@@ -2,14 +2,13 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useVehicles } from "@/hooks/use-vehicles";
 import { useChecklists, useCreateChecklist, useDeleteChecklist } from "@/hooks/use-fleet";
 import {
   tipoChecklistOptions,
   checklistItemTipoOptions,
   checklistItemStatusOptions,
 } from "@/lib/validations";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -22,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
@@ -32,12 +32,12 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function ChecklistsPage() {
-  const { data: vehicles = [] } = useVehicles();
   const { data: checklists = [], isLoading } = useChecklists();
   const createChecklist = useCreateChecklist();
   const deleteChecklist = useDeleteChecklist();
 
   const [vehicleId, setVehicleId] = useState("");
+  const [km, setKm] = useState("");
   const [tipo, setTipo] = useState<(typeof tipoChecklistOptions)[number]>("Diario");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [hora, setHora] = useState("");
@@ -51,9 +51,15 @@ export default function ChecklistsPage() {
       toast.error("Selecione um veículo");
       return;
     }
+    const kmNumber = parseInt(km, 10);
+    if (!km || Number.isNaN(kmNumber) || kmNumber <= 0) {
+      toast.error("Informe o KM atual do veículo (maior que zero)");
+      return;
+    }
     try {
       await createChecklist.mutateAsync({
         vehicleId,
+        km: kmNumber,
         tipo,
         data,
         hora,
@@ -65,6 +71,7 @@ export default function ChecklistsPage() {
       });
       toast.success("Checklist registrado");
       setVehicleId("");
+      setKm("");
       setObservacoes("");
       setItemStatus(Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"])));
     } catch (err) {
@@ -82,23 +89,23 @@ export default function ChecklistsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Novo checklist</CardTitle>
+          <CardDescription>Informe o veículo e o KM atual antes de preencher os itens de inspeção</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-2 sm:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-5">
             <div className="space-y-1">
               <Label>Veículo *</Label>
-              <Select value={vehicleId} onValueChange={(v) => setVehicleId(v ?? "")}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicles.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.placa} — {v.marca} {v.modelo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <VehicleSelect value={vehicleId} onChange={setVehicleId} />
+            </div>
+            <div className="space-y-1">
+              <Label>KM Atual *</Label>
+              <Input
+                type="number"
+                min={1}
+                placeholder="Ex: 45000"
+                value={km}
+                onChange={(e) => setKm(e.target.value)}
+              />
             </div>
             <div className="space-y-1">
               <Label>Tipo</Label>
@@ -125,7 +132,7 @@ export default function ChecklistsPage() {
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {checklistItemTipoOptions.map((item) => (
               <div key={item} className="space-y-1">
                 <Label>{item}</Label>

@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mail, MailCheck, MailX, Send } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Mail, MailCheck, MailX, Send, Settings, Building2, Info, BellRing } from "lucide-react";
+import { PersonalizacaoTab } from "@/components/settings/personalizacao-tab";
+import { SobreTab } from "@/components/settings/sobre-tab";
+import { CompaniesManager } from "@/components/companies/companies-manager";
 
 type SmtpStatus = {
   configured: boolean;
@@ -23,7 +28,7 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
-export default function ConfiguracoesPage() {
+function NotificacoesTab() {
   const { data: smtp, isLoading } = useQuery({
     queryKey: ["smtp-status"],
     queryFn: () => fetchJson<SmtpStatus>("/api/config/smtp-status"),
@@ -52,96 +57,141 @@ export default function ConfiguracoesPage() {
   }
 
   return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Mail className="h-4 w-4" /> Envio de e-mails (SMTP)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4">
+        {isLoading && (
+          <p className="text-sm text-muted-foreground">Verificando configuração...</p>
+        )}
+
+        {!isLoading && smtp && (
+          <>
+            <div className="flex items-center gap-2">
+              {smtp.configured ? (
+                <Badge className="gap-1">
+                  <MailCheck className="h-3.5 w-3.5" /> Configurado
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="gap-1">
+                  <MailX className="h-3.5 w-3.5" /> Não configurado
+                </Badge>
+              )}
+            </div>
+
+            {smtp.configured && (
+              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-muted-foreground">Host</dt>
+                  <dd>{smtp.host}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Porta</dt>
+                  <dd>{smtp.port}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Remetente</dt>
+                  <dd>{smtp.from}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Conexão segura (TLS)</dt>
+                  <dd>{smtp.secure ? "Sim" : "Não"}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-muted-foreground">Destinatários das notificações de frota</dt>
+                  <dd>{smtp.recipients.length > 0 ? smtp.recipients.join(", ") : "Nenhum configurado"}</dd>
+                </div>
+              </dl>
+            )}
+
+            {!smtp.configured && (
+              <p className="text-sm text-muted-foreground">
+                Defina as variáveis SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM e
+                SMTP_SECURE no ambiente para habilitar o envio de e-mails.
+              </p>
+            )}
+          </>
+        )}
+
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-sm font-medium">Notificações da frota</p>
+          <p className="text-sm text-muted-foreground">
+            Dispara e-mails para checklists não realizados, documentos e trocas de óleo
+            vencendo/vencidos, evitando reenvio no mesmo dia.
+          </p>
+          <Button onClick={handleTest} disabled={testing}>
+            {testing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" />
+            )}
+            Testar envio de notificações
+          </Button>
+
+          {lastResult && (
+            <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs">
+              {JSON.stringify(lastResult, null, 2)}
+            </pre>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ConfiguracoesContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") || "personalizacao";
+
+  return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
         <p className="text-sm text-muted-foreground">
-          Status de integrações e rotinas do sistema
+          Personalização, empresas emissoras, notificações e informações do sistema
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Mail className="h-4 w-4" /> Envio de e-mails (SMTP)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoading && (
-            <p className="text-sm text-muted-foreground">Verificando configuração...</p>
-          )}
+      <Tabs defaultValue={initialTab}>
+        <TabsList>
+          <TabsTrigger value="personalizacao" className="gap-1.5">
+            <Settings className="h-4 w-4" /> Personalização
+          </TabsTrigger>
+          <TabsTrigger value="empresas" className="gap-1.5">
+            <Building2 className="h-4 w-4" /> Empresas Emissoras
+          </TabsTrigger>
+          <TabsTrigger value="notificacoes" className="gap-1.5">
+            <BellRing className="h-4 w-4" /> Notificações
+          </TabsTrigger>
+          <TabsTrigger value="sobre" className="gap-1.5">
+            <Info className="h-4 w-4" /> Sobre
+          </TabsTrigger>
+        </TabsList>
 
-          {!isLoading && smtp && (
-            <>
-              <div className="flex items-center gap-2">
-                {smtp.configured ? (
-                  <Badge className="gap-1">
-                    <MailCheck className="h-3.5 w-3.5" /> Configurado
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="gap-1">
-                    <MailX className="h-3.5 w-3.5" /> Não configurado
-                  </Badge>
-                )}
-              </div>
-
-              {smtp.configured && (
-                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="text-muted-foreground">Host</dt>
-                    <dd>{smtp.host}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Porta</dt>
-                    <dd>{smtp.port}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Remetente</dt>
-                    <dd>{smtp.from}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Conexão segura (TLS)</dt>
-                    <dd>{smtp.secure ? "Sim" : "Não"}</dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="text-muted-foreground">Destinatários das notificações de frota</dt>
-                    <dd>{smtp.recipients.length > 0 ? smtp.recipients.join(", ") : "Nenhum configurado"}</dd>
-                  </div>
-                </dl>
-              )}
-
-              {!smtp.configured && (
-                <p className="text-sm text-muted-foreground">
-                  Defina as variáveis SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM e
-                  SMTP_SECURE no ambiente para habilitar o envio de e-mails.
-                </p>
-              )}
-            </>
-          )}
-
-          <div className="space-y-2 border-t pt-4">
-            <p className="text-sm font-medium">Notificações da frota</p>
-            <p className="text-sm text-muted-foreground">
-              Dispara e-mails para checklists não realizados, documentos e trocas de óleo
-              vencendo/vencidos, evitando reenvio no mesmo dia.
-            </p>
-            <Button onClick={handleTest} disabled={testing}>
-              {testing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
-              )}
-              Testar envio de notificações
-            </Button>
-
-            {lastResult && (
-              <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs">
-                {JSON.stringify(lastResult, null, 2)}
-              </pre>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        <TabsContent value="personalizacao" className="pt-4">
+          <PersonalizacaoTab />
+        </TabsContent>
+        <TabsContent value="empresas" className="pt-4">
+          <CompaniesManager />
+        </TabsContent>
+        <TabsContent value="notificacoes" className="pt-4">
+          <NotificacoesTab />
+        </TabsContent>
+        <TabsContent value="sobre" className="pt-4">
+          <SobreTab />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+export default function ConfiguracoesPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-muted-foreground">Carregando...</p>}>
+      <ConfiguracoesContent />
+    </Suspense>
   );
 }

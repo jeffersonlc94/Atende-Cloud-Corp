@@ -9,9 +9,8 @@ import {
   navItems,
   orcamentosNavItems,
   frotaNavItems,
-  frotaCommonNavItems,
 } from "./nav-items";
-import { useCompanies } from "@/hooks/use-companies";
+import { useSystemSettings } from "@/hooks/use-settings";
 import { Button } from "@/components/ui/button";
 import {
   Avatar,
@@ -23,7 +22,7 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Leaf,
-  Car,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -31,6 +30,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -42,42 +43,26 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "hidden md:flex h-screen sticky top-0 flex-col border-r transition-all duration-200",
-        collapsed ? "w-16" : "w-[210px]",
-        isFrota
-          ? "border-slate-800 bg-[#0f1b2d] text-slate-300"
-          : "bg-white text-slate-700"
+        "hidden md:flex h-screen sticky top-0 flex-col border-r bg-white text-slate-700 transition-all duration-200",
+        collapsed ? "w-16" : "w-[210px]"
       )}
     >
-      {isFrota ? (
-        <FrotaBrand collapsed={collapsed} />
-      ) : (
-        <OrcamentosBrand collapsed={collapsed} />
-      )}
+      <Brand collapsed={collapsed} />
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         {isFrota ? (
-          <FrotaNav pathname={pathname} collapsed={collapsed} isAdmin={isAdmin} />
+          <FrotaNav pathname={pathname} collapsed={collapsed} />
         ) : (
           <OrcamentosNav pathname={pathname} collapsed={collapsed} isAdmin={isAdmin} />
         )}
       </nav>
 
-      <div
-        className={cn(
-          "border-t p-2",
-          isFrota ? "border-slate-800" : "border-slate-200"
-        )}
-      >
-        {!collapsed &&
-          (isFrota ? <FrotaFooter /> : <OrcamentosFooter session={session} />)}
+      <div className="border-t border-slate-200 p-2">
+        {!collapsed && <SidebarFooter session={session} />}
         <Button
           variant="ghost"
           size="icon"
-          className={cn(
-            "mt-1 w-full",
-            isFrota && "text-slate-300 hover:bg-slate-800 hover:text-white"
-          )}
+          className="mt-1 w-full"
           onClick={() => setCollapsed((c) => !c)}
           aria-label="Recolher menu"
         >
@@ -92,35 +77,29 @@ export function Sidebar() {
   );
 }
 
-function OrcamentosBrand({ collapsed }: { collapsed: boolean }) {
+function Brand({ collapsed }: { collapsed: boolean }) {
+  const { data: settings } = useSystemSettings();
+  const systemName = settings?.systemName || DEFAULT_SYSTEM_NAME;
+
   return (
     <div className="flex h-16 items-center gap-2 border-b border-slate-200 px-4">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
-        <Leaf className="h-5 w-5" />
-      </span>
-      {!collapsed && (
-        <div className="min-w-0">
-          <p className="truncate font-bold leading-tight text-slate-900">Orçamentos</p>
-          <p className="truncate text-xs leading-tight text-slate-500">
-            Sistema de Orçamentos
-          </p>
-        </div>
+      {settings?.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={settings.logoUrl}
+          alt={systemName}
+          className="h-9 w-9 shrink-0 rounded-full object-contain"
+        />
+      ) : (
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+          <Leaf className="h-5 w-5" />
+        </span>
       )}
-    </div>
-  );
-}
-
-function FrotaBrand({ collapsed }: { collapsed: boolean }) {
-  return (
-    <div className="flex h-16 items-center gap-2 border-b border-slate-800 px-4">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
-        <Car className="h-5 w-5" />
-      </span>
       {!collapsed && (
         <div className="min-w-0">
-          <p className="truncate font-bold leading-tight text-white">Frota</p>
-          <p className="truncate text-xs leading-tight text-slate-400">
-            Controle de Veículos
+          <p className="truncate font-bold leading-tight text-slate-900">{systemName}</p>
+          <p className="truncate text-xs leading-tight text-slate-500">
+            Orçamentos e Frota
           </p>
         </div>
       )}
@@ -134,7 +113,6 @@ function NavLink({
   Icon,
   active,
   collapsed,
-  dark,
   indent,
   badge,
 }: {
@@ -143,7 +121,6 @@ function NavLink({
   Icon: LucideIcon;
   active: boolean;
   collapsed: boolean;
-  dark?: boolean;
   indent?: boolean;
   badge?: string;
 }) {
@@ -154,8 +131,6 @@ function NavLink({
         indent && !collapsed && "ml-3",
         active
           ? "bg-emerald-600 text-white"
-          : dark
-          ? "text-slate-300 hover:bg-slate-800 hover:text-white"
           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
       )}
     >
@@ -257,13 +232,14 @@ function OrcamentosNav({
 
       {navItems.slice(2).map((item) => {
         if (item.adminOnly && !isAdmin) return null;
+        const itemPath = item.href.split("?")[0];
         return (
           <NavLink
             key={item.href}
             href={item.href}
             label={item.label}
             Icon={item.icon}
-            active={pathname.startsWith(item.href) && item.href !== "#"}
+            active={pathname.startsWith(itemPath) && itemPath !== "#"}
             collapsed={collapsed}
           />
         );
@@ -275,13 +251,12 @@ function OrcamentosNav({
 function FrotaNav({
   pathname,
   collapsed,
-  isAdmin,
 }: {
   pathname: string;
   collapsed: boolean;
-  isAdmin: boolean;
 }) {
   const [open, setOpen] = useState(true);
+  const isFrotaSection = pathname.startsWith("/frota");
 
   return (
     <>
@@ -289,12 +264,15 @@ function FrotaNav({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+          className={cn(
+            "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900",
+            isFrotaSection && !open && "text-slate-900"
+          )}
         >
-          <Car className="h-4 w-4 shrink-0" />
+          <Truck className="h-4 w-4 shrink-0" />
           {!collapsed && (
             <>
-              <span className="flex-1 text-left">Veículos</span>
+              <span className="flex-1 text-left">Gestão de Frota</span>
               <ChevronDown
                 className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
               />
@@ -311,7 +289,6 @@ function FrotaNav({
                 Icon={item.icon}
                 active={pathname === item.href}
                 collapsed={collapsed}
-                dark
                 indent
               />
             ))}
@@ -319,17 +296,16 @@ function FrotaNav({
         )}
       </div>
 
-      {frotaCommonNavItems.map((item) => {
-        if (item.adminOnly && !isAdmin) return null;
+      {navItems.slice(2).map((item) => {
+        const itemPath = item.href.split("?")[0];
         return (
           <NavLink
             key={item.href}
             href={item.href}
             label={item.label}
             Icon={item.icon}
-            active={pathname.startsWith(item.href)}
+            active={pathname.startsWith(itemPath) && itemPath !== "#"}
             collapsed={collapsed}
-            dark
           />
         );
       })}
@@ -337,7 +313,7 @@ function FrotaNav({
   );
 }
 
-function OrcamentosFooter({
+function SidebarFooter({
   session,
 }: {
   session: ReturnType<typeof useSession>["data"];
@@ -368,28 +344,5 @@ function OrcamentosFooter({
       </div>
       <ChevronsUpDown className="h-4 w-4 shrink-0 text-slate-400" />
     </button>
-  );
-}
-
-function FrotaFooter() {
-  const { data: companies = [] } = useCompanies();
-  const current = companies[0];
-  const nome = current?.nomeFantasia || current?.razaoSocial;
-
-  return (
-    <div className="rounded-md px-1.5 py-1.5">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-        Empresa atual
-      </p>
-      <p className="truncate text-sm font-bold text-white">
-        {nome || "Nenhuma empresa"}
-      </p>
-      <Link
-        href="/empresas"
-        className="text-xs font-medium text-emerald-500 hover:text-emerald-400 hover:underline"
-      >
-        Trocar empresa
-      </Link>
-    </div>
   );
 }

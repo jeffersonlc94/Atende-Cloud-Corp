@@ -14,13 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatDateBR } from "@/lib/format";
 
 function DocumentsForVehicle({ vehicleId, placa }: { vehicleId: string; placa: string }) {
@@ -59,9 +53,9 @@ function DocumentsForVehicle({ vehicleId, placa }: { vehicleId: string; placa: s
 
 export default function DocumentosPage() {
   const { data: vehicles = [] } = useVehicles();
-  const [vehicleId, setVehicleId] = useState<string>("all");
+  const [vehicleId, setVehicleId] = useState<string>("");
 
-  const filtered = vehicleId === "all" ? vehicles : vehicles.filter((v) => v.id === vehicleId);
+  const filtered = !vehicleId ? vehicles : vehicles.filter((v) => v.id === vehicleId);
 
   return (
     <div className="space-y-4">
@@ -72,19 +66,14 @@ export default function DocumentosPage() {
             Documentos dos veículos, com alertas de vencimento. Para adicionar um documento, acesse a página do veículo.
           </p>
         </div>
-        <Select value={vehicleId} onValueChange={(v) => setVehicleId(v ?? "")}>
-          <SelectTrigger className="w-56">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os veículos</SelectItem>
-            {vehicles.map((v) => (
-              <SelectItem key={v.id} value={v.id}>
-                {v.placa}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <VehicleSelect
+          value={vehicleId}
+          onChange={setVehicleId}
+          placeholder="Todos os veículos"
+          allowEmpty
+          emptyLabel="Todos os veículos"
+          className="sm:w-72"
+        />
       </div>
 
       <Card>

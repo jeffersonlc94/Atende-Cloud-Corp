@@ -39,9 +39,22 @@ export const companySchema = z.object({
   site: z.string().optional().default(""),
   logoUrl: z.string().optional().default(""),
   nomeResponsavel: z.string().optional().default(""),
+  isDefault: z.boolean().optional().default(false),
 });
 
 export type CompanyFormValues = z.input<typeof companySchema>;
+
+export const systemSettingsSchema = z.object({
+  systemName: z.string().optional().default(""),
+  logoUrl: z.string().optional().default(""),
+  faviconUrl: z.string().optional().default(""),
+  primaryColor: z.string().optional().default(""),
+  sidebarColor: z.string().optional().default(""),
+  buttonColor: z.string().optional().default(""),
+  accentColor: z.string().optional().default(""),
+});
+
+export type SystemSettingsFormValues = z.input<typeof systemSettingsSchema>;
 
 // ---------------------------------------------------------------------------
 // Gestão de Frota
@@ -162,11 +175,11 @@ export const checklistItemInputSchema = z.object({
 });
 
 export const checklistSchema = z.object({
-  vehicleId: z.string().min(1),
+  vehicleId: z.string().min(1, "Selecione o veículo"),
   tipo: z.enum(tipoChecklistOptions).default("Diario"),
   data: z.string().min(1, "Informe a data"),
   hora: z.string().optional().default(""),
-  km: z.number().int().nonnegative().optional(),
+  km: z.number().int().min(1, "Informe o KM atual"),
   observacoes: z.string().optional().default(""),
   itens: z.array(checklistItemInputSchema).min(1, "Adicione ao menos um item"),
 });

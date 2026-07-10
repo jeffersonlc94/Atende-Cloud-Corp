@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash2 } from "lucide-react";
+import { Car, Trash2 } from "lucide-react";
 
 export default function VeiculosPage() {
   const { data: session } = useSession();
@@ -67,6 +67,7 @@ export default function VeiculosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-14" />
                   <TableHead>Placa</TableHead>
                   <TableHead>Veículo</TableHead>
                   <TableHead>Empresa</TableHead>
@@ -78,20 +79,34 @@ export default function VeiculosPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && vehicles.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                       Nenhum veículo cadastrado
                     </TableCell>
                   </TableRow>
                 )}
                 {vehicles.map((v) => (
                   <TableRow key={v.id}>
+                    <TableCell>
+                      {v.fotoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={v.fotoUrl}
+                          alt={v.placa}
+                          className="h-10 w-10 rounded-full border object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border bg-muted text-muted-foreground">
+                          <Car className="h-5 w-5" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">
                       <Link href={`/frota/veiculos/${v.id}`} className="hover:underline">
                         {v.placa}

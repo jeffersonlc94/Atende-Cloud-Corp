@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/sheet";
 import { navItems } from "./nav-items";
 import { cn } from "@/lib/utils";
+import { useSystemSettings } from "@/hooks/use-settings";
 
 export function MobileNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { data: settings } = useSystemSettings();
   const isAdmin = session?.user?.role === "ADMIN";
   const [open, setOpen] = useState(false);
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin);
@@ -35,7 +37,7 @@ export function MobileNav() {
       <SheetContent side="left" className="w-64 p-0">
         <SheetHeader className="border-b h-14 flex-row items-center px-4">
           <Building className="h-5 w-5 text-primary" />
-          <SheetTitle>Atende Cloud Corp</SheetTitle>
+          <SheetTitle>{settings?.systemName || "Atende Cloud Corp"}</SheetTitle>
         </SheetHeader>
         <nav className="space-y-1 p-2">
           {visibleItems.map((item) => {

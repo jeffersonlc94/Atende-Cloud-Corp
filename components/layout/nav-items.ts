@@ -47,7 +47,7 @@ export const navItems: NavItem[] = [
   },
   {
     label: "Empresas Emissoras",
-    href: "/empresas",
+    href: "/configuracoes?tab=empresas",
     icon: Building2,
   },
   {
@@ -84,11 +84,4 @@ export const frotaNavItems: (NavItem & { label: string; href: string })[] = [
   { label: "Abastecimentos", href: "/frota/abastecimentos", icon: Fuel },
   { label: "Agenda", href: "/frota/agenda", icon: CalendarDays },
   { label: "Relatórios", href: "/frota/relatorios", icon: BarChart3 },
-];
-
-// Itens comuns exibidos abaixo do grupo de veículos na sidebar do módulo de Frota.
-export const frotaCommonNavItems: NavItem[] = [
-  { label: "Empresas", href: "/empresas", icon: Building2 },
-  { label: "Usuários", href: "/usuarios", icon: Users, adminOnly: true },
-  { label: "Configurações", href: "/configuracoes", icon: Settings },
 ];

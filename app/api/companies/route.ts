@@ -26,7 +26,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const company = await prisma.company.create({ data: parsed.data });
+  const company = await prisma.$transaction(async (tx) => {
+    if (parsed.data.isDefault) {
+      await tx.company.updateMany({ where: { isDefault: true }, data: { isDefault: false } });
+    }
+    return tx.company.create({ data: parsed.data });
+  });
 
   await registerAudit({
     userId: session.user.id,

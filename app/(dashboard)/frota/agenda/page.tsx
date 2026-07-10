@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useVehicles } from "@/hooks/use-vehicles";
 import { useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-fleet";
 import { tipoEventoAgendaOptions } from "@/lib/validations";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,11 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
 export default function AgendaPage() {
-  const { data: vehicles = [] } = useVehicles();
   const { data: events = [], isLoading } = useCalendarEvents({ futuras: true });
   const createEvent = useCreateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
@@ -59,9 +58,10 @@ export default function AgendaPage() {
       <Card>
         <CardHeader>
           <CardTitle>Novo evento</CardTitle>
+          <CardDescription>Adicione compromissos e lembretes relacionados à frota</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <Label>Título *</Label>
               <Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
@@ -87,18 +87,13 @@ export default function AgendaPage() {
             </div>
             <div className="space-y-1">
               <Label>Veículo (opcional)</Label>
-              <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v ?? "" })}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Nenhum" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicles.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.placa}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <VehicleSelect
+                value={form.vehicleId}
+                onChange={(v) => setForm({ ...form, vehicleId: v })}
+                placeholder="Nenhum"
+                allowEmpty
+                emptyLabel="Nenhum veículo"
+              />
             </div>
           </div>
           <div className="space-y-1">

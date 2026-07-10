@@ -4,19 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useVehicles } from "@/hooks/use-vehicles";
 import { useOilChanges, useCreateOilChange, useDeleteOilChange } from "@/hooks/use-fleet";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { Trash2 } from "lucide-react";
 
@@ -107,23 +101,16 @@ export default function TrocaOleoPage() {
       <Card>
         <CardHeader>
           <CardTitle>Nova troca de óleo</CardTitle>
+          <CardDescription>Registre a troca e a quilometragem prevista para a próxima</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
             <div className="space-y-1">
               <Label>Veículo *</Label>
-              <Select value={form.vehicleId} onValueChange={(v) => setForm({ ...form, vehicleId: v ?? "" })}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {vehicles.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.placa}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <VehicleSelect
+                value={form.vehicleId}
+                onChange={(v) => setForm({ ...form, vehicleId: v })}
+              />
             </div>
             <div className="space-y-1">
               <Label>Data</Label>

@@ -33,22 +33,45 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
-  const item = await prisma.checklist.create({
-    data: {
-      vehicleId: data.vehicleId,
-      tipo: data.tipo,
-      data: new Date(data.data),
-      hora: data.hora || null,
-      km: data.km ?? null,
-      userId: session.user.id,
-      observacoes: data.observacoes || null,
-      itens: {
-        createMany: {
-          data: data.itens.map((i) => ({ item: i.item, status: i.status })),
+  const dataChecklist = new Date(data.data);
+
+  const item = await prisma.$transaction(async (tx) => {
+    const checklist = await tx.checklist.create({
+      data: {
+        vehicleId: data.vehicleId,
+        tipo: data.tipo,
+        data: dataChecklist,
+        hora: data.hora || null,
+        km: data.km,
+        userId: session.user.id,
+        observacoes: data.observacoes || null,
+        itens: {
+          createMany: {
+            data: data.itens.map((i) => ({ item: i.item, status: i.status })),
+          },
         },
       },
-    },
-    include: { itens: true },
+      include: { itens: true },
+    });
+
+    // Registra o histórico de quilometragem a partir do KM informado no checklist.
+    await tx.mileageLog.create({
+      data: {
+        vehicleId: data.vehicleId,
+        data: dataChecklist,
+        km: data.km,
+        userId: session.user.id,
+      },
+    });
+
+    // Atualiza o KM atual do veículo apenas se o novo valor for maior (evita retroceder
+    // o campo denormalizado usado pela barra de progresso da próxima troca de óleo).
+    await tx.vehicle.updateMany({
+      where: { id: data.vehicleId, kmAtual: { lt: data.km } },
+      data: { kmAtual: data.km },
+    });
+
+    return checklist;
   });
 
   await registerAudit({

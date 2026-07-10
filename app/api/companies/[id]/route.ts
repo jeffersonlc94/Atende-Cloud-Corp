@@ -33,9 +33,14 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const company = await prisma.company.update({
-    where: { id },
-    data: parsed.data,
+  const company = await prisma.$transaction(async (tx) => {
+    if (parsed.data.isDefault) {
+      await tx.company.updateMany({
+        where: { isDefault: true, id: { not: id } },
+        data: { isDefault: false },
+      });
+    }
+    return tx.company.update({ where: { id }, data: parsed.data });
   });
 
   await registerAudit({

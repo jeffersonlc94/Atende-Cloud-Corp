@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Loader2, Plus, Upload } from "lucide-react";
+import { Loader2, Plus, Upload, Star } from "lucide-react";
 
 const emptyValues: CompanyFormValues = {
   razaoSocial: "",
@@ -38,6 +39,7 @@ const emptyValues: CompanyFormValues = {
   site: "",
   logoUrl: "",
   nomeResponsavel: "",
+  isDefault: false,
 };
 
 export function CompanyFormDialog({ company }: { company?: Company }) {
@@ -115,11 +117,14 @@ export function CompanyFormDialog({ company }: { company?: Company }) {
           )
         }
       />
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle>{company ? "Editar empresa" : "Nova empresa emissora"}</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Dados usados na emissão de orçamentos e como empresa responsável na Frota
+          </p>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 sm:grid-cols-2">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-5 pt-2 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label>Logo</Label>
             <div className="flex items-center gap-3">
@@ -202,6 +207,18 @@ export function CompanyFormDialog({ company }: { company?: Company }) {
           <div className="space-y-2">
             <Label>Site</Label>
             <Input {...register("site")} />
+          </div>
+
+          <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3 sm:col-span-2">
+            <Checkbox
+              id="isDefault"
+              checked={watch("isDefault")}
+              onCheckedChange={(checked) => setValue("isDefault", checked === true)}
+            />
+            <Label htmlFor="isDefault" className="flex items-center gap-1.5 font-normal">
+              <Star className="h-3.5 w-3.5 text-amber-500" />
+              Definir como empresa padrão (pré-selecionada em novos orçamentos e veículos)
+            </Label>
           </div>
 
           <DialogFooter className="sm:col-span-2">
