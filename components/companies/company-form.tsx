@@ -187,7 +187,7 @@ export function CompanyForm({ initialData }: { initialData?: Company }) {
       <div className="space-y-6">
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={Building2} title="Dados da Empresa" description="Informações usadas na emissão de orçamentos e como empresa responsável na Frota" />
-          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <FieldLabel icon={Building2}>Logo</FieldLabel>
               <div className="flex items-center gap-3">
@@ -244,7 +244,7 @@ export function CompanyForm({ initialData }: { initialData?: Company }) {
 
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={MapPin} title="Endereço e Contato" description="Endereço, telefones e canais de contato" />
-          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <FieldLabel icon={MapPin}>Endereço</FieldLabel>
               <Input {...register("endereco")} />

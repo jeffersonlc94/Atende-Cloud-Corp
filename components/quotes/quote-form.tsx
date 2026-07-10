@@ -248,7 +248,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
       <div className="space-y-6">
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ClipboardList} title="Dados do Orçamento" description="Informações gerais do orçamento" />
-          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel icon={Building2}>Empresa Emissora *</FieldLabel>
               <Select
@@ -328,7 +328,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
 
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ListOrdered} title="Itens do Orçamento" description="Lista de produtos ou serviços" />
-          <CardContent className="space-y-4 pt-4">
+          <CardContent className="space-y-4 pt-4 pb-5">
             <QuoteItemsTable control={control} register={register} watchItems={itens} />
             {errors.itens && !Array.isArray(errors.itens) && (
               <p className="text-sm text-destructive">{errors.itens.message}</p>
@@ -342,7 +342,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
 
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={MessageSquareText} title="Observações" description="Observações gerais sobre o orçamento" />
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-5">
             <Textarea
               rows={4}
               placeholder="Observações gerais sobre o orçamento..."

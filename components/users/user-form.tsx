@@ -150,7 +150,7 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
       <div className="space-y-6">
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={User} title="Dados do Usuário" description="Informações de acesso ao sistema" />
-          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel icon={User}>Nome *</FieldLabel>
               <Input {...register("name")} />

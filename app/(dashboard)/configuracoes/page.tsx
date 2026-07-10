@@ -62,7 +62,7 @@ function NotificacoesTab() {
           <Mail className="h-4 w-4" /> Envio de e-mails (SMTP)
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="space-y-4 pt-4 pb-5">
         {isLoading && (
           <p className="text-sm text-muted-foreground">Verificando configuração...</p>
         )}

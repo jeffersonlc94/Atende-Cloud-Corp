@@ -96,7 +96,7 @@ export function PersonalizacaoTab() {
             {DEFAULT_SYSTEM_NAME}&quot;
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-5 pt-4 sm:grid-cols-2">
+        <CardContent className="grid gap-5 pt-4 pb-5 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label>Nome do sistema</Label>
             <Input
@@ -178,7 +178,7 @@ export function PersonalizacaoTab() {
             destaques) assim que salvas.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-5 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+        <CardContent className="grid gap-5 pt-4 pb-5 sm:grid-cols-2 lg:grid-cols-4">
           {COLOR_FIELDS.map((field) => (
             <div key={field.key} className="space-y-2">
               <Label>{field.label}</Label>

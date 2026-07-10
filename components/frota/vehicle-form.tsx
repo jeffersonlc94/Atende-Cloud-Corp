@@ -214,7 +214,7 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
       <div className="space-y-6">
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={Car} title="Dados do Veículo" description="Informações cadastrais do veículo" />
-          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <FieldLabel icon={ImageIcon}>Foto</FieldLabel>
               <div className="flex items-center gap-3">
@@ -313,7 +313,7 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
 
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={Building2} title="Empresa e Situação" description="Empresa responsável e situação atual do veículo" />
-          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
             <div className="space-y-2">
               <FieldLabel icon={Building2}>Empresa responsável *</FieldLabel>
               <Controller
@@ -374,7 +374,7 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
 
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={MessageSquareText} title="Observações" description="Observações gerais sobre o veículo" />
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 pb-5">
             <Textarea rows={4} placeholder="Observações gerais sobre o veículo..." {...register("observacoes")} />
           </CardContent>
         </Card>
