@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
     include: {
       company: { select: { id: true, razaoSocial: true, nomeFantasia: true } },
       _count: { select: { checklists: true, documentos: true, maintenances: true } },
+      oilChanges: { orderBy: { data: "desc" }, take: 1, select: { km: true, kmProximaTroca: true } },
+      mileageLogs: { orderBy: { data: "desc" }, take: 1, select: { data: true, km: true } },
     },
     orderBy: { createdAt: "desc" },
   });

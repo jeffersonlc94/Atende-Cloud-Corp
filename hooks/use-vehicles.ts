@@ -28,6 +28,8 @@ export type VehicleRecord = {
   updatedAt: string;
   company: { id: string; razaoSocial: string; nomeFantasia: string | null };
   _count?: { checklists: number; documentos: number; maintenances: number };
+  oilChanges?: { km: number; kmProximaTroca: number | null }[];
+  mileageLogs?: { data: string; km: number }[];
 };
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
