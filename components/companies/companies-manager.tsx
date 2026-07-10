@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Star } from "lucide-react";
+import { Star, Plus } from "lucide-react";
 import { useCompanies, useDeleteCompany } from "@/hooks/use-companies";
 import { canDeleteRecords } from "@/lib/permissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { CompanyFormDialog } from "@/components/companies/company-form-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
 /**
@@ -53,7 +53,9 @@ export function CompaniesManager() {
             que ela seja pré-selecionada automaticamente em novos cadastros.
           </p>
         </div>
-        <CompanyFormDialog />
+        <Link href="/configuracoes/empresas/novo" className={buttonVariants()}>
+          <Plus className="mr-2 h-4 w-4" /> Nova Empresa
+        </Link>
       </div>
 
       <Card className="rounded-2xl">
@@ -105,7 +107,12 @@ export function CompaniesManager() {
                       {c.cidade ? `${c.cidade}${c.estado ? "/" + c.estado : ""}` : "—"}
                     </TableCell>
                     <TableCell className="flex justify-end gap-1">
-                      <CompanyFormDialog company={c} />
+                      <Link
+                        href={`/configuracoes/empresas/${c.id}/editar`}
+                        className={buttonVariants({ variant: "ghost", size: "sm" })}
+                      >
+                        Editar
+                      </Link>
                       {canDelete && (
                         <Button
                           variant="ghost"

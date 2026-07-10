@@ -6,10 +6,9 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useVehicles, useDeleteVehicle } from "@/hooks/use-vehicles";
 import { canDeleteRecords } from "@/lib/permissions";
-import { VehicleFormDialog } from "@/components/frota/vehicle-form-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -19,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Car, Trash2 } from "lucide-react";
+import { Car, Plus, Trash2 } from "lucide-react";
 
 export default function VeiculosPage() {
   const { data: session } = useSession();
@@ -47,7 +46,9 @@ export default function VeiculosPage() {
           <h1 className="text-2xl font-bold tracking-tight">Veículos</h1>
           <p className="text-sm text-muted-foreground">Cadastro de veículos da frota</p>
         </div>
-        <VehicleFormDialog />
+        <Link href="/frota/veiculos/novo" className={buttonVariants()}>
+          <Plus className="mr-2 h-4 w-4" /> Novo Veículo
+        </Link>
       </div>
 
       <Card>
@@ -131,7 +132,12 @@ export default function VeiculosPage() {
                     </TableCell>
                     <TableCell>{v.kmAtual.toLocaleString("pt-BR")} km</TableCell>
                     <TableCell className="flex justify-end gap-1">
-                      <VehicleFormDialog vehicle={v} />
+                      <Link
+                        href={`/frota/veiculos/${v.id}/editar`}
+                        className={buttonVariants({ variant: "ghost", size: "sm" })}
+                      >
+                        Editar
+                      </Link>
                       {canDelete && (
                         <Button variant="ghost" size="icon" onClick={() => setPendingDelete(v.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />

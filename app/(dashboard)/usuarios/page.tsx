@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useUsers, useDeleteUser } from "@/hooks/use-users";
@@ -15,9 +16,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { UserFormDialog } from "@/components/users/user-form-dialog";
-import { Trash2, ShieldAlert } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Plus, Trash2, ShieldAlert } from "lucide-react";
 
 export default function UsuariosPage() {
   const { data: session } = useSession();
@@ -57,7 +57,9 @@ export default function UsuariosPage() {
             Gerenciamento de acesso ao sistema (somente administradores)
           </p>
         </div>
-        <UserFormDialog />
+        <Link href="/usuarios/novo" className={buttonVariants()}>
+          <Plus className="mr-2 h-4 w-4" /> Novo Usuário
+        </Link>
       </div>
 
       <Card>
@@ -97,7 +99,12 @@ export default function UsuariosPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="flex justify-end gap-1">
-                      <UserFormDialog user={u} />
+                      <Link
+                        href={`/usuarios/${u.id}/editar`}
+                        className={buttonVariants({ variant: "ghost", size: "sm" })}
+                      >
+                        Editar
+                      </Link>
                       <Button variant="ghost" size="icon" onClick={() => setPendingDelete(u.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

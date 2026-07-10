@@ -17,8 +17,8 @@ import {
 import { useState, type ReactNode } from "react";
 import type { DateRange } from "react-day-picker";
 import { useFleetDashboard } from "@/hooks/use-fleet";
-import { VehicleFormDialog } from "@/components/frota/vehicle-form-dialog";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard, type StatCardAccent } from "@/components/shared/stat-card";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -50,6 +50,7 @@ import {
   Car,
   Eye,
   MoreVertical,
+  Plus,
 } from "lucide-react";
 
 const kmChartConfig = {
@@ -167,7 +168,9 @@ export default function FrotaDashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <DateRangePicker value={range} onChange={setRange} />
-          <VehicleFormDialog />
+          <Link href="/frota/veiculos/novo" className={buttonVariants()}>
+            <Plus className="mr-2 h-4 w-4" /> Novo Veículo
+          </Link>
         </div>
       </div>
 

@@ -31,6 +31,20 @@ export function useUsers() {
   });
 }
 
+/**
+ * Não há endpoint GET /api/users/:id — reaproveita a listagem já
+ * cacheada pelo React Query para obter os dados de um usuário específico
+ * (usado na página de edição).
+ */
+export function useUser(id?: string) {
+  const query = useUsers();
+  return {
+    ...query,
+    data: id ? query.data?.find((u) => u.id === id) : undefined,
+    isLoading: query.isLoading,
+  };
+}
+
 export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({
