@@ -30,6 +30,7 @@ model User {
   avatarUrl           String?
   canAccessOrcamentos Boolean  @default(true)
   canAccessFrota      Boolean  @default(true)
+  hidden              Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 

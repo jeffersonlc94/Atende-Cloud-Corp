@@ -18,6 +18,11 @@ async function main() {
         email: adminEmail,
         passwordHash,
         role: "ADMIN",
+        // Oculto por padrão na listagem de Usuários — é um acesso de
+        // emergência criado automaticamente pelo seed, não um usuário do
+        // dia a dia. O admin pode desmarcar essa opção editando o usuário
+        // se quiser exibi-lo normalmente.
+        hidden: true,
       },
     });
     console.log(`Usuário administrador criado: ${adminEmail}`);

@@ -14,7 +14,8 @@ export async function GET() {
   }
 
   const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, avatarUrl: true, createdAt: true, updatedAt: true },
+    where: { hidden: false },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
     orderBy: { name: "asc" },
   });
 
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       canAccessOrcamentos: data.canAccessOrcamentos ?? true,
       canAccessFrota: data.canAccessFrota ?? true,
     },
-    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, avatarUrl: true, createdAt: true, updatedAt: true },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
   });
 
   await registerAudit({
