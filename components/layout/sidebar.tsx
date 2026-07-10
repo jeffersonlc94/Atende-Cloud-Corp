@@ -48,7 +48,8 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           onNavigate={onNavigate}
           isActive={(item) =>
             item.href === "/orcamentos"
-              ? pathname === "/orcamentos" || /^\/orcamentos\/[^/]+$/.test(pathname)
+              ? pathname === "/orcamentos" ||
+                (/^\/orcamentos\/[^/]+$/.test(pathname) && pathname !== "/orcamentos/novo")
               : pathname === item.href
           }
         />
