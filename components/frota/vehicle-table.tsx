@@ -116,7 +116,7 @@ export function VehicleTable({
                     <img
                       src={v.fotoUrl}
                       alt={v.placa}
-                      className="h-9 w-9 rounded-md border object-cover"
+                      className="h-9 w-9 rounded-md border bg-muted object-contain p-0.5"
                     />
                   ) : (
                     <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-muted text-muted-foreground">
