@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
@@ -42,6 +43,7 @@ export function Header() {
 
   const alertCount = alerts.length;
   const isFrota = pathname?.startsWith("/frota");
+  const [notifOpen, setNotifOpen] = useState(false);
 
   function handleSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -78,7 +80,7 @@ export function Header() {
           <HelpCircle className="h-5 w-5" />
         </Link>
 
-        <Popover>
+        <Popover open={notifOpen} onOpenChange={setNotifOpen}>
           <PopoverTrigger
             render={
               <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
@@ -99,19 +101,38 @@ export function Header() {
                   Nenhuma notificação no momento.
                 </p>
               )}
-              {alerts.slice(0, 8).map((a) => (
-                <div key={a.id} className="flex items-start gap-2 rounded-md px-1 py-1.5 text-sm hover:bg-muted">
-                  <AlertTriangle
-                    className={`mt-0.5 h-4 w-4 shrink-0 ${
-                      a.severidade === "critico" ? "text-red-600" : "text-amber-600"
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{a.titulo}</p>
-                    <p className="truncate text-xs text-muted-foreground">{a.descricao}</p>
+              {alerts.slice(0, 8).map((a) => {
+                const content = (
+                  <>
+                    <AlertTriangle
+                      className={`mt-0.5 h-4 w-4 shrink-0 ${
+                        a.severidade === "critico" ? "text-red-600" : "text-amber-600"
+                      }`}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{a.titulo}</p>
+                      <p className="truncate text-xs text-muted-foreground">{a.descricao}</p>
+                    </div>
+                  </>
+                );
+                return a.vehicleId ? (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => {
+                      setNotifOpen(false);
+                      router.push(`/frota/veiculos/${a.vehicleId}`);
+                    }}
+                    className="flex w-full items-start gap-2 rounded-md px-1 py-1.5 text-left text-sm hover:bg-muted"
+                  >
+                    {content}
+                  </button>
+                ) : (
+                  <div key={a.id} className="flex items-start gap-2 rounded-md px-1 py-1.5 text-sm">
+                    {content}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </PopoverContent>
         </Popover>
