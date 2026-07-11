@@ -330,7 +330,7 @@ export default function DocumentosPage() {
       ) : (
         <Card>
           <CardContent className="p-0">
-            <div className="overflow-x-auto rounded-xl border">
+            <div className="overflow-hidden rounded-xl border">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
