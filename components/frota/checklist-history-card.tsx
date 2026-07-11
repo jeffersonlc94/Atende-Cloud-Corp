@@ -4,7 +4,7 @@ import { Eye, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { ChecklistRecord } from "@/hooks/use-fleet";
-import { checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
+import { checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels, statusBorderClasses } from "@/components/frota/checklist-item-status";
 import { checklistItemTipoLabels } from "@/lib/validations";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export function ChecklistHistoryCard({
   const monthYear = `${mesesAbrev[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 
   return (
-    <Card className="shadow-sm">
+    <Card className={cn("border-2 shadow-sm", statusBorderClasses[checklist.statusGeral])}>
       <CardContent className="flex flex-wrap items-center gap-4 p-4">
         <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-muted">
           <span className="text-lg font-bold leading-none">{day}</span>
@@ -36,8 +36,12 @@ export function ChecklistHistoryCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="font-medium leading-tight">
+          <p className="flex flex-wrap items-center gap-2 font-medium leading-tight">
             {checklist.km ? `${checklist.km.toLocaleString("pt-BR")} km` : "KM não informado"} — Checklist {checklist.tipo}
+            <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
+              <span className={cn("h-1.5 w-1.5 rounded-full", statusDotClasses[checklist.statusGeral])} />
+              {statusLabels[checklist.statusGeral] ?? checklist.statusGeral}
+            </span>
           </p>
           <p className="text-xs text-muted-foreground">
             Por: {checklist.user?.name ?? "—"} {checklist.hora ? `• ${checklist.hora}` : ""}

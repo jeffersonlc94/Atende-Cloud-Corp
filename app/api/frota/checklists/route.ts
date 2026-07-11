@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         hora: data.hora || null,
         km: data.km,
         userId: session.user.id,
+        statusGeral: data.statusGeral,
         observacoes: data.observacoes || null,
         fotos: data.fotos ?? [],
         itens: {

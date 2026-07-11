@@ -30,10 +30,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { VehicleSelect, formatVehicleLabel } from "@/components/frota/vehicle-select";
-import { ChecklistItemStatusCard, checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
+import { ChecklistItemStatusCard, checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels, statusBorderClasses } from "@/components/frota/checklist-item-status";
 import { ChecklistHistoryCard } from "@/components/frota/checklist-history-card";
 import { formatDateBR } from "@/lib/format";
-import { List, CalendarDays, Clock, Camera, Save, X, ImageOff } from "lucide-react";
+import { List, CalendarDays, Clock, Camera, Save, X, ImageOff, ShieldAlert } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -63,6 +63,7 @@ export default function ChecklistsPage() {
   const [tipo, setTipo] = useState<(typeof tipoChecklistOptions)[number]>("Diario");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [hora, setHora] = useState("");
+  const [statusGeral, setStatusGeral] = useState<(typeof checklistItemStatusOptions)[number]>("OK");
   const [observacoes, setObservacoes] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -85,6 +86,7 @@ export default function ChecklistsPage() {
     setTipo("Diario");
     setData(new Date().toISOString().slice(0, 10));
     setHora("");
+    setStatusGeral("OK");
     setObservacoes("");
     setFotos([]);
     setItemStatus(Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"])));
@@ -112,6 +114,7 @@ export default function ChecklistsPage() {
         tipo,
         data,
         hora,
+        statusGeral,
         observacoes,
         fotos,
         itens: checklistItemTipoOptions.map((item) => ({
@@ -234,6 +237,41 @@ export default function ChecklistsPage() {
                 statusOptions={checklistItemStatusOptions}
               />
             ))}
+          </div>
+
+          <div
+            className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 bg-card p-3 ${statusBorderClasses[statusGeral]}`}
+          >
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-semibold leading-tight">Status geral do checklist</p>
+                <p className="text-xs text-muted-foreground">
+                  Use quando houver algo fora dos itens fixos (ex.: para-brisa quebrado), registrando o
+                  detalhe em Observações.
+                </p>
+              </div>
+            </div>
+            <Select value={statusGeral} onValueChange={(v) => setStatusGeral(v as typeof statusGeral)}>
+              <SelectTrigger className="h-9 w-48">
+                <SelectValue>
+                  <span className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${statusDotClasses[statusGeral]}`} />
+                    {statusLabels[statusGeral]}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {checklistItemStatusOptions.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    <span className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${statusDotClasses[s]}`} />
+                      {statusLabels[s]}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -390,6 +428,11 @@ export default function ChecklistsPage() {
                 </p>
                 <p>
                   <span className="font-medium">Por:</span> {viewing.user?.name ?? "—"}
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <span className="font-medium">Status geral:</span>
+                  <span className={`h-2 w-2 rounded-full ${statusDotClasses[viewing.statusGeral]}`} />
+                  {statusLabels[viewing.statusGeral] ?? viewing.statusGeral}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {viewing.itens.map((i) => {

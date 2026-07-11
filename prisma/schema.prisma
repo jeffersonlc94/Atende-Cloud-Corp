@@ -307,18 +307,19 @@ model Maintenance {
 }
 
 model Checklist {
-  id          String        @id @default(cuid())
+  id          String              @id @default(cuid())
   vehicleId   String
-  vehicle     Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  tipo        TipoChecklist @default(Diario)
-  data        DateTime      @default(now())
+  vehicle     Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  tipo        TipoChecklist       @default(Diario)
+  data        DateTime            @default(now())
   hora        String?
   km          Int?
   userId      String?
-  user        User?         @relation(fields: [userId], references: [id])
+  user        User?               @relation(fields: [userId], references: [id])
+  statusGeral ChecklistItemStatus @default(OK)
   observacoes String?
-  fotos       String[]      @default([])
-  createdAt   DateTime      @default(now())
+  fotos       String[]            @default([])
+  createdAt   DateTime            @default(now())
 
   itens ChecklistItem[]
 

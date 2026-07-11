@@ -189,6 +189,7 @@ export type ChecklistRecord = {
   data: string;
   hora: string | null;
   km: number | null;
+  statusGeral: string;
   observacoes: string | null;
   fotos: string[];
   vehicle: { id: string; placa: string; marca: string; modelo: string };

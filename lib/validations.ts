@@ -266,6 +266,7 @@ export const checklistSchema = z.object({
   data: z.string().min(1, "Informe a data"),
   hora: z.string().optional().default(""),
   km: z.number().int().min(1, "Informe o KM atual"),
+  statusGeral: z.enum(checklistItemStatusOptions).default("OK"),
   observacoes: z.string().optional().default(""),
   fotos: z.array(z.string()).optional().default([]),
   itens: z.array(checklistItemInputSchema).min(1, "Adicione ao menos um item"),
