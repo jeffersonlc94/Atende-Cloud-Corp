@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useVehicles } from "@/hooks/use-vehicles";
 import {
@@ -49,6 +49,9 @@ import {
   List as ListIcon,
   PackageOpen,
   Upload,
+  Eye,
+  Download,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +67,62 @@ function getDocStatus(doc: Pick<VehicleDocumentWithVehicle, "dataVencimento">) {
     return { label: "Vencendo", variant: "outline" as const };
   }
   return { label: "OK", variant: "secondary" as const };
+}
+
+function DocumentPreviewDialog({
+  doc,
+  open,
+  onOpenChange,
+}: {
+  doc: VehicleDocumentWithVehicle | null;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  function handlePrint() {
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    win.focus();
+    win.print();
+  }
+
+  if (!doc?.arquivoUrl) return null;
+  const url = doc.arquivoUrl;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>
+            {doc.tipo} — {doc.vehicle.placa}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="h-[70vh] w-full overflow-hidden rounded-md border bg-muted">
+          <iframe ref={iframeRef} src={url} title={doc.tipo} className="h-full w-full bg-white" />
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <a
+            href={url}
+            download
+            className={buttonVariants({
+              variant: "outline",
+              className: "text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-500/10",
+            })}
+          >
+            <Download className="mr-2 h-4 w-4" /> Baixar
+          </a>
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            className="text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-500/10"
+          >
+            <Printer className="mr-2 h-4 w-4" /> Imprimir
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function NovoDocumentoDialog({
@@ -193,10 +252,12 @@ function NovoDocumentoDialog({
 
 function DocumentCard({
   doc,
+  onView,
   onEdit,
   onDelete,
 }: {
   doc: VehicleDocumentWithVehicle;
+  onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -204,7 +265,7 @@ function DocumentCard({
   return (
     <Card className="flex flex-col overflow-hidden transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardContent className="flex flex-1 flex-col gap-3">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
               <FileText className="h-5 w-5" />
@@ -216,7 +277,7 @@ function DocumentCard({
               </p>
             </div>
           </div>
-          <Badge variant={status.variant} className="shrink-0">
+          <Badge variant={status.variant} className="shrink-0 whitespace-nowrap">
             {status.label}
           </Badge>
         </div>
@@ -233,20 +294,17 @@ function DocumentCard({
         </div>
       </CardContent>
 
-      <div className="flex items-center justify-end gap-1 border-t p-3 pt-2">
+      <div className="flex flex-wrap items-center justify-end gap-1 border-t p-3 pt-2">
         {doc.arquivoUrl && (
-          <a
-            href={doc.arquivoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonVariants({
-              variant: "ghost",
-              size: "sm",
-              className: "text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-500/10",
-            })}
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Visualizar"
+            className="text-sky-600 hover:bg-sky-50 hover:text-sky-700 dark:hover:bg-sky-500/10"
+            onClick={onView}
           >
-            Ver arquivo
-          </a>
+            <Eye className="mr-1 h-4 w-4" /> Visualizar
+          </Button>
         )}
         <Button
           variant="ghost"
@@ -278,6 +336,7 @@ export default function DocumentosPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [newDocOpen, setNewDocOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<VehicleDocumentWithVehicle | null>(null);
+  const [previewingDoc, setPreviewingDoc] = useState<VehicleDocumentWithVehicle | null>(null);
   const [pendingDelete, setPendingDelete] = useState<VehicleDocumentWithVehicle | null>(null);
   const deleteDoc = useDeleteVehicleDocument(pendingDelete?.vehicle.id ?? "");
 
@@ -371,6 +430,7 @@ export default function DocumentosPage() {
             <DocumentCard
               key={doc.id}
               doc={doc}
+              onView={() => setPreviewingDoc(doc)}
               onEdit={() => setEditingDoc(doc)}
               onDelete={() => setPendingDelete(doc)}
             />
@@ -406,17 +466,16 @@ export default function DocumentosPage() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             {doc.arquivoUrl && (
-                              <a
-                                href={doc.arquivoUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                title="Ver arquivo"
+                              <button
+                                type="button"
+                                title="Visualizar"
+                                onClick={() => setPreviewingDoc(doc)}
                                 className={cn(
-                                  "rounded-md p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                                  "rounded-md p-1.5 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-500/10"
                                 )}
                               >
-                                <FileText className="h-4 w-4" />
-                              </a>
+                                <Eye className="h-4 w-4" />
+                              </button>
                             )}
                             <Button
                               variant="ghost"
@@ -453,6 +512,11 @@ export default function DocumentosPage() {
         open={!!editingDoc}
         onOpenChange={(o) => !o && setEditingDoc(null)}
         editDoc={editingDoc}
+      />
+      <DocumentPreviewDialog
+        doc={previewingDoc}
+        open={!!previewingDoc}
+        onOpenChange={(o) => !o && setPreviewingDoc(null)}
       />
 
       <ConfirmDialog
