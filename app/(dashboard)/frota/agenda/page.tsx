@@ -270,7 +270,7 @@ export default function AgendaPage() {
         <CardHeader>
           <CardTitle>Próximos eventos</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-2 pb-2">
           {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
           {!isLoading && events.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum evento futuro cadastrado.</p>
