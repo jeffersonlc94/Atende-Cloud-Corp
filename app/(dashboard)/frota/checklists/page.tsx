@@ -29,13 +29,28 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { VehicleSelect, formatVehicleLabel } from "@/components/frota/vehicle-select";
-import { ChecklistItemStatusCard, checklistItemIcons, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
+import { ChecklistItemStatusCard, checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
 import { ChecklistHistoryCard } from "@/components/frota/checklist-history-card";
 import { formatDateBR } from "@/lib/format";
-import { List, CalendarDays, Clock, Camera, Save, X } from "lucide-react";
+import { List, CalendarDays, Clock, Camera, Save, X, ImageOff } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
+
+function FotoThumb({ url, alt, className }: { url: string; alt: string; className: string }) {
+  const [error, setError] = useState(false);
+  if (error) {
+    return (
+      <div className={`flex items-center justify-center rounded-md border bg-muted text-muted-foreground ${className}`}>
+        <ImageOff className="h-5 w-5" />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={url} alt={alt} className={`rounded-md border object-cover ${className}`} onError={() => setError(true)} />
+  );
+}
 
 export default function ChecklistsPage() {
   const { data: checklists = [], isLoading } = useChecklists();
@@ -259,8 +274,7 @@ export default function ChecklistsPage() {
                 <div className="flex flex-wrap gap-2 pt-1">
                   {fotos.map((url, idx) => (
                     <div key={url} className="relative">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt={`Foto ${idx + 1}`} className="h-14 w-14 rounded-md border object-cover" />
+                      <FotoThumb url={url} alt={`Foto ${idx + 1}`} className="h-14 w-14" />
                       <button
                         type="button"
                         onClick={() => setFotos((prev) => prev.filter((u) => u !== url))}
@@ -381,9 +395,10 @@ export default function ChecklistsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   {viewing.itens.map((i) => {
                     const Icon = checklistItemIcons[i.item as keyof typeof checklistItemIcons];
+                    const iconColor = checklistItemIconColors[i.item as keyof typeof checklistItemIconColors];
                     return (
                       <div key={i.id} className="flex items-center gap-2 rounded-md border p-2">
-                        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+                        {Icon && <Icon className={`h-4 w-4 ${iconColor}`} />}
                         <span className="flex-1 truncate">
                           {checklistItemTipoLabels[i.item as keyof typeof checklistItemTipoLabels] ?? i.item}
                         </span>
@@ -403,8 +418,7 @@ export default function ChecklistsPage() {
                     <p className="mb-1 font-medium">Fotos:</p>
                     <div className="flex flex-wrap gap-2">
                       {viewing.fotos.map((url) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img key={url} src={url} alt="Foto do checklist" className="h-20 w-20 rounded-md border object-cover" />
+                        <FotoThumb key={url} url={url} alt="Foto do checklist" className="h-20 w-20" />
                       ))}
                     </div>
                   </div>

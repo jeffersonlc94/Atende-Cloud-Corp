@@ -36,6 +36,19 @@ export const checklistItemIcons: Record<(typeof checklistItemTipoOptions)[number
   EquipObrigatorio: TriangleAlert,
 };
 
+export const checklistItemIconColors: Record<(typeof checklistItemTipoOptions)[number], string> = {
+  Pneus: "text-slate-600",
+  Freios: "text-sky-600",
+  Luzes: "text-yellow-500",
+  Oleo: "text-orange-600",
+  Agua: "text-blue-500",
+  Motor: "text-zinc-600",
+  Suspensao: "text-purple-600",
+  Bateria: "text-emerald-600",
+  Documentacao: "text-indigo-600",
+  EquipObrigatorio: "text-amber-600",
+};
+
 export const statusLabels: Record<string, string> = {
   OK: "OK",
   Atencao: "Atenção",
@@ -64,7 +77,7 @@ export function ChecklistItemStatusCard({
 
   return (
     <div className="flex flex-col items-center gap-2 rounded-xl border bg-card p-3 text-center shadow-sm">
-      <Icon className="h-5 w-5 text-muted-foreground" />
+      <Icon className={cn("h-5 w-5", checklistItemIconColors[item])} />
       <p className="text-xs font-medium leading-tight">{checklistItemTipoLabels[item]}</p>
       <Select value={status} onValueChange={(v) => onChange(v ?? "OK")}>
         <SelectTrigger className="h-8 w-full text-xs">
