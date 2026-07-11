@@ -4,7 +4,7 @@ import { Eye, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { ChecklistRecord } from "@/hooks/use-fleet";
-import { checklistItemIcons, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
+import { checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
 import { checklistItemTipoLabels } from "@/lib/validations";
 import { cn } from "@/lib/utils";
 
@@ -45,9 +45,10 @@ export function ChecklistHistoryCard({
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
             {checklist.itens.map((i) => {
               const Icon = checklistItemIcons[i.item as keyof typeof checklistItemIcons];
+              const iconColor = checklistItemIconColors[i.item as keyof typeof checklistItemIconColors];
               return (
                 <span key={i.id} className="flex items-center gap-1 text-xs text-muted-foreground">
-                  {Icon && <Icon className="h-3.5 w-3.5 text-primary" />}
+                  {Icon && <Icon className={cn("h-3.5 w-3.5", iconColor)} />}
                   {checklistItemTipoLabels[i.item as keyof typeof checklistItemTipoLabels] ?? i.item}:
                   <span className="flex items-center gap-1 font-medium text-foreground">
                     <span className={cn("h-1.5 w-1.5 rounded-full", statusDotClasses[i.status])} />

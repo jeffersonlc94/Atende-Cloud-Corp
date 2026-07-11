@@ -2,16 +2,16 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  CircleDot,
-  Disc3,
+  Circle,
+  Disc,
   Lightbulb,
-  Droplets,
-  Fuel,
+  Droplet,
+  Waves,
   Cog,
-  Wrench,
+  Activity,
   Battery,
   FileText,
-  ShieldCheck,
+  TriangleAlert,
 } from "lucide-react";
 import {
   Select,
@@ -23,18 +23,30 @@ import {
 import { checklistItemTipoOptions, checklistItemTipoLabels } from "@/lib/validations";
 import { cn } from "@/lib/utils";
 
-// Óleo usa "Fuel" pois a biblioteca lucide-react não possui um ícone "OilCan".
 export const checklistItemIcons: Record<(typeof checklistItemTipoOptions)[number], LucideIcon> = {
-  Pneus: CircleDot,
-  Freios: Disc3,
+  Pneus: Circle,
+  Freios: Disc,
   Luzes: Lightbulb,
-  Oleo: Fuel,
-  Agua: Droplets,
+  Oleo: Droplet,
+  Agua: Waves,
   Motor: Cog,
-  Suspensao: Wrench,
+  Suspensao: Activity,
   Bateria: Battery,
   Documentacao: FileText,
-  EquipObrigatorio: ShieldCheck,
+  EquipObrigatorio: TriangleAlert,
+};
+
+export const checklistItemIconColors: Record<(typeof checklistItemTipoOptions)[number], string> = {
+  Pneus: "text-slate-600",
+  Freios: "text-sky-600",
+  Luzes: "text-yellow-500",
+  Oleo: "text-orange-600",
+  Agua: "text-blue-500",
+  Motor: "text-zinc-600",
+  Suspensao: "text-purple-600",
+  Bateria: "text-emerald-600",
+  Documentacao: "text-indigo-600",
+  EquipObrigatorio: "text-amber-600",
 };
 
 export const statusLabels: Record<string, string> = {
@@ -76,7 +88,7 @@ export function ChecklistItemStatusCard({
         statusBorderClasses[status]
       )}
     >
-      <Icon className="text-primary" style={{ height: 22, width: 22 }} />
+      <Icon className={cn("h-5 w-5", checklistItemIconColors[item])} />
       <p className="text-xs font-medium leading-tight">{checklistItemTipoLabels[item]}</p>
       <Select value={status} onValueChange={(v) => onChange(v ?? "OK")}>
         <SelectTrigger className="h-8 w-full text-xs">

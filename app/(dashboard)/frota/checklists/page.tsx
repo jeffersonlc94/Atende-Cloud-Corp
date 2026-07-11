@@ -29,7 +29,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { VehicleSelect, formatVehicleLabel } from "@/components/frota/vehicle-select";
-import { ChecklistItemStatusCard, checklistItemIcons, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
+import { ChecklistItemStatusCard, checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels } from "@/components/frota/checklist-item-status";
 import { ChecklistHistoryCard } from "@/components/frota/checklist-history-card";
 import { formatDateBR } from "@/lib/format";
 import { List, CalendarDays, Clock, Camera, Save, X, ImageOff } from "lucide-react";
@@ -395,9 +395,10 @@ export default function ChecklistsPage() {
                 <div className="grid grid-cols-2 gap-2">
                   {viewing.itens.map((i) => {
                     const Icon = checklistItemIcons[i.item as keyof typeof checklistItemIcons];
+                    const iconColor = checklistItemIconColors[i.item as keyof typeof checklistItemIconColors];
                     return (
                       <div key={i.id} className="flex items-center gap-2 rounded-md border p-2">
-                        {Icon && <Icon className="h-4 w-4 text-primary" />}
+                        {Icon && <Icon className={`h-4 w-4 ${iconColor}`} />}
                         <span className="flex-1 truncate">
                           {checklistItemTipoLabels[i.item as keyof typeof checklistItemTipoLabels] ?? i.item}
                         </span>
