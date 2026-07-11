@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { formatDateBR } from "@/lib/format";
 import { getOilChangeStatus, getLastKmUpdate } from "@/components/frota/vehicle-maintenance-info";
+import { VehicleViewDialog } from "@/components/frota/vehicle-view-dialog";
 import { cn } from "@/lib/utils";
 import {
   Car,
@@ -19,6 +20,7 @@ import {
   Fuel,
   Gauge,
   CalendarClock,
+  Eye,
 } from "lucide-react";
 
 const situacaoBadge: Record<VehicleRecord["situacao"], { label: string; className: string }> = {
@@ -46,6 +48,7 @@ export function VehicleCard({
   onDelete: (id: string) => void;
 }) {
   const [fotoError, setFotoError] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
   const badge = situacaoBadge[vehicle.situacao];
   const oilStatus = getOilChangeStatus(vehicle);
   const lastKmUpdate = getLastKmUpdate(vehicle);
@@ -143,14 +146,24 @@ export function VehicleCard({
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-wrap items-center justify-end gap-1 bg-transparent p-3 pt-0">
+      <CardFooter className="grid grid-cols-2 gap-1 bg-transparent p-3 pt-0">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          title="Visualizar cadastro"
+          className="justify-start text-sky-600 hover:bg-sky-50 hover:text-sky-700 dark:hover:bg-sky-500/10"
+          onClick={() => setViewOpen(true)}
+        >
+          <Eye className="mr-1 h-4 w-4" /> Visualizar
+        </Button>
         <Link
           href={`/frota/veiculos/${vehicle.id}/editar`}
           title="Editar"
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
-            className: "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10",
+            className: "justify-start text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10",
           })}
         >
           <Pencil className="mr-1 h-4 w-4" /> Editar
@@ -161,7 +174,7 @@ export function VehicleCard({
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
-            className: "text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-500/10",
+            className: "justify-start text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-500/10",
           })}
         >
           <History className="mr-1 h-4 w-4" /> Histórico
@@ -172,7 +185,7 @@ export function VehicleCard({
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
-            className: "text-violet-600 hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-500/10",
+            className: "justify-start text-violet-600 hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-500/10",
           })}
         >
           <FileText className="mr-1 h-4 w-4" /> Documentos
@@ -183,7 +196,7 @@ export function VehicleCard({
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
-            className: "text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-500/10",
+            className: "justify-start text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-500/10",
           })}
         >
           <ClipboardList className="mr-1 h-4 w-4" /> Checklist
@@ -193,13 +206,15 @@ export function VehicleCard({
             variant="ghost"
             size="sm"
             title="Excluir"
-            className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
+            className="justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
             onClick={() => onDelete(vehicle.id)}
           >
             <Trash2 className="mr-1 h-4 w-4" /> Excluir
           </Button>
         )}
       </CardFooter>
+
+      <VehicleViewDialog vehicle={vehicle} open={viewOpen} onOpenChange={setViewOpen} />
     </Card>
   );
 }
