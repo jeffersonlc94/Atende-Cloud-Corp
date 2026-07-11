@@ -53,7 +53,7 @@ export function VehicleCard({
   return (
     <Card className="flex flex-col overflow-hidden transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardContent className="flex flex-1 flex-col gap-3">
-        <div className="relative flex items-stretch gap-3">
+        <div className="flex items-stretch gap-3">
           {vehicle.fotoUrl && !fotoError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -67,7 +67,15 @@ export function VehicleCard({
               <Car className="h-8 w-8" />
             </div>
           )}
-          <div className="min-w-0 flex-1 pr-16">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <span
+              className={cn(
+                "w-fit shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                badge.className
+              )}
+            >
+              {badge.label}
+            </span>
             <p className="truncate text-base font-bold leading-tight">
               {vehicle.marca} {vehicle.modelo}
             </p>
@@ -75,14 +83,6 @@ export function VehicleCard({
               {vehicle.placa} • {vehicle.ano}
             </p>
           </div>
-          <span
-            className={cn(
-              "absolute right-0 top-0 shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold",
-              badge.className
-            )}
-          >
-            {badge.label}
-          </span>
         </div>
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-xs">

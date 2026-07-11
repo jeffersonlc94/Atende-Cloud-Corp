@@ -236,8 +236,8 @@ function VeiculosPageContent() {
       )}
 
       <Card>
-        <CardContent className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[220px] flex-1">
+        <CardContent className="flex flex-col gap-3">
+          <div className="relative w-full">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar por placa, marca ou modelo"
@@ -247,6 +247,7 @@ function VeiculosPageContent() {
             />
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
           <FilterSelect
             icon={ListFilter}
             label="Status"
@@ -321,6 +322,7 @@ function VeiculosPageContent() {
             >
               <ListIcon className="h-4 w-4" />
             </Button>
+          </div>
           </div>
         </CardContent>
       </Card>
