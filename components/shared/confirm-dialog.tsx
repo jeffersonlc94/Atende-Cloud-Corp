@@ -31,12 +31,20 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   // Trava o scroll da página por trás enquanto o diálogo está aberto,
   // evitando a inconsistência de rolar o conteúdo com o overlay por cima.
+  // Compensa a largura da scrollbar com padding para o conteúdo não "pular"
+  // horizontalmente ao esconder a barra.
   useEffect(() => {
     if (!open) return;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
     document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
     };
   }, [open]);
 
