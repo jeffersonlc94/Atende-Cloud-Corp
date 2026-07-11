@@ -391,8 +391,10 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
                   name="descontoGeralTipo"
                   render={({ field }) => (
                     <Select value={field.value ?? "Valor"} onValueChange={(v) => field.onChange(v)}>
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
+                      <SelectTrigger className="w-24">
+                        <SelectValue>
+                          {(value: string) => (value === "Percentual" ? "%" : "R$")}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Valor">R$</SelectItem>

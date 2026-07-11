@@ -114,8 +114,10 @@ export function QuoteItemsTable({
                             value={field.value ?? "Valor"}
                             onValueChange={(v) => field.onChange(v)}
                           >
-                            <SelectTrigger className="w-16 shrink-0">
-                              <SelectValue />
+                            <SelectTrigger className="w-[4.5rem] shrink-0">
+                              <SelectValue>
+                                {(value: string) => (value === "Percentual" ? "%" : "R$")}
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Valor">R$</SelectItem>
