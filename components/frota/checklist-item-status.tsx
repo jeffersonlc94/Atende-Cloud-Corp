@@ -2,13 +2,13 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  Circle,
+  Disc3,
   Disc,
   Lightbulb,
   Droplet,
-  Waves,
+  Fuel,
   Cog,
-  Activity,
+  Wrench,
   Battery,
   FileText,
   TriangleAlert,
@@ -24,21 +24,21 @@ import { checklistItemTipoOptions, checklistItemTipoLabels } from "@/lib/validat
 import { cn } from "@/lib/utils";
 
 export const checklistItemIcons: Record<(typeof checklistItemTipoOptions)[number], LucideIcon> = {
-  Pneus: Circle,
+  Pneus: Disc3,
   Freios: Disc,
   Luzes: Lightbulb,
-  Oleo: Droplet,
-  Agua: Waves,
+  Oleo: Fuel,
+  Agua: Droplet,
   Motor: Cog,
-  Suspensao: Activity,
+  Suspensao: Wrench,
   Bateria: Battery,
   Documentacao: FileText,
   EquipObrigatorio: TriangleAlert,
 };
 
 export const checklistItemIconColors: Record<(typeof checklistItemTipoOptions)[number], string> = {
-  Pneus: "text-slate-600",
-  Freios: "text-sky-600",
+  Pneus: "text-emerald-600",
+  Freios: "text-teal-600",
   Luzes: "text-yellow-500",
   Oleo: "text-orange-600",
   Agua: "text-blue-500",
