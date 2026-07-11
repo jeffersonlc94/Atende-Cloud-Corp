@@ -4,9 +4,20 @@ import { use, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useQuote } from "@/hooks/use-quotes";
-import { QuotePrintLayout } from "@/components/quotes/quote-print-layout";
+import {
+  QuotePrintLayout,
+  quotePrintLayoutOptions,
+  type QuotePrintLayoutId,
+} from "@/components/quotes/quote-print-layout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowLeft, Printer, FileDown, Loader2 } from "lucide-react";
 
 export default function ImprimirOrcamentoPage({
@@ -18,6 +29,7 @@ export default function ImprimirOrcamentoPage({
   const { data: quote, isLoading } = useQuote(id);
   const printRef = useRef<HTMLDivElement>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [layout, setLayout] = useState<QuotePrintLayoutId>("classico");
 
   async function handleGeneratePdf() {
     if (!printRef.current || !quote) return;
@@ -81,7 +93,19 @@ export default function ImprimirOrcamentoPage({
         <Link href="/orcamentos" className={buttonVariants({ variant: "ghost" })}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Link>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={layout} onValueChange={(v) => setLayout(v as QuotePrintLayoutId)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {quotePrintLayoutOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="mr-2 h-4 w-4" /> Imprimir
           </Button>
@@ -99,6 +123,7 @@ export default function ImprimirOrcamentoPage({
       <div className="py-8">
         <div ref={printRef}>
           <QuotePrintLayout
+            layout={layout}
             company={quote.company}
             quote={{
               numero: quote.numero,
