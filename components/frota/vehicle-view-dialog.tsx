@@ -8,15 +8,53 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
-import { Car } from "lucide-react";
+import {
+  Car,
+  Tag,
+  Hash,
+  CalendarDays,
+  Building2,
+  ClipboardCheck,
+  Wrench,
+  Fuel,
+  Palette,
+  Gauge,
+  MessageSquareText,
+  type LucideIcon,
+} from "lucide-react";
 
-function Field({ label, value }: { label: string; value: React.ReactNode }) {
+const situacaoLabels: Record<string, string> = {
+  Ativo: "Ativo",
+  Manutencao: "Manutenção",
+  Inativo: "Inativo",
+};
+
+const situacaoBadgeVariant: Record<string, "default" | "secondary" | "outline"> = {
+  Ativo: "default",
+  Manutencao: "outline",
+  Inativo: "secondary",
+};
+
+function SectionHeader({ icon: Icon, title }: { icon: LucideIcon; title: string }) {
   return (
-    <div className="min-w-0">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="truncate text-sm font-medium">{value ?? "—"}</p>
+    <div className="flex items-center gap-2 border-b px-4 py-3 text-sm font-bold uppercase tracking-wide text-slate-700 dark:text-slate-300">
+      <Icon className="h-4 w-4 text-primary" />
+      {title}
     </div>
+  );
+}
+
+function FieldLabel({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
+  return (
+    <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+      <Icon className="h-3.5 w-3.5" />
+      {children}
+    </span>
   );
 }
 
@@ -33,73 +71,184 @@ export function VehicleViewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg sm:max-w-lg">
+      <DialogContent className="max-w-2xl sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {vehicle.marca} {vehicle.modelo} — {vehicle.placa}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-          <div className="flex items-center gap-3">
-            {vehicle.fotoUrl && !fotoError ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={vehicle.fotoUrl}
-                alt={vehicle.placa}
-                onError={() => setFotoError(true)}
-                className="h-20 w-24 shrink-0 rounded-lg border object-cover"
-              />
-            ) : (
-              <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-                <Car className="h-7 w-7" />
+        <div className="max-h-[75vh] space-y-4 overflow-y-auto pr-1">
+          <Card className="py-0 gap-0 overflow-hidden rounded-2xl">
+            <SectionHeader icon={Car} title="Informações principais" />
+            <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-3">
+              <div className="flex items-center gap-3 sm:col-span-3">
+                {vehicle.fotoUrl && !fotoError ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={vehicle.fotoUrl}
+                    alt={vehicle.placa}
+                    onError={() => setFotoError(true)}
+                    className="h-20 w-24 shrink-0 rounded-lg border object-cover"
+                  />
+                ) : (
+                  <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
+                    <Car className="h-7 w-7" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-base font-bold">
+                    {vehicle.nome || `${vehicle.marca} ${vehicle.modelo}`}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {vehicle.company.nomeFantasia || vehicle.company.razaoSocial}
+                  </p>
+                </div>
               </div>
-            )}
-            <div className="min-w-0">
-              <p className="truncate text-base font-bold">
-                {vehicle.nome || `${vehicle.marca} ${vehicle.modelo}`}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {vehicle.company.nomeFantasia || vehicle.company.razaoSocial}
-              </p>
-            </div>
-          </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Tag}>Nome do veículo</FieldLabel>
+                <Input readOnly disabled value={vehicle.nome || "—"} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Hash}>Placa</FieldLabel>
+                <Input readOnly disabled className="uppercase" value={vehicle.placa} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Hash}>Renavam</FieldLabel>
+                <Input readOnly disabled value={vehicle.renavam || "—"} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Car}>Marca</FieldLabel>
+                <Input readOnly disabled value={vehicle.marca} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Car}>Modelo</FieldLabel>
+                <Input readOnly disabled value={vehicle.modelo} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={CalendarDays}>Ano</FieldLabel>
+                <Input readOnly disabled value={vehicle.ano} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Building2}>Empresa</FieldLabel>
+                <Input
+                  readOnly
+                  disabled
+                  value={vehicle.company.nomeFantasia || vehicle.company.razaoSocial}
+                />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={ClipboardCheck}>Status</FieldLabel>
+                <div>
+                  <Badge variant={situacaoBadgeVariant[vehicle.situacao] ?? "outline"}>
+                    {situacaoLabels[vehicle.situacao] ?? vehicle.situacao}
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Tag}>Categoria</FieldLabel>
+                <Input readOnly disabled value={vehicle.categoria || "Não informado"} />
+              </div>
+            </CardContent>
+          </Card>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Placa" value={vehicle.placa} />
-            <Field label="Situação" value={vehicle.situacao === "Manutencao" ? "Manutenção" : vehicle.situacao} />
-            <Field label="Marca" value={vehicle.marca} />
-            <Field label="Modelo" value={vehicle.modelo} />
-            <Field label="Versão" value={vehicle.versao} />
-            <Field label="Ano" value={vehicle.ano} />
-            <Field label="Cor" value={vehicle.cor} />
-            <Field label="Combustível" value={vehicle.combustivel} />
-            <Field label="Categoria" value={vehicle.categoria} />
-            <Field label="Tipo de uso" value={vehicle.tipoUso} />
-            <Field label="Tração" value={vehicle.tracao} />
-            <Field
-              label="Capacidade de carga"
-              value={vehicle.capacidadeCarga ? `${vehicle.capacidadeCarga} kg` : null}
-            />
-            <Field label="Potência" value={vehicle.potencia ? `${vehicle.potencia} cv` : null} />
-            <Field label="KM atual" value={`${vehicle.kmAtual.toLocaleString("pt-BR")} km`} />
-            <Field
-              label="Intervalo troca de óleo"
-              value={vehicle.oilChangeIntervalKm ? `${vehicle.oilChangeIntervalKm} km` : null}
-            />
-            <Field label="Renavam" value={vehicle.renavam} />
-            <Field label="Chassi" value={vehicle.chassi} />
-            <Field
-              label="Valor de aquisição"
-              value={vehicle.valorAquisicao ? formatCurrencyBRL(Number(vehicle.valorAquisicao)) : null}
-            />
-            <Field label="Data de aquisição" value={vehicle.dataAquisicao ? formatDateBR(vehicle.dataAquisicao) : null} />
-          </div>
+          <Card className="py-0 gap-0 overflow-hidden rounded-2xl">
+            <SectionHeader icon={Wrench} title="Especificações" />
+            <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-3">
+              <div className="space-y-2">
+                <FieldLabel icon={Fuel}>Tipo de combustível</FieldLabel>
+                <Input readOnly disabled value={vehicle.combustivel} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Palette}>Cor</FieldLabel>
+                <Input readOnly disabled value={vehicle.cor || "—"} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Hash}>Chassi</FieldLabel>
+                <Input readOnly disabled value={vehicle.chassi || "—"} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Gauge}>Capacidade de carga (kg)</FieldLabel>
+                <Input
+                  readOnly
+                  disabled
+                  value={vehicle.capacidadeCarga ? `${vehicle.capacidadeCarga}` : "—"}
+                />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Gauge}>Potência (cv)</FieldLabel>
+                <Input readOnly disabled value={vehicle.potencia ? `${vehicle.potencia}` : "—"} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Car}>Tração</FieldLabel>
+                <Input readOnly disabled value={vehicle.tracao || "Não informado"} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={ClipboardCheck}>Tipo de uso</FieldLabel>
+                <Input readOnly disabled value={vehicle.tipoUso || "Não informado"} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Gauge}>Valor de aquisição</FieldLabel>
+                <Input
+                  readOnly
+                  disabled
+                  value={
+                    vehicle.valorAquisicao ? formatCurrencyBRL(Number(vehicle.valorAquisicao)) : "—"
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={CalendarDays}>Data de aquisição</FieldLabel>
+                <Input
+                  readOnly
+                  disabled
+                  value={vehicle.dataAquisicao ? formatDateBR(vehicle.dataAquisicao) : "—"}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-          {vehicle.observacoesAdicionais && (
-            <Field label="Observações adicionais" value={vehicle.observacoesAdicionais} />
+          <Card className="py-0 gap-0 overflow-hidden rounded-2xl">
+            <SectionHeader icon={ClipboardCheck} title="Informações de uso" />
+            <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-3">
+              <div className="space-y-2">
+                <FieldLabel icon={Gauge}>KM atual</FieldLabel>
+                <Input readOnly disabled value={`${vehicle.kmAtual.toLocaleString("pt-BR")} km`} />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={Gauge}>Intervalo troca de óleo</FieldLabel>
+                <Input
+                  readOnly
+                  disabled
+                  value={vehicle.oilChangeIntervalKm ? `${vehicle.oilChangeIntervalKm} km` : "—"}
+                />
+              </div>
+              <div className="space-y-2">
+                <FieldLabel icon={CalendarDays}>Última atualização</FieldLabel>
+                <Input readOnly disabled value={formatDateBR(vehicle.updatedAt) || "—"} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {(vehicle.observacoes || vehicle.observacoesAdicionais) && (
+            <Card className="py-0 gap-0 overflow-hidden rounded-2xl">
+              <SectionHeader icon={MessageSquareText} title="Observações" />
+              <CardContent className="space-y-3 pt-4 pb-5">
+                {vehicle.observacoes && (
+                  <div className="space-y-2">
+                    <FieldLabel icon={MessageSquareText}>Observações</FieldLabel>
+                    <Textarea readOnly disabled rows={3} value={vehicle.observacoes} />
+                  </div>
+                )}
+                {vehicle.observacoesAdicionais && (
+                  <div className="space-y-2">
+                    <FieldLabel icon={MessageSquareText}>Observações adicionais</FieldLabel>
+                    <Textarea readOnly disabled rows={3} value={vehicle.observacoesAdicionais} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           )}
-          {vehicle.observacoes && <Field label="Observações" value={vehicle.observacoes} />}
         </div>
       </DialogContent>
     </Dialog>
