@@ -17,7 +17,6 @@ import { getOilChangeStatus, getLastKmUpdate } from "@/components/frota/vehicle-
 import { VehicleViewDialog } from "@/components/frota/vehicle-view-dialog";
 import { cn } from "@/lib/utils";
 import {
-  Car,
   Eye,
   Pencil,
   History,
@@ -90,7 +89,6 @@ export function VehicleTable({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="w-14" />
             <SortableHead label="Veículo" sortKey="veiculo" />
             <SortableHead label="Placa" sortKey="placa" />
             <SortableHead label="Ano" sortKey="ano" />
@@ -110,20 +108,6 @@ export function VehicleTable({
             const lastKmUpdate = getLastKmUpdate(v);
             return (
               <TableRow key={v.id} className="transition-colors odd:bg-muted/20 hover:bg-muted/40">
-                <TableCell>
-                  {v.fotoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={v.fotoUrl}
-                      alt={v.placa}
-                      className="h-9 w-9 rounded-md border bg-muted object-contain p-0.5"
-                    />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-md border bg-muted text-muted-foreground">
-                      <Car className="h-4 w-4" />
-                    </div>
-                  )}
-                </TableCell>
                 <TableCell className="font-medium">
                   <Link href={`/frota/veiculos/${v.id}`} className="hover:underline">
                     {v.marca} {v.modelo}
