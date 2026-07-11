@@ -396,7 +396,9 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
                       onValueChange={(v) => field.onChange(v === NONE ? undefined : v)}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder="Selecione">
+                          {(v) => (v && v !== NONE ? v : "Não informado")}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>Não informado</SelectItem>
@@ -470,7 +472,9 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
                       onValueChange={(v) => field.onChange(v === NONE ? undefined : v)}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder="Selecione">
+                          {(v) => (v && v !== NONE ? v : "Não informado")}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>Não informado</SelectItem>
@@ -673,7 +677,9 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
                       onValueChange={(v) => field.onChange(v === NONE ? undefined : v)}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder="Selecione">
+                          {(v) => (v && v !== NONE ? v : "Não informado")}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={NONE}>Não informado</SelectItem>
