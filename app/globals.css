@@ -4,14 +4,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-html,
-body {
-  scrollbar-gutter: stable;
-  -webkit-scrollbar-gutter: stable;
-}
-
 html {
-  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 @theme inline {

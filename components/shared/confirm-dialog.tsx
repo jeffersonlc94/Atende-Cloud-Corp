@@ -29,16 +29,29 @@ export function ConfirmDialog({
   variant = "default",
   onConfirm,
 }: ConfirmDialogProps) {
-  // Trava o scroll da página por trás enquanto o diálogo está aberto,
-  // evitando a inconsistência de rolar o conteúdo com o overlay por cima.
-  // O gutter da scrollbar é reservado globalmente (globals.css), então
-  // esconder a barra aqui não desloca o layout.
+  // Trava o scroll de TODOS os contêineres (o dashboard rola dentro do
+  // <main>, não no body) bloqueando os eventos de rolagem na captura.
+  // Como nenhum overflow é alterado, a scrollbar não some e o layout
+  // não "dança" ao abrir/fechar o diálogo.
   useEffect(() => {
     if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const blockEvent = (ev: Event) => {
+      ev.preventDefault();
+    };
+    const blockScrollKeys = (ev: KeyboardEvent) => {
+      const keys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "];
+      const target = ev.target as HTMLElement | null;
+      const isFormField =
+        target !== null && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+      if (keys.includes(ev.key) && !isFormField) ev.preventDefault();
+    };
+    window.addEventListener("wheel", blockEvent, { passive: false, capture: true });
+    window.addEventListener("touchmove", blockEvent, { passive: false, capture: true });
+    window.addEventListener("keydown", blockScrollKeys, { capture: true });
     return () => {
-      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("wheel", blockEvent, { capture: true });
+      window.removeEventListener("touchmove", blockEvent, { capture: true });
+      window.removeEventListener("keydown", blockScrollKeys, { capture: true });
     };
   }, [open]);
 
