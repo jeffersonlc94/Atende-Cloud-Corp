@@ -13,11 +13,13 @@ export async function GET(req: NextRequest) {
 
   const vehicleId = req.nextUrl.searchParams.get("vehicleId")?.trim();
   const futurasApenas = req.nextUrl.searchParams.get("futuras") === "1";
+  const inicioDoDia = new Date();
+  inicioDoDia.setUTCHours(0, 0, 0, 0);
 
   const items = await prisma.calendarEvent.findMany({
     where: {
       ...(vehicleId ? { vehicleId } : {}),
-      ...(futurasApenas ? { data: { gte: new Date() } } : {}),
+      ...(futurasApenas ? { data: { gte: inicioDoDia } } : {}),
     },
     include: { vehicle: { select: { id: true, placa: true, marca: true, modelo: true } } },
     orderBy: { data: "asc" },

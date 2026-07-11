@@ -311,6 +311,18 @@ export function useCreateCalendarEvent() {
   });
 }
 
+export function useUpdateCalendarEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CalendarEventFormValues }) =>
+      fetchJson<CalendarEventRecord>(`/api/frota/calendar-events/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["calendar-events"] }),
+  });
+}
+
 export function useDeleteCalendarEvent() {
   const qc = useQueryClient();
   return useMutation({
@@ -361,6 +373,21 @@ export function useCreateVehicleDocument(vehicleId: string) {
       qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] });
       qc.invalidateQueries({ queryKey: ["fleet-dashboard"] });
       qc.invalidateQueries({ queryKey: ["vehicles", vehicleId] });
+    },
+  });
+}
+
+export function useUpdateVehicleDocument(vehicleId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: VehicleDocumentFormValues }) =>
+      fetchJson<VehicleDocumentRecord>(`/api/frota/vehicles/${vehicleId}/documents/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] });
+      qc.invalidateQueries({ queryKey: ["vehicle-documents-all"] });
     },
   });
 }

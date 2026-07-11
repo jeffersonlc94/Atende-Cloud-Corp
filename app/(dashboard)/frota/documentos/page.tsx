@@ -6,6 +6,7 @@ import { useVehicles } from "@/hooks/use-vehicles";
 import {
   useAllVehicleDocuments,
   useCreateVehicleDocument,
+  useUpdateVehicleDocument,
   useDeleteVehicleDocument,
   type VehicleDocumentWithVehicle,
 } from "@/hooks/use-fleet";
@@ -42,6 +43,7 @@ import { formatDateBR } from "@/lib/format";
 import {
   FileText,
   Plus,
+  Pencil,
   Trash2,
   LayoutGrid,
   List as ListIcon,
@@ -64,7 +66,15 @@ function getDocStatus(doc: Pick<VehicleDocumentWithVehicle, "dataVencimento">) {
   return { label: "OK", variant: "secondary" as const };
 }
 
-function NovoDocumentoDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+function NovoDocumentoDialog({
+  open,
+  onOpenChange,
+  editDoc,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  editDoc?: VehicleDocumentWithVehicle | null;
+}) {
   const [vehicleId, setVehicleId] = useState("");
   const [tipo, setTipo] = useState<(typeof tipoDocumentoOptions)[number]>("CRLV");
   const [dataEmissao, setDataEmissao] = useState("");
@@ -72,6 +82,7 @@ function NovoDocumentoDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [arquivoUrl, setArquivoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const createDoc = useCreateVehicleDocument(vehicleId);
+  const updateDoc = useUpdateVehicleDocument(editDoc?.vehicle.id ?? vehicleId);
 
   useEffect(() => {
     if (!open) {
@@ -80,8 +91,14 @@ function NovoDocumentoDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       setDataEmissao("");
       setDataVencimento("");
       setArquivoUrl("");
+    } else if (editDoc) {
+      setVehicleId(editDoc.vehicle.id);
+      setTipo(editDoc.tipo as (typeof tipoDocumentoOptions)[number]);
+      setDataEmissao(editDoc.dataEmissao ? editDoc.dataEmissao.slice(0, 10) : "");
+      setDataVencimento(editDoc.dataVencimento ? editDoc.dataVencimento.slice(0, 10) : "");
+      setArquivoUrl(editDoc.arquivoUrl || "");
     }
-  }, [open]);
+  }, [open, editDoc]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -107,11 +124,16 @@ function NovoDocumentoDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       return;
     }
     try {
-      await createDoc.mutateAsync({ vehicleId, tipo, dataEmissao, dataVencimento, arquivoUrl });
-      toast.success("Documento lançado com sucesso");
+      if (editDoc) {
+        await updateDoc.mutateAsync({ id: editDoc.id, data: { vehicleId, tipo, dataEmissao, dataVencimento, arquivoUrl } });
+        toast.success("Documento atualizado");
+      } else {
+        await createDoc.mutateAsync({ vehicleId, tipo, dataEmissao, dataVencimento, arquivoUrl });
+        toast.success("Documento lançado com sucesso");
+      }
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao lançar documento");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar documento");
     }
   }
 
@@ -119,7 +141,7 @@ function NovoDocumentoDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Lançar documento</DialogTitle>
+          <DialogTitle>{editDoc ? "Editar documento" : "Lançar documento"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
@@ -155,9 +177,13 @@ function NovoDocumentoDialog({ open, onOpenChange }: { open: boolean; onOpenChan
             <Label>Arquivo</Label>
             <Input type="file" onChange={handleFileChange} disabled={uploading} />
           </div>
-          <Button className="w-full" onClick={handleSubmit} disabled={createDoc.isPending || uploading}>
+          <Button
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={createDoc.isPending || updateDoc.isPending || uploading}
+          >
             <Upload className="mr-2 h-4 w-4" />
-            Lançar documento
+            {editDoc ? "Salvar alterações" : "Lançar documento"}
           </Button>
         </div>
       </DialogContent>
@@ -165,7 +191,15 @@ function NovoDocumentoDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   );
 }
 
-function DocumentCard({ doc, onDelete }: { doc: VehicleDocumentWithVehicle; onDelete: () => void }) {
+function DocumentCard({
+  doc,
+  onEdit,
+  onDelete,
+}: {
+  doc: VehicleDocumentWithVehicle;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const status = getDocStatus(doc);
   return (
     <Card className="flex flex-col overflow-hidden transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-md">
@@ -217,6 +251,15 @@ function DocumentCard({ doc, onDelete }: { doc: VehicleDocumentWithVehicle; onDe
         <Button
           variant="ghost"
           size="sm"
+          title="Editar"
+          className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
+          onClick={onEdit}
+        >
+          <Pencil className="mr-1 h-4 w-4" /> Editar
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           title="Excluir"
           className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
           onClick={onDelete}
@@ -234,6 +277,7 @@ export default function DocumentosPage() {
   const [vehicleId, setVehicleId] = useState<string>("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [newDocOpen, setNewDocOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<VehicleDocumentWithVehicle | null>(null);
   const [pendingDelete, setPendingDelete] = useState<VehicleDocumentWithVehicle | null>(null);
   const deleteDoc = useDeleteVehicleDocument(pendingDelete?.vehicle.id ?? "");
 
@@ -324,7 +368,12 @@ export default function DocumentosPage() {
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((doc) => (
-            <DocumentCard key={doc.id} doc={doc} onDelete={() => setPendingDelete(doc)} />
+            <DocumentCard
+              key={doc.id}
+              doc={doc}
+              onEdit={() => setEditingDoc(doc)}
+              onDelete={() => setPendingDelete(doc)}
+            />
           ))}
         </div>
       ) : (
@@ -372,6 +421,15 @@ export default function DocumentosPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              title="Editar"
+                              className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
+                              onClick={() => setEditingDoc(doc)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               title="Excluir"
                               className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
                               onClick={() => setPendingDelete(doc)}
@@ -391,6 +449,11 @@ export default function DocumentosPage() {
       )}
 
       <NovoDocumentoDialog open={newDocOpen} onOpenChange={setNewDocOpen} />
+      <NovoDocumentoDialog
+        open={!!editingDoc}
+        onOpenChange={(o) => !o && setEditingDoc(null)}
+        editDoc={editingDoc}
+      />
 
       <ConfirmDialog
         open={!!pendingDelete}

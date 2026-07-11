@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useVehicles } from "@/hooks/use-vehicles";
-import { useOilChanges, useCreateOilChange, useDeleteOilChange } from "@/hooks/use-fleet";
+import { useOilChanges, useCreateOilChange, useUpdateOilChange, useDeleteOilChange } from "@/hooks/use-fleet";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,18 +14,20 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function TrocaOleoPage() {
   const { data: vehicles = [] } = useVehicles();
   const { data: items = [], isLoading } = useOilChanges();
   const createOil = useCreateOilChange();
+  const updateOil = useUpdateOilChange();
   const deleteOil = useDeleteOilChange();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [confirmAddOpen, setConfirmAddOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     vehicleId: "",
     data: new Date().toISOString().slice(0, 10),
     km: "",
@@ -33,27 +35,52 @@ export default function TrocaOleoPage() {
     oficina: "",
     valor: "",
     kmProximaTroca: "",
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
+
+  function handleEdit(o: (typeof items)[number]) {
+    setEditingId(o.id);
+    setForm({
+      vehicleId: o.vehicleId,
+      data: o.data.slice(0, 10),
+      km: String(o.km),
+      tipoOleo: o.tipoOleo || "",
+      oficina: o.oficina || "",
+      valor: o.valor ? String(o.valor) : "",
+      kmProximaTroca: o.kmProximaTroca ? String(o.kmProximaTroca) : "",
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm);
+  }
 
   async function handleAdd() {
     if (!form.vehicleId || !form.km) {
       toast.error("Selecione o veículo e informe o KM");
       return;
     }
+    const payload = {
+      vehicleId: form.vehicleId,
+      data: form.data,
+      km: parseInt(form.km, 10),
+      tipoOleo: form.tipoOleo,
+      oficina: form.oficina,
+      valor: form.valor ? parseFloat(form.valor) : undefined,
+      kmProximaTroca: form.kmProximaTroca ? parseInt(form.kmProximaTroca, 10) : undefined,
+    };
     try {
-      await createOil.mutateAsync({
-        vehicleId: form.vehicleId,
-        data: form.data,
-        km: parseInt(form.km, 10),
-        tipoOleo: form.tipoOleo,
-        oficina: form.oficina,
-        valor: form.valor ? parseFloat(form.valor) : undefined,
-        kmProximaTroca: form.kmProximaTroca ? parseInt(form.kmProximaTroca, 10) : undefined,
-      });
-      toast.success("Troca de óleo registrada");
-      setForm({ vehicleId: "", data: new Date().toISOString().slice(0, 10), km: "", tipoOleo: "", oficina: "", valor: "", kmProximaTroca: "" });
+      if (editingId) {
+        await updateOil.mutateAsync({ id: editingId, data: payload });
+        toast.success("Troca de óleo atualizada");
+      } else {
+        await createOil.mutateAsync(payload);
+        toast.success("Troca de óleo registrada");
+      }
+      cancelEdit();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao registrar");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     }
   }
 
@@ -105,8 +132,12 @@ export default function TrocaOleoPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Nova troca de óleo</CardTitle>
-          <CardDescription>Registre a troca e a quilometragem prevista para a próxima</CardDescription>
+          <CardTitle>{editingId ? "Editar troca de óleo" : "Nova troca de óleo"}</CardTitle>
+          <CardDescription>
+            {editingId
+              ? "Atualize os dados da troca selecionada"
+              : "Registre a troca e a quilometragem prevista para a próxima"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-7">
@@ -151,18 +182,25 @@ export default function TrocaOleoPage() {
               />
             </div>
           </div>
-          <Button
-            onClick={() => {
-              if (!form.vehicleId || !form.km) {
-                toast.error("Selecione o veículo e informe o KM");
-                return;
-              }
-              setConfirmAddOpen(true);
-            }}
-            disabled={createOil.isPending}
-          >
-            Registrar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                if (!form.vehicleId || !form.km) {
+                  toast.error("Selecione o veículo e informe o KM");
+                  return;
+                }
+                setConfirmAddOpen(true);
+              }}
+              disabled={createOil.isPending || updateOil.isPending}
+            >
+              {editingId ? "Salvar alterações" : "Registrar"}
+            </Button>
+            {editingId && (
+              <Button type="button" variant="outline" onClick={cancelEdit}>
+                <X className="mr-1 h-4 w-4" /> Cancelar edição
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -180,9 +218,26 @@ export default function TrocaOleoPage() {
               <span>{o.vehicle.placa} — {formatDateBR(o.data)} — {o.km.toLocaleString("pt-BR")} km</span>
               <span>{o.tipoOleo || "—"}</span>
               <span>{o.valor ? formatCurrencyBRL(Number(o.valor)) : "—"}</span>
-              <Button variant="ghost" size="icon" onClick={() => setPendingDelete(o.id)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Editar"
+                  className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
+                  onClick={() => handleEdit(o)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Excluir"
+                  className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
+                  onClick={() => setPendingDelete(o.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </CardContent>
@@ -200,8 +255,8 @@ export default function TrocaOleoPage() {
       <ConfirmDialog
         open={confirmAddOpen}
         onOpenChange={setConfirmAddOpen}
-        title="Confirma o registro desta troca de óleo?"
-        confirmLabel="Registrar"
+        title={editingId ? "Confirma a alteração desta troca de óleo?" : "Confirma o registro desta troca de óleo?"}
+        confirmLabel={editingId ? "Salvar" : "Registrar"}
         onConfirm={handleAdd}
       />
     </div>

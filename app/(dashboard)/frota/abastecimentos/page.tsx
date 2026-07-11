@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useFuels, useCreateFuel, useDeleteFuel } from "@/hooks/use-fleet";
+import { useFuels, useCreateFuel, useUpdateFuel, useDeleteFuel } from "@/hooks/use-fleet";
 import { combustivelOptions } from "@/lib/validations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,17 +27,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function AbastecimentosPage() {
   const { data: items = [], isLoading } = useFuels();
   const createFuel = useCreateFuel();
+  const updateFuel = useUpdateFuel();
   const deleteFuel = useDeleteFuel();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [confirmAddOpen, setConfirmAddOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     vehicleId: "",
     data: new Date().toISOString().slice(0, 10),
     km: "",
@@ -45,38 +47,55 @@ export default function AbastecimentosPage() {
     valorLitro: "",
     posto: "",
     tipoCombustivel: "Flex" as (typeof combustivelOptions)[number],
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const valorTotal =
     form.litros && form.valorLitro ? parseFloat(form.litros) * parseFloat(form.valorLitro) : 0;
+
+  function handleEdit(f: (typeof items)[number]) {
+    setEditingId(f.id);
+    setForm({
+      vehicleId: f.vehicleId,
+      data: f.data.slice(0, 10),
+      km: f.km ? String(f.km) : "",
+      litros: String(f.litros),
+      valorLitro: String(f.valorLitro),
+      posto: f.posto || "",
+      tipoCombustivel: f.tipoCombustivel as (typeof combustivelOptions)[number],
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm);
+  }
 
   async function handleAdd() {
     if (!form.vehicleId || !form.litros || !form.valorLitro) {
       toast.error("Preencha veículo, litros e valor por litro");
       return;
     }
+    const payload = {
+      vehicleId: form.vehicleId,
+      data: form.data,
+      km: form.km ? parseInt(form.km, 10) : undefined,
+      litros: parseFloat(form.litros),
+      valorLitro: parseFloat(form.valorLitro),
+      posto: form.posto,
+      tipoCombustivel: form.tipoCombustivel,
+    };
     try {
-      await createFuel.mutateAsync({
-        vehicleId: form.vehicleId,
-        data: form.data,
-        km: form.km ? parseInt(form.km, 10) : undefined,
-        litros: parseFloat(form.litros),
-        valorLitro: parseFloat(form.valorLitro),
-        posto: form.posto,
-        tipoCombustivel: form.tipoCombustivel,
-      });
-      toast.success("Abastecimento registrado");
-      setForm({
-        vehicleId: "",
-        data: new Date().toISOString().slice(0, 10),
-        km: "",
-        litros: "",
-        valorLitro: "",
-        posto: "",
-        tipoCombustivel: "Flex",
-      });
+      if (editingId) {
+        await updateFuel.mutateAsync({ id: editingId, data: payload });
+        toast.success("Abastecimento atualizado");
+      } else {
+        await createFuel.mutateAsync(payload);
+        toast.success("Abastecimento registrado");
+      }
+      cancelEdit();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao registrar");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     }
   }
 
@@ -89,8 +108,12 @@ export default function AbastecimentosPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Novo abastecimento</CardTitle>
-          <CardDescription>Registre litros, valor e posto de abastecimento</CardDescription>
+          <CardTitle>{editingId ? "Editar abastecimento" : "Novo abastecimento"}</CardTitle>
+          <CardDescription>
+            {editingId
+              ? "Atualize os dados do abastecimento selecionado"
+              : "Registre litros, valor e posto de abastecimento"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-7">
@@ -149,18 +172,25 @@ export default function AbastecimentosPage() {
           <p className="text-sm text-muted-foreground">
             Valor total: <span className="font-medium text-foreground">{formatCurrencyBRL(valorTotal)}</span>
           </p>
-          <Button
-            onClick={() => {
-              if (!form.vehicleId || !form.litros || !form.valorLitro) {
-                toast.error("Preencha veículo, litros e valor por litro");
-                return;
-              }
-              setConfirmAddOpen(true);
-            }}
-            disabled={createFuel.isPending}
-          >
-            Registrar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                if (!form.vehicleId || !form.litros || !form.valorLitro) {
+                  toast.error("Preencha veículo, litros e valor por litro");
+                  return;
+                }
+                setConfirmAddOpen(true);
+              }}
+              disabled={createFuel.isPending || updateFuel.isPending}
+            >
+              {editingId ? "Salvar alterações" : "Registrar"}
+            </Button>
+            {editingId && (
+              <Button type="button" variant="outline" onClick={cancelEdit}>
+                <X className="mr-1 h-4 w-4" /> Cancelar edição
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -176,7 +206,7 @@ export default function AbastecimentosPage() {
                   <TableHead>Valor/litro</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Posto</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-20" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -203,9 +233,26 @@ export default function AbastecimentosPage() {
                     <TableCell className="text-right">{formatCurrencyBRL(Number(f.valorTotal))}</TableCell>
                     <TableCell>{f.posto || "—"}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => setPendingDelete(f.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Editar"
+                          className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
+                          onClick={() => handleEdit(f)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Excluir"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
+                          onClick={() => setPendingDelete(f.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -227,8 +274,8 @@ export default function AbastecimentosPage() {
       <ConfirmDialog
         open={confirmAddOpen}
         onOpenChange={setConfirmAddOpen}
-        title="Confirma o registro deste abastecimento?"
-        confirmLabel="Registrar"
+        title={editingId ? "Confirma a alteração deste abastecimento?" : "Confirma o registro deste abastecimento?"}
+        confirmLabel={editingId ? "Salvar" : "Registrar"}
         onConfirm={handleAdd}
       />
     </div>

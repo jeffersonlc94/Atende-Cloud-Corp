@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-fleet";
+import {
+  useCalendarEvents,
+  useCreateCalendarEvent,
+  useUpdateCalendarEvent,
+  useDeleteCalendarEvent,
+} from "@/hooks/use-fleet";
 import { tipoEventoAgendaOptions } from "@/lib/validations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,23 +24,42 @@ import {
 } from "@/components/ui/select";
 import { VehicleSelect } from "@/components/frota/vehicle-select";
 import { formatDateBR } from "@/lib/format";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function AgendaPage() {
   const { data: events = [], isLoading } = useCalendarEvents({ futuras: true });
   const createEvent = useCreateCalendarEvent();
+  const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [confirmAddOpen, setConfirmAddOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     vehicleId: "",
     titulo: "",
     data: new Date().toISOString().slice(0, 10),
     descricao: "",
     tipo: "Outro" as (typeof tipoEventoAgendaOptions)[number],
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
+
+  function handleEdit(e: (typeof events)[number]) {
+    setEditingId(e.id);
+    setForm({
+      vehicleId: e.vehicleId || "",
+      titulo: e.titulo,
+      data: e.data.slice(0, 10),
+      descricao: e.descricao || "",
+      tipo: e.tipo as (typeof tipoEventoAgendaOptions)[number],
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm);
+  }
 
   async function handleAdd() {
     if (!form.titulo) {
@@ -43,11 +67,16 @@ export default function AgendaPage() {
       return;
     }
     try {
-      await createEvent.mutateAsync(form);
-      toast.success("Evento adicionado à agenda");
-      setForm({ vehicleId: "", titulo: "", data: new Date().toISOString().slice(0, 10), descricao: "", tipo: "Outro" });
+      if (editingId) {
+        await updateEvent.mutateAsync({ id: editingId, data: form });
+        toast.success("Evento atualizado");
+      } else {
+        await createEvent.mutateAsync(form);
+        toast.success("Evento adicionado à agenda");
+      }
+      cancelEdit();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao adicionar evento");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar evento");
     }
   }
 
@@ -60,8 +89,12 @@ export default function AgendaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Novo evento</CardTitle>
-          <CardDescription>Adicione compromissos e lembretes relacionados à frota</CardDescription>
+          <CardTitle>{editingId ? "Editar evento" : "Novo evento"}</CardTitle>
+          <CardDescription>
+            {editingId
+              ? "Atualize os dados do evento selecionado"
+              : "Adicione compromissos e lembretes relacionados à frota"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -103,18 +136,25 @@ export default function AgendaPage() {
             <Label>Descrição</Label>
             <Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </div>
-          <Button
-            onClick={() => {
-              if (!form.titulo) {
-                toast.error("Informe o título do evento");
-                return;
-              }
-              setConfirmAddOpen(true);
-            }}
-            disabled={createEvent.isPending}
-          >
-            Adicionar evento
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                if (!form.titulo) {
+                  toast.error("Informe o título do evento");
+                  return;
+                }
+                setConfirmAddOpen(true);
+              }}
+              disabled={createEvent.isPending || updateEvent.isPending}
+            >
+              {editingId ? "Salvar alterações" : "Adicionar evento"}
+            </Button>
+            {editingId && (
+              <Button type="button" variant="outline" onClick={cancelEdit}>
+                <X className="mr-1 h-4 w-4" /> Cancelar edição
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -140,8 +180,23 @@ export default function AgendaPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{e.tipo}</Badge>
-                <Button variant="ghost" size="icon" onClick={() => setPendingDelete(e.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Editar"
+                  className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
+                  onClick={() => handleEdit(e)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Excluir"
+                  className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
+                  onClick={() => setPendingDelete(e.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -161,8 +216,8 @@ export default function AgendaPage() {
       <ConfirmDialog
         open={confirmAddOpen}
         onOpenChange={setConfirmAddOpen}
-        title="Confirma a inclusão deste evento na agenda?"
-        confirmLabel="Adicionar"
+        title={editingId ? "Confirma a alteração deste evento?" : "Confirma a inclusão deste evento na agenda?"}
+        confirmLabel={editingId ? "Salvar" : "Adicionar"}
         onConfirm={handleAdd}
       />
     </div>

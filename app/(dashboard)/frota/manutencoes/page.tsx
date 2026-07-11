@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useMaintenances, useCreateMaintenance, useDeleteMaintenance } from "@/hooks/use-fleet";
+import { useMaintenances, useCreateMaintenance, useUpdateMaintenance, useDeleteMaintenance } from "@/hooks/use-fleet";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,17 +20,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 export default function ManutencoesPage() {
   const { data: items = [], isLoading } = useMaintenances();
   const createMaintenance = useCreateMaintenance();
+  const updateMaintenance = useUpdateMaintenance();
   const deleteMaintenance = useDeleteMaintenance();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [confirmAddOpen, setConfirmAddOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
+  const emptyForm = {
     vehicleId: "",
     tipo: "",
     data: new Date().toISOString().slice(0, 10),
@@ -38,27 +40,52 @@ export default function ManutencoesPage() {
     valor: "",
     km: "",
     descricao: "",
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
+
+  function handleEdit(m: (typeof items)[number]) {
+    setEditingId(m.id);
+    setForm({
+      vehicleId: m.vehicleId,
+      tipo: m.tipo,
+      data: m.data.slice(0, 10),
+      oficina: m.oficina || "",
+      valor: m.valor ? String(m.valor) : "",
+      km: m.km ? String(m.km) : "",
+      descricao: m.descricao || "",
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm);
+  }
 
   async function handleAdd() {
     if (!form.vehicleId || !form.tipo) {
       toast.error("Selecione o veículo e informe o tipo");
       return;
     }
+    const payload = {
+      vehicleId: form.vehicleId,
+      tipo: form.tipo,
+      data: form.data,
+      oficina: form.oficina,
+      valor: form.valor ? parseFloat(form.valor) : undefined,
+      km: form.km ? parseInt(form.km, 10) : undefined,
+      descricao: form.descricao,
+    };
     try {
-      await createMaintenance.mutateAsync({
-        vehicleId: form.vehicleId,
-        tipo: form.tipo,
-        data: form.data,
-        oficina: form.oficina,
-        valor: form.valor ? parseFloat(form.valor) : undefined,
-        km: form.km ? parseInt(form.km, 10) : undefined,
-        descricao: form.descricao,
-      });
-      toast.success("Manutenção registrada");
-      setForm({ vehicleId: "", tipo: "", data: new Date().toISOString().slice(0, 10), oficina: "", valor: "", km: "", descricao: "" });
+      if (editingId) {
+        await updateMaintenance.mutateAsync({ id: editingId, data: payload });
+        toast.success("Manutenção atualizada");
+      } else {
+        await createMaintenance.mutateAsync(payload);
+        toast.success("Manutenção registrada");
+      }
+      cancelEdit();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao registrar");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     }
   }
 
@@ -71,8 +98,10 @@ export default function ManutencoesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Nova manutenção</CardTitle>
-          <CardDescription>Registre serviços realizados na frota</CardDescription>
+          <CardTitle>{editingId ? "Editar manutenção" : "Nova manutenção"}</CardTitle>
+          <CardDescription>
+            {editingId ? "Atualize os dados da manutenção selecionada" : "Registre serviços realizados na frota"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
@@ -114,18 +143,25 @@ export default function ManutencoesPage() {
             <Label>Descrição</Label>
             <Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </div>
-          <Button
-            onClick={() => {
-              if (!form.vehicleId || !form.tipo) {
-                toast.error("Selecione o veículo e informe o tipo");
-                return;
-              }
-              setConfirmAddOpen(true);
-            }}
-            disabled={createMaintenance.isPending}
-          >
-            Registrar
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                if (!form.vehicleId || !form.tipo) {
+                  toast.error("Selecione o veículo e informe o tipo");
+                  return;
+                }
+                setConfirmAddOpen(true);
+              }}
+              disabled={createMaintenance.isPending || updateMaintenance.isPending}
+            >
+              {editingId ? "Salvar alterações" : "Registrar"}
+            </Button>
+            {editingId && (
+              <Button type="button" variant="outline" onClick={cancelEdit}>
+                <X className="mr-1 h-4 w-4" /> Cancelar edição
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -168,9 +204,26 @@ export default function ManutencoesPage() {
                       {m.valor ? formatCurrencyBRL(Number(m.valor)) : "—"}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => setPendingDelete(m.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Editar"
+                          className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
+                          onClick={() => handleEdit(m)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Excluir"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-500/10"
+                          onClick={() => setPendingDelete(m.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -192,8 +245,8 @@ export default function ManutencoesPage() {
       <ConfirmDialog
         open={confirmAddOpen}
         onOpenChange={setConfirmAddOpen}
-        title="Confirma o registro desta manutenção?"
-        confirmLabel="Registrar"
+        title={editingId ? "Confirma a alteração desta manutenção?" : "Confirma o registro desta manutenção?"}
+        confirmLabel={editingId ? "Salvar" : "Registrar"}
         onConfirm={handleAdd}
       />
     </div>
