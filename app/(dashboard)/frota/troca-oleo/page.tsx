@@ -7,6 +7,8 @@ import { useOilChanges, useCreateOilChange, useDeleteOilChange } from "@/hooks/u
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -107,7 +109,7 @@ export default function TrocaOleoPage() {
           <CardDescription>Registre a troca e a quilometragem prevista para a próxima</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-7">
             <div className="space-y-1">
               <Label>Veículo *</Label>
               <VehicleSelect
@@ -121,7 +123,10 @@ export default function TrocaOleoPage() {
             </div>
             <div className="space-y-1">
               <Label>KM *</Label>
-              <Input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
+              <NumberInput
+                value={form.km ? Number(form.km) : undefined}
+                onValueChange={(v) => setForm({ ...form, km: v === undefined ? "" : String(v) })}
+              />
             </div>
             <div className="space-y-1">
               <Label>Tipo de óleo</Label>
@@ -133,7 +138,17 @@ export default function TrocaOleoPage() {
             </div>
             <div className="space-y-1">
               <Label>Próxima troca (KM)</Label>
-              <Input type="number" value={form.kmProximaTroca} onChange={(e) => setForm({ ...form, kmProximaTroca: e.target.value })} />
+              <NumberInput
+                value={form.kmProximaTroca ? Number(form.kmProximaTroca) : undefined}
+                onValueChange={(v) => setForm({ ...form, kmProximaTroca: v === undefined ? "" : String(v) })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Valor (R$)</Label>
+              <CurrencyInput
+                value={form.valor ? Number(form.valor) : undefined}
+                onValueChange={(v) => setForm({ ...form, valor: v === undefined ? "" : String(v) })}
+              />
             </div>
           </div>
           <Button

@@ -1,8 +1,9 @@
 "use client";
 
-import { useFieldArray, type Control, type UseFormRegister } from "react-hook-form";
+import { Controller, useFieldArray, type Control, type UseFormRegister } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Table,
   TableBody,
@@ -75,11 +76,16 @@ export function QuoteItemsTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      {...register(`itens.${index}.valorUnitario`, { valueAsNumber: true })}
+                    <Controller
+                      control={control}
+                      name={`itens.${index}.valorUnitario`}
+                      render={({ field }) => (
+                        <CurrencyInput
+                          value={field.value as number | undefined}
+                          onValueChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
                   </TableCell>
                   <TableCell className="font-medium">

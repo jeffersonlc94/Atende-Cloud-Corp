@@ -7,6 +7,8 @@ import { combustivelOptions } from "@/lib/validations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -105,7 +107,10 @@ export default function AbastecimentosPage() {
             </div>
             <div className="space-y-1">
               <Label>KM</Label>
-              <Input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
+              <NumberInput
+                value={form.km ? Number(form.km) : undefined}
+                onValueChange={(v) => setForm({ ...form, km: v === undefined ? "" : String(v) })}
+              />
             </div>
             <div className="space-y-1">
               <Label>Litros *</Label>
@@ -113,7 +118,10 @@ export default function AbastecimentosPage() {
             </div>
             <div className="space-y-1">
               <Label>Valor/litro *</Label>
-              <Input type="number" step="0.001" value={form.valorLitro} onChange={(e) => setForm({ ...form, valorLitro: e.target.value })} />
+              <CurrencyInput
+                value={form.valorLitro ? Number(form.valorLitro) : undefined}
+                onValueChange={(v) => setForm({ ...form, valorLitro: v === undefined ? "" : String(v) })}
+              />
             </div>
             <div className="space-y-1">
               <Label>Posto</Label>

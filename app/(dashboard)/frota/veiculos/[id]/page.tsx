@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -197,7 +199,11 @@ function MileageTab({ vehicleId }: { vehicleId: string }) {
           </div>
           <div className="space-y-1">
             <Label>KM</Label>
-            <Input type="number" value={km} onChange={(e) => setKm(e.target.value)} className="w-32" />
+            <NumberInput
+              value={km ? Number(km) : undefined}
+              onValueChange={(v) => setKm(v === undefined ? "" : String(v))}
+              className="w-32"
+            />
           </div>
           <Button onClick={() => km && setConfirmOpen(true)} disabled={createLog.isPending}>
             Registrar
@@ -272,7 +278,10 @@ function OilTab({ vehicleId }: { vehicleId: string }) {
           </div>
           <div className="space-y-1">
             <Label>KM</Label>
-            <Input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
+            <NumberInput
+              value={form.km ? Number(form.km) : undefined}
+              onValueChange={(v) => setForm({ ...form, km: v === undefined ? "" : String(v) })}
+            />
           </div>
           <div className="space-y-1">
             <Label>Tipo de óleo</Label>
@@ -284,11 +293,17 @@ function OilTab({ vehicleId }: { vehicleId: string }) {
           </div>
           <div className="space-y-1">
             <Label>Valor (R$)</Label>
-            <Input type="number" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
+            <CurrencyInput
+              value={form.valor ? Number(form.valor) : undefined}
+              onValueChange={(v) => setForm({ ...form, valor: v === undefined ? "" : String(v) })}
+            />
           </div>
           <div className="space-y-1">
             <Label>Próxima troca (KM)</Label>
-            <Input type="number" value={form.kmProximaTroca} onChange={(e) => setForm({ ...form, kmProximaTroca: e.target.value })} />
+            <NumberInput
+              value={form.kmProximaTroca ? Number(form.kmProximaTroca) : undefined}
+              onValueChange={(v) => setForm({ ...form, kmProximaTroca: v === undefined ? "" : String(v) })}
+            />
           </div>
         </div>
         <Button onClick={() => form.km && setConfirmOpen(true)} disabled={createOil.isPending}>
@@ -374,11 +389,17 @@ function MaintenanceTab({ vehicleId }: { vehicleId: string }) {
           </div>
           <div className="space-y-1">
             <Label>Valor (R$)</Label>
-            <Input type="number" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
+            <CurrencyInput
+              value={form.valor ? Number(form.valor) : undefined}
+              onValueChange={(v) => setForm({ ...form, valor: v === undefined ? "" : String(v) })}
+            />
           </div>
           <div className="space-y-1">
             <Label>KM</Label>
-            <Input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
+            <NumberInput
+              value={form.km ? Number(form.km) : undefined}
+              onValueChange={(v) => setForm({ ...form, km: v === undefined ? "" : String(v) })}
+            />
           </div>
         </div>
         <Button onClick={() => form.tipo && setConfirmOpen(true)} disabled={createMaintenance.isPending}>

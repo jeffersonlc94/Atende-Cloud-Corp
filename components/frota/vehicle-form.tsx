@@ -18,6 +18,8 @@ import { useCreateVehicle, useUpdateVehicle, type VehicleRecord } from "@/hooks/
 import { useCompanies } from "@/hooks/use-companies";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -445,9 +447,12 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
               </div>
               <div className="space-y-2">
                 <FieldLabel icon={Gauge}>Capacidade de carga (kg)</FieldLabel>
-                <Input
-                  type="number"
-                  {...register("capacidadeCarga", { valueAsNumber: true })}
+                <Controller
+                  control={control}
+                  name="capacidadeCarga"
+                  render={({ field }) => (
+                    <NumberInput value={field.value as number | undefined} onValueChange={field.onChange} onBlur={field.onBlur} />
+                  )}
                 />
               </div>
               <div className="space-y-2">
@@ -493,10 +498,17 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
                   >
                     Intervalo de troca de óleo * (km)
                   </FieldLabel>
-                  <Input
-                    type="number"
-                    placeholder="Ex.: 5000"
-                    {...register("oilChangeIntervalKm", { valueAsNumber: true })}
+                  <Controller
+                    control={control}
+                    name="oilChangeIntervalKm"
+                    render={({ field }) => (
+                      <NumberInput
+                        placeholder="Ex.: 5.000"
+                        value={field.value as number | undefined}
+                        onValueChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )}
                   />
                 </div>
                 <div className="space-y-2">
@@ -545,7 +557,13 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
             <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-3">
               <div className="space-y-2">
                 <FieldLabel icon={Gauge}>KM atual</FieldLabel>
-                <Input type="number" {...register("kmAtual", { valueAsNumber: true })} />
+                <Controller
+                  control={control}
+                  name="kmAtual"
+                  render={({ field }) => (
+                    <NumberInput value={field.value as number | undefined} onValueChange={field.onChange} onBlur={field.onBlur} />
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <FieldLabel icon={CalendarDays}>Data da última atualização</FieldLabel>
@@ -675,10 +693,12 @@ export function VehicleForm({ initialData }: { initialData?: VehicleRecord }) {
               </div>
               <div className="space-y-2">
                 <FieldLabel icon={DollarSign}>Valor de aquisição (R$)</FieldLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...register("valorAquisicao", { valueAsNumber: true })}
+                <Controller
+                  control={control}
+                  name="valorAquisicao"
+                  render={({ field }) => (
+                    <CurrencyInput value={field.value as number | undefined} onValueChange={field.onChange} onBlur={field.onBlur} />
+                  )}
                 />
               </div>
             </CardContent>

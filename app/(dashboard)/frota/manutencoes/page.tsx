@@ -6,6 +6,8 @@ import { useMaintenances, useCreateMaintenance, useDeleteMaintenance } from "@/h
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VehicleSelect } from "@/components/frota/vehicle-select";
@@ -95,11 +97,17 @@ export default function ManutencoesPage() {
             </div>
             <div className="space-y-1">
               <Label>Valor (R$)</Label>
-              <Input type="number" step="0.01" value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
+              <CurrencyInput
+                value={form.valor ? Number(form.valor) : undefined}
+                onValueChange={(v) => setForm({ ...form, valor: v === undefined ? "" : String(v) })}
+              />
             </div>
             <div className="space-y-1">
               <Label>KM</Label>
-              <Input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} />
+              <NumberInput
+                value={form.km ? Number(form.km) : undefined}
+                onValueChange={(v) => setForm({ ...form, km: v === undefined ? "" : String(v) })}
+              />
             </div>
           </div>
           <div className="space-y-1">

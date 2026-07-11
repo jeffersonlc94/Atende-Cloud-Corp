@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -181,12 +182,10 @@ export default function ChecklistsPage() {
             <div className="space-y-1">
               <Label>KM atual *</Label>
               <div className="relative">
-                <Input
-                  type="number"
-                  min={1}
-                  placeholder="Ex: 45000"
-                  value={km}
-                  onChange={(e) => setKm(e.target.value)}
+                <NumberInput
+                  placeholder="Ex: 45.000"
+                  value={km ? Number(km) : undefined}
+                  onValueChange={(v) => setKm(v === undefined ? "" : String(v))}
                   className="pr-9"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
