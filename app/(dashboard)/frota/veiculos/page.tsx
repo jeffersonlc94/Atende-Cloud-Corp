@@ -33,12 +33,45 @@ import {
   LayoutGrid,
   List as ListIcon,
   PackageOpen,
+  Search,
+  ListFilter,
+  Fuel,
+  Building2,
 } from "lucide-react";
 
 const VIEW_MODE_KEY = "atende:veiculos:viewMode";
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 type ViewMode = "grid" | "list";
+
+function FilterSelect({
+  icon: Icon,
+  label,
+  value,
+  display,
+  onValueChange,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  display: React.ReactNode;
+  onValueChange: (v: string | null) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger className="h-auto w-44 gap-2 px-3 py-2">
+        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="flex min-w-0 flex-col items-start text-left">
+          <span className="text-xs text-muted-foreground">{label}</span>
+          <span className="truncate text-sm font-semibold">{display}</span>
+        </span>
+      </SelectTrigger>
+      <SelectContent>{children}</SelectContent>
+    </Select>
+  );
+}
 
 function VeiculosPageContent() {
   const { data: session } = useSession();
@@ -145,9 +178,14 @@ function VeiculosPageContent() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Veículos</h1>
-          <p className="text-sm text-muted-foreground">Cadastro e gerenciamento da frota.</p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+            <Car className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Veículos</h1>
+            <p className="text-sm text-muted-foreground">Cadastro e gerenciamento da frota.</p>
+          </div>
         </div>
         <Link href="/frota/veiculos/novo" className={buttonVariants()}>
           <Plus className="mr-2 h-4 w-4" /> Novo Veículo
@@ -162,58 +200,107 @@ function VeiculosPageContent() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Total de veículos" value={stats.total} icon={Car} accent="info" />
-          <StatCard label="Veículos ativos" value={stats.ativos} icon={CheckCircle2} accent="default" />
-          <StatCard label="Em manutenção" value={stats.manutencao} icon={Wrench} accent="warning" />
-          <StatCard label="Inativos" value={stats.inativos} icon={Ban} accent="critical" />
+          <StatCard
+            label="Total de veículos"
+            value={stats.total}
+            hint="Todos os veículos cadastrados"
+            icon={Car}
+            accent="info"
+            accentBorder
+          />
+          <StatCard
+            label="Veículos ativos"
+            value={stats.ativos}
+            hint="Em operação"
+            icon={CheckCircle2}
+            accent="default"
+            accentBorder
+          />
+          <StatCard
+            label="Em manutenção"
+            value={stats.manutencao}
+            hint="Fora de operação"
+            icon={Wrench}
+            accent="warning"
+            accentBorder
+          />
+          <StatCard
+            label="Inativos"
+            value={stats.inativos}
+            hint="Sem uso"
+            icon={Ban}
+            accent="critical"
+            accentBorder
+          />
         </div>
       )}
 
       <Card>
         <CardContent className="flex flex-wrap items-center gap-2">
-          <Input
-            placeholder="Buscar por placa, marca ou modelo"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="max-w-xs"
-          />
-          <Select value={situacao} onValueChange={(v) => setSituacao(v ?? "all")}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Situação" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as situações</SelectItem>
-              <SelectItem value="Ativo">Ativo</SelectItem>
-              <SelectItem value="Manutencao">Manutenção</SelectItem>
-              <SelectItem value="Inativo">Inativo</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={companyId} onValueChange={(v) => setCompanyId(v ?? "all")}>
-            <SelectTrigger className="w-52">
-              <SelectValue placeholder="Empresa" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as empresas</SelectItem>
-              {companies.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.nomeFantasia || c.razaoSocial}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={combustivel} onValueChange={(v) => setCombustivel(v ?? "all")}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Combustível" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os combustíveis</SelectItem>
-              {combustivelOptions.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por placa, marca ou modelo"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <FilterSelect
+            icon={ListFilter}
+            label="Status"
+            value={situacao}
+            display={
+              situacao === "all"
+                ? "Todos"
+                : situacao === "Manutencao"
+                  ? "Manutenção"
+                  : situacao
+            }
+            onValueChange={(v) => setSituacao(v ?? "all")}
+          >
+            <SelectItem value="all">Todas as situações</SelectItem>
+            <SelectItem value="Ativo">Ativo</SelectItem>
+            <SelectItem value="Manutencao">Manutenção</SelectItem>
+            <SelectItem value="Inativo">Inativo</SelectItem>
+          </FilterSelect>
+
+          <FilterSelect
+            icon={Fuel}
+            label="Combustível"
+            value={combustivel}
+            display={combustivel === "all" ? "Todos" : combustivel}
+            onValueChange={(v) => setCombustivel(v ?? "all")}
+          >
+            <SelectItem value="all">Todos os combustíveis</SelectItem>
+            {combustivelOptions.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            icon={Building2}
+            label="Empresa"
+            value={companyId}
+            display={
+              companyId === "all"
+                ? "Todas"
+                : companies.find((c) => c.id === companyId)?.nomeFantasia ||
+                  companies.find((c) => c.id === companyId)?.razaoSocial ||
+                  "Todas"
+            }
+            onValueChange={(v) => setCompanyId(v ?? "all")}
+          >
+            <SelectItem value="all">Todas as empresas</SelectItem>
+            {companies.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.nomeFantasia || c.razaoSocial}
+              </SelectItem>
+            ))}
+          </FilterSelect>
 
           <div className="ml-auto flex items-center gap-1 rounded-lg border p-1">
             <Button
