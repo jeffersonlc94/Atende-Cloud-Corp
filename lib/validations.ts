@@ -96,6 +96,20 @@ export const combustivelOptions = [
 
 export const situacaoVeiculoOptions = ["Ativo", "Inativo", "Manutencao"] as const;
 
+export const categoriaVeiculoOptions = [
+  "Carro de Passeio",
+  "Caminhonete",
+  "Utilitário",
+  "Caminhão",
+  "Moto",
+  "Ônibus",
+  "Outro",
+] as const;
+
+export const tracaoOptions = ["4x2", "4x4", "Dianteira", "Traseira"] as const;
+
+export const tipoUsoOptions = ["Próprio", "Alugado", "Terceirizado"] as const;
+
 export const tipoDocumentoOptions = [
   "CRLV",
   "Seguro",
@@ -144,6 +158,7 @@ export const tipoEventoAgendaOptions = [
 
 export const vehicleSchema = z.object({
   fotoUrl: z.string().optional().default(""),
+  nome: z.string().optional().default(""),
   placa: z.string().min(1, "Placa obrigatória"),
   marca: z.string().min(1, "Marca obrigatória"),
   modelo: z.string().min(1, "Modelo obrigatório"),
@@ -156,8 +171,28 @@ export const vehicleSchema = z.object({
   companyId: z.string().min(1, "Selecione a empresa responsável"),
   kmAtual: z.number().int().nonnegative().default(0),
   situacao: z.enum(situacaoVeiculoOptions).default("Ativo"),
+  categoria: z.enum(categoriaVeiculoOptions).optional(),
+  capacidadeCarga: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().int().nonnegative().optional()
+  ),
+  potencia: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().int().nonnegative().optional()
+  ),
+  tracao: z.enum(tracaoOptions).optional(),
+  oilChangeIntervalKm: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().int().positive().optional()
+  ),
+  tipoUso: z.enum(tipoUsoOptions).optional(),
+  valorAquisicao: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().nonnegative().optional()
+  ),
+  observacoesAdicionais: z.string().max(300, "Máximo de 300 caracteres").optional().default(""),
   dataAquisicao: z.string().optional().default(""),
-  observacoes: z.string().optional().default(""),
+  observacoes: z.string().max(500, "Máximo de 500 caracteres").optional().default(""),
 });
 
 export type VehicleFormValues = z.input<typeof vehicleSchema>;

@@ -5,7 +5,7 @@ import path from "path";
 import crypto from "crypto";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
-const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB (alinhado ao texto de ajuda da tela de veículos)
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 
 export async function POST(req: NextRequest) {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "Arquivo muito grande (máx 2MB)" }, { status: 400 });
+    return NextResponse.json({ error: "Arquivo muito grande (máx 5MB)" }, { status: 400 });
   }
 
   await mkdir(UPLOAD_DIR, { recursive: true });

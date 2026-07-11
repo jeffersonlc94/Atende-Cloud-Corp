@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
   const vehicle = await prisma.vehicle.create({
     data: {
       fotoUrl: data.fotoUrl || null,
+      nome: data.nome || null,
       placa: data.placa.toUpperCase(),
       marca: data.marca,
       modelo: data.modelo,
@@ -74,6 +75,14 @@ export async function POST(req: NextRequest) {
       companyId: data.companyId,
       kmAtual: data.kmAtual,
       situacao: data.situacao,
+      categoria: data.categoria || null,
+      capacidadeCarga: data.capacidadeCarga ?? null,
+      potencia: data.potencia ?? null,
+      tracao: data.tracao || null,
+      oilChangeIntervalKm: data.oilChangeIntervalKm ?? null,
+      tipoUso: data.tipoUso || null,
+      valorAquisicao: data.valorAquisicao ?? null,
+      observacoesAdicionais: data.observacoesAdicionais || null,
       dataAquisicao: data.dataAquisicao ? new Date(data.dataAquisicao) : null,
       observacoes: data.observacoes || null,
     },

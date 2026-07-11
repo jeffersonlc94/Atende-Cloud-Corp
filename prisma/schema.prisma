@@ -193,25 +193,34 @@ enum TipoEventoAgenda {
 }
 
 model Vehicle {
-  id            String          @id @default(cuid())
-  fotoUrl       String?
-  placa         String          @unique
-  marca         String
-  modelo        String
-  versao        String?
-  ano           Int
-  cor           String?
-  renavam       String?
-  chassi        String?
-  combustivel   Combustivel     @default(Flex)
-  companyId     String
-  company       Company         @relation(fields: [companyId], references: [id])
-  kmAtual       Int             @default(0)
-  situacao      SituacaoVeiculo @default(Ativo)
-  dataAquisicao DateTime?
-  observacoes   String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                    String          @id @default(cuid())
+  fotoUrl               String?
+  nome                  String?
+  placa                 String          @unique
+  marca                 String
+  modelo                String
+  versao                String?
+  ano                   Int
+  cor                   String?
+  renavam               String?
+  chassi                String?
+  combustivel           Combustivel     @default(Flex)
+  companyId             String
+  company               Company         @relation(fields: [companyId], references: [id])
+  kmAtual               Int             @default(0)
+  situacao              SituacaoVeiculo @default(Ativo)
+  categoria             String?
+  capacidadeCarga       Int?
+  potencia              Int?
+  tracao                String?
+  oilChangeIntervalKm   Int?
+  tipoUso               String?
+  valorAquisicao        Decimal?        @db.Decimal(14, 2)
+  observacoesAdicionais String?
+  dataAquisicao         DateTime?
+  observacoes           String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 
   documentos   VehicleDocument[]
   mileageLogs  MileageLog[]

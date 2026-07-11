@@ -10,6 +10,7 @@ import type {
 export type VehicleRecord = {
   id: string;
   fotoUrl: string | null;
+  nome: string | null;
   placa: string;
   marca: string;
   modelo: string;
@@ -22,13 +23,21 @@ export type VehicleRecord = {
   companyId: string;
   kmAtual: number;
   situacao: (typeof situacaoVeiculoOptions)[number];
+  categoria: string | null;
+  capacidadeCarga: number | null;
+  potencia: number | null;
+  tracao: string | null;
+  oilChangeIntervalKm: number | null;
+  tipoUso: string | null;
+  valorAquisicao: string | number | null;
+  observacoesAdicionais: string | null;
   dataAquisicao: string | null;
   observacoes: string | null;
   createdAt: string;
   updatedAt: string;
   company: { id: string; razaoSocial: string; nomeFantasia: string | null };
   _count?: { checklists: number; documentos: number; maintenances: number };
-  oilChanges?: { km: number; kmProximaTroca: number | null }[];
+  oilChanges?: { km: number; kmProximaTroca: number | null; data: string }[];
   mileageLogs?: { data: string; km: number }[];
 };
 
