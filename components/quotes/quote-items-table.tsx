@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -14,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
 import { formatCurrencyBRL } from "@/lib/format";
+import { computeItemTotal } from "@/lib/quote-calc";
 import type { QuoteFormValues } from "@/lib/validations";
 
 export function QuoteItemsTable({
@@ -36,6 +44,8 @@ export function QuoteItemsTable({
       descricao: "",
       quantidade: 1,
       valorUnitario: undefined,
+      descontoTipo: undefined,
+      descontoValor: undefined,
     });
   }
 
@@ -49,6 +59,7 @@ export function QuoteItemsTable({
               <TableHead>Descrição</TableHead>
               <TableHead className="w-28">Qtd.</TableHead>
               <TableHead className="w-36">Valor Unit.</TableHead>
+              <TableHead className="w-44">Desconto</TableHead>
               <TableHead className="w-36">Total</TableHead>
               <TableHead className="w-10" />
             </TableRow>
@@ -56,8 +67,13 @@ export function QuoteItemsTable({
           <TableBody>
             {fields.map((field, index) => {
               const item = watchItems?.[index];
-              const totalLinha =
-                (Number(item?.quantidade) || 0) * (Number(item?.valorUnitario) || 0);
+              const totalLinha = computeItemTotal(
+                Number(item?.quantidade) || 0,
+                Number(item?.valorUnitario) || 0,
+                item?.descontoTipo,
+                Number(item?.descontoValor) || 0
+              );
+              const descontoTipoAtual = item?.descontoTipo ?? "Valor";
               return (
                 <TableRow key={field.id}>
                   <TableCell className="text-muted-foreground">{index + 1}</TableCell>
@@ -87,6 +103,61 @@ export function QuoteItemsTable({
                         />
                       )}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <Controller
+                        control={control}
+                        name={`itens.${index}.descontoTipo`}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value ?? "Valor"}
+                            onValueChange={(v) => field.onChange(v)}
+                          >
+                            <SelectTrigger className="w-16 shrink-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Valor">R$</SelectItem>
+                              <SelectItem value="Percentual">%</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      <Controller
+                        control={control}
+                        name={`itens.${index}.descontoValor`}
+                        render={({ field }) =>
+                          descontoTipoAtual === "Percentual" ? (
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                className="pr-6"
+                                value={(field.value as number | undefined) ?? ""}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value === "" ? undefined : Number(e.target.value)
+                                  )
+                                }
+                                onBlur={field.onBlur}
+                              />
+                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                %
+                              </span>
+                            </div>
+                          ) : (
+                            <CurrencyInput
+                              value={field.value as number | undefined}
+                              onValueChange={field.onChange}
+                              onBlur={field.onBlur}
+                            />
+                          )
+                        }
+                      />
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium">
                     {formatCurrencyBRL(totalLinha)}

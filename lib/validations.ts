@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+export const descontoTipoOptions = ["Valor", "Percentual"] as const;
+
+const optionalDescontoTipo = z.enum(descontoTipoOptions).optional();
+
+const optionalDescontoValor = z.preprocess(
+  (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+  z.number().nonnegative("Desconto não pode ser negativo").optional()
+);
+
 export const quoteItemSchema = z.object({
   id: z.string().optional(),
   ordem: z.number().int().nonnegative(),
@@ -9,6 +18,8 @@ export const quoteItemSchema = z.object({
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? 0 : v),
     z.number().nonnegative("Valor unitário não pode ser negativo")
   ),
+  descontoTipo: optionalDescontoTipo,
+  descontoValor: optionalDescontoValor,
 });
 
 export const visibilidadeOptions = ["Global", "Privado"] as const;
@@ -28,6 +39,8 @@ export const quoteSchema = z.object({
   observacoes: z.string().optional().default(""),
   visibilidade: z.enum(visibilidadeOptions).default("Global"),
   itens: z.array(quoteItemSchema).min(1, "Adicione ao menos um item"),
+  descontoGeralTipo: optionalDescontoTipo,
+  descontoGeralValor: optionalDescontoValor,
 });
 
 export type QuoteFormValues = z.input<typeof quoteSchema>;

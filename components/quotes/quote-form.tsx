@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -29,7 +29,9 @@ import {
 } from "@/components/ui/card";
 import { ClientCombobox } from "@/components/clients/client-combobox";
 import { QuoteItemsTable } from "./quote-items-table";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { formatCurrencyBRL } from "@/lib/format";
+import { computeQuoteTotals } from "@/lib/quote-calc";
 import {
   Loader2,
   Save,
@@ -121,7 +123,14 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             descricao: i.descricao,
             quantidade: Number(i.quantidade),
             valorUnitario: Number(i.valorUnitario),
+            descontoTipo: i.descontoTipo ?? undefined,
+            descontoValor: i.descontoValor !== null && i.descontoValor !== undefined ? Number(i.descontoValor) : undefined,
           })),
+          descontoGeralTipo: initialData.descontoGeralTipo ?? undefined,
+          descontoGeralValor:
+            initialData.descontoGeralValor !== null && initialData.descontoGeralValor !== undefined
+              ? Number(initialData.descontoGeralValor)
+              : undefined,
         }
       : {
           numero: "",
@@ -134,19 +143,35 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           prazoEntrega: "",
           observacoes: "",
           visibilidade: "Global",
-          itens: [{ ordem: 0, descricao: "", quantidade: 1, valorUnitario: undefined }],
+          itens: [{ ordem: 0, descricao: "", quantidade: 1, valorUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
+          descontoGeralTipo: undefined,
+          descontoGeralValor: undefined,
         },
   });
 
   const values = watch();
   const itens = useWatch({ control, name: "itens" });
+  const descontoGeralTipo = useWatch({ control, name: "descontoGeralTipo" });
+  const descontoGeralValor = useWatch({ control, name: "descontoGeralValor" });
 
-  const total = useMemo(() => {
-    return (itens ?? []).reduce(
-      (acc, item) => acc + (Number(item?.quantidade) || 0) * (Number(item?.valorUnitario) || 0),
-      0
+  const { subtotal, total, descontoGeral } = useMemo(() => {
+    const itensNormalizados = (itens ?? []).map((item) => ({
+      quantidade: Number(item?.quantidade) || 0,
+      valorUnitario: Number(item?.valorUnitario) || 0,
+      descontoTipo: item?.descontoTipo as "Valor" | "Percentual" | undefined,
+      descontoValor: Number(item?.descontoValor) || 0,
+    }));
+    const result = computeQuoteTotals(
+      itensNormalizados,
+      descontoGeralTipo as "Valor" | "Percentual" | undefined,
+      Number(descontoGeralValor) || 0
     );
-  }, [itens]);
+    return {
+      subtotal: result.subtotal,
+      total: result.total,
+      descontoGeral: Math.round((result.subtotal - result.total) * 100) / 100,
+    };
+  }, [itens, descontoGeralTipo, descontoGeralValor]);
 
   const dataValidade = useMemo(() => {
     if (!values.dataEmissao || !values.validadeDias) return "";
@@ -357,9 +382,73 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             {errors.itens && !Array.isArray(errors.itens) && (
               <p className="text-sm text-destructive">{errors.itens.message}</p>
             )}
-            <div className="flex items-center justify-end gap-3 border-t pt-4">
-              <span className="text-sm font-medium text-muted-foreground">TOTAL</span>
-              <span className="text-2xl font-bold text-primary">{formatCurrencyBRL(total)}</span>
+
+            <div className="flex flex-col items-end gap-3 border-t pt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Desconto geral</span>
+                <Controller
+                  control={control}
+                  name="descontoGeralTipo"
+                  render={({ field }) => (
+                    <Select value={field.value ?? "Valor"} onValueChange={(v) => field.onChange(v)}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Valor">R$</SelectItem>
+                        <SelectItem value="Percentual">%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <Controller
+                  control={control}
+                  name="descontoGeralValor"
+                  render={({ field }) =>
+                    (values.descontoGeralTipo ?? "Valor") === "Percentual" ? (
+                      <div className="relative w-32">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="pr-6"
+                          value={(field.value as number | undefined) ?? ""}
+                          onChange={(e) =>
+                            field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          }
+                          onBlur={field.onBlur}
+                        />
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          %
+                        </span>
+                      </div>
+                    ) : (
+                      <CurrencyInput
+                        className="w-32"
+                        value={field.value as number | undefined}
+                        onValueChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )
+                  }
+                />
+              </div>
+
+              <div className="w-full max-w-xs space-y-1 text-right">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>{formatCurrencyBRL(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Desconto</span>
+                  <span>{formatCurrencyBRL(descontoGeral)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-1">
+                  <span className="text-sm font-medium text-muted-foreground">TOTAL</span>
+                  <span className="text-2xl font-bold text-primary">{formatCurrencyBRL(total)}</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

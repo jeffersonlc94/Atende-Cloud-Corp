@@ -4,12 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { quoteSchema } from "@/lib/validations";
 import { registerAudit, getRequestIp } from "@/lib/audit";
 import {canDeleteRecords, canAccessModule} from "@/lib/permissions";
+import { computeQuoteTotals } from "@/lib/quote-calc";
 
 type Params = { params: Promise<{ id: string }> };
-
-function computeItemTotal(quantidade: number, valorUnitario: number) {
-  return Math.round(quantidade * valorUnitario * 100) / 100;
-}
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth();
@@ -81,15 +78,21 @@ export async function PUT(req: NextRequest, { params }: Params) {
       where: { nome: { equals: clientNome, mode: "insensitive" } },
     })) ?? (await prisma.client.create({ data: { nome: clientNome } }));
 
-  const itensComputados = data.itens.map((item, idx) => ({
+  const { itensComputados, subtotal, total } = computeQuoteTotals(
+    data.itens,
+    data.descontoGeralTipo,
+    data.descontoGeralValor
+  );
+
+  const itensParaCriar = itensComputados.map((item, idx) => ({
     ordem: idx,
     descricao: item.descricao,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
-    valorTotal: computeItemTotal(item.quantidade, item.valorUnitario),
+    descontoTipo: item.descontoTipo ?? null,
+    descontoValor: item.descontoValor ?? null,
+    valorTotal: item.valorTotal,
   }));
-
-  const total = itensComputados.reduce((acc, i) => acc + i.valorTotal, 0);
 
   const dataEmissao = new Date(data.dataEmissao);
   let dataValidade: Date | null = null;
@@ -114,9 +117,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
         condicoesPagamento: data.condicoesPagamento,
         prazoEntrega: data.prazoEntrega,
         observacoes: data.observacoes,
+        subtotal,
+        descontoGeralTipo: data.descontoGeralTipo ?? null,
+        descontoGeralValor: data.descontoGeralValor ?? null,
         total,
         visibilidade: data.visibilidade,
-        itens: { createMany: { data: itensComputados } },
+        itens: { createMany: { data: itensParaCriar } },
       },
       include: { itens: true, company: true, client: true },
     });

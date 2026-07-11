@@ -85,26 +85,34 @@ enum Visibilidade {
   Privado
 }
 
+enum DescontoTipo {
+  Valor
+  Percentual
+}
+
 model Quote {
-  id                 String       @id @default(cuid())
-  numero             String       @unique
+  id                 String        @id @default(cuid())
+  numero             String        @unique
   companyId          String
-  company            Company      @relation(fields: [companyId], references: [id])
+  company            Company       @relation(fields: [companyId], references: [id])
   clientId           String
-  client             Client       @relation(fields: [clientId], references: [id])
+  client             Client        @relation(fields: [clientId], references: [id])
   referencia         String?
-  dataEmissao        DateTime     @default(now())
+  dataEmissao        DateTime      @default(now())
   dataValidade       DateTime?
   validadeDias       Int?
   condicoesPagamento String?
   prazoEntrega       String?
   observacoes        String?
-  total              Decimal      @default(0) @db.Decimal(14, 2)
-  visibilidade       Visibilidade @default(Global)
+  subtotal           Decimal?      @db.Decimal(14, 2)
+  descontoGeralTipo  DescontoTipo?
+  descontoGeralValor Decimal?      @db.Decimal(14, 2)
+  total              Decimal       @default(0) @db.Decimal(14, 2)
+  visibilidade       Visibilidade  @default(Global)
   createdByUserId    String?
-  createdByUser      User?        @relation(fields: [createdByUserId], references: [id])
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  createdByUser      User?         @relation(fields: [createdByUserId], references: [id])
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   itens QuoteItem[]
 
@@ -112,14 +120,16 @@ model Quote {
 }
 
 model QuoteItem {
-  id            String  @id @default(cuid())
+  id            String        @id @default(cuid())
   quoteId       String
-  quote         Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  quote         Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   ordem         Int
   descricao     String
-  quantidade    Decimal @db.Decimal(14, 3)
-  valorUnitario Decimal @db.Decimal(14, 2)
-  valorTotal    Decimal @db.Decimal(14, 2)
+  quantidade    Decimal       @db.Decimal(14, 3)
+  valorUnitario Decimal       @db.Decimal(14, 2)
+  descontoTipo  DescontoTipo?
+  descontoValor Decimal?      @db.Decimal(14, 2)
+  valorTotal    Decimal       @db.Decimal(14, 2)
 
   @@map("quote_items")
 }

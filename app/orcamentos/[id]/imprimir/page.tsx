@@ -110,6 +110,9 @@ export default function ImprimirOrcamentoPage({
               prazoEntrega: quote.prazoEntrega,
               observacoes: quote.observacoes,
               itens: quote.itens,
+              subtotal: quote.subtotal,
+              descontoGeralTipo: quote.descontoGeralTipo,
+              descontoGeralValor: quote.descontoGeralValor,
               total: quote.total,
             }}
           />

@@ -25,6 +25,8 @@ export type QuotePrintItem = {
   descricao: string;
   quantidade: number | string;
   valorUnitario: number | string;
+  descontoTipo?: "Valor" | "Percentual" | null;
+  descontoValor?: number | string | null;
   valorTotal: number | string;
 };
 
@@ -38,8 +40,17 @@ export type QuotePrintData = {
   prazoEntrega?: string | null;
   observacoes?: string | null;
   itens: QuotePrintItem[];
+  subtotal?: number | string | null;
+  descontoGeralTipo?: "Valor" | "Percentual" | null;
+  descontoGeralValor?: number | string | null;
   total: number | string;
 };
+
+function formatDescontoItem(item: QuotePrintItem): string {
+  const valor = Number(item.descontoValor);
+  if (!item.descontoTipo || !valor) return "—";
+  return item.descontoTipo === "Percentual" ? `${valor}%` : formatCurrencyBRL(valor);
+}
 
 export function QuotePrintLayout({
   company,
@@ -60,6 +71,16 @@ export function QuotePrintLayout({
 
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" | ");
   const [logoError, setLogoError] = useState(false);
+
+  const hasItemDesconto = quote.itens.some(
+    (item) => item.descontoTipo && Number(item.descontoValor) > 0
+  );
+  const subtotalNum = quote.subtotal !== null && quote.subtotal !== undefined ? Number(quote.subtotal) : null;
+  const totalNum = Number(quote.total);
+  const hasDescontoGeral =
+    (subtotalNum !== null && Math.abs(subtotalNum - totalNum) > 0.001) ||
+    !!(quote.descontoGeralTipo && Number(quote.descontoGeralValor) > 0);
+  const descontoGeralNum = subtotalNum !== null ? Math.max(0, subtotalNum - totalNum) : 0;
 
   return (
     <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none" id={id}>
@@ -136,13 +157,16 @@ export function QuotePrintLayout({
             <th className="border border-gray-400 p-1.5 text-center">DESCRIÇÃO</th>
             <th className="w-20 border border-gray-400 p-1.5 text-center">QTD</th>
             <th className="w-28 border border-gray-400 p-1.5 text-center">R$ UNIT</th>
+            {hasItemDesconto && (
+              <th className="w-24 border border-gray-400 p-1.5 text-center">DESCONTO</th>
+            )}
             <th className="w-28 border border-gray-400 p-1.5 text-center">R$ TOTAL</th>
           </tr>
         </thead>
         <tbody>
           {quote.itens.length === 0 && (
             <tr>
-              <td colSpan={5} className="border border-gray-400 p-3 text-center text-gray-400">
+              <td colSpan={hasItemDesconto ? 6 : 5} className="border border-gray-400 p-3 text-center text-gray-400">
                 Nenhum item adicionado
               </td>
             </tr>
@@ -157,6 +181,11 @@ export function QuotePrintLayout({
               <td className="border border-gray-400 p-1.5 text-center">
                 {formatCurrencyBRL(Number(item.valorUnitario))}
               </td>
+              {hasItemDesconto && (
+                <td className="border border-gray-400 p-1.5 text-center">
+                  {formatDescontoItem(item)}
+                </td>
+              )}
               <td className="border border-gray-400 p-1.5 text-center">
                 {formatCurrencyBRL(Number(item.valorTotal))}
               </td>
@@ -164,14 +193,43 @@ export function QuotePrintLayout({
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-gray-200 font-bold">
-            <td colSpan={4} className="border border-gray-400 p-1.5 text-right">
-              TOTAL
-            </td>
-            <td className="border border-gray-400 p-1.5 text-center">
-              {formatCurrencyBRL(Number(quote.total))}
-            </td>
-          </tr>
+          {hasDescontoGeral ? (
+            <>
+              <tr className="bg-gray-100">
+                <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
+                  Subtotal
+                </td>
+                <td className="border border-gray-400 p-1.5 text-center">
+                  {formatCurrencyBRL(subtotalNum ?? totalNum)}
+                </td>
+              </tr>
+              <tr className="bg-gray-100">
+                <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
+                  Desconto
+                </td>
+                <td className="border border-gray-400 p-1.5 text-center">
+                  {formatCurrencyBRL(descontoGeralNum)}
+                </td>
+              </tr>
+              <tr className="bg-gray-200 font-bold">
+                <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
+                  TOTAL
+                </td>
+                <td className="border border-gray-400 p-1.5 text-center">
+                  {formatCurrencyBRL(totalNum)}
+                </td>
+              </tr>
+            </>
+          ) : (
+            <tr className="bg-gray-200 font-bold">
+              <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
+                TOTAL
+              </td>
+              <td className="border border-gray-400 p-1.5 text-center">
+                {formatCurrencyBRL(totalNum)}
+              </td>
+            </tr>
+          )}
         </tfoot>
       </table>
 

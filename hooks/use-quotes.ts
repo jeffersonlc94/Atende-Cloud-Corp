@@ -9,6 +9,8 @@ export type QuoteItemRecord = {
   descricao: string;
   quantidade: string;
   valorUnitario: string;
+  descontoTipo: "Valor" | "Percentual" | null;
+  descontoValor: string | null;
   valorTotal: string;
 };
 
@@ -24,6 +26,9 @@ export type QuoteRecord = {
   condicoesPagamento: string | null;
   prazoEntrega: string | null;
   observacoes: string | null;
+  subtotal: string | null;
+  descontoGeralTipo: "Valor" | "Percentual" | null;
+  descontoGeralValor: string | null;
   total: string;
   visibilidade: "Global" | "Privado";
   createdByUserId: string | null;
