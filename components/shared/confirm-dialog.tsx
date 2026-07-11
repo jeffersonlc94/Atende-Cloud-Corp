@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -57,7 +58,9 @@ export function ConfirmDialog({
 
   if (!open) return null;
 
-  return (
+  // Renderiza no body via portal: o <main> do dashboard usa contain:layout,
+  // que prenderia o overlay fixed dentro dele em vez de cobrir a janela toda.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <Card className="w-full max-w-sm">
         <CardContent className="space-y-4 p-6">
@@ -81,6 +84,7 @@ export function ConfirmDialog({
           </div>
         </CardContent>
       </Card>
-    </div>
+    </div>,
+    document.body
   );
 }
