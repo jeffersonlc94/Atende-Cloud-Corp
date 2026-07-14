@@ -59,7 +59,11 @@ async function recipientsForAlert(
     .filter((u) => isNotificationAllowedForCargo(prefs, u.cargo, tipoNotificacao))
     .map((u) => u.email);
 
-  return Array.from(new Set([...envRecipients, ...userEmails]));
+  // Domínios internos (ex.: admin@atende.local do seed) não são entregáveis
+  // e fazem o servidor SMTP rejeitar o envio inteiro.
+  return Array.from(new Set([...envRecipients, ...userEmails])).filter(
+    (email) => !email.toLowerCase().endsWith(".local")
+  );
 }
 
 function relevantAlerts(alerts: FleetAlert[]): FleetAlert[] {
