@@ -37,9 +37,22 @@ export default function TrocaOleoPage() {
     kmProximaTroca: "",
   };
   const [form, setForm] = useState(emptyForm);
+  // Sugere a próxima troca (km + intervalo do cadastro do veículo) sem
+  // sobrescrever um valor que o usuário já tenha digitado manualmente.
+  const [kmProximaManual, setKmProximaManual] = useState(false);
+
+  function suggestKmProxima(vehicleId: string, kmStr: string, manual: boolean) {
+    if (manual) return undefined;
+    const intervalo = vehicles.find((v) => v.id === vehicleId)?.oilChangeIntervalKm;
+    const km = parseInt(kmStr, 10);
+    if (!intervalo || !kmStr || Number.isNaN(km)) return undefined;
+    return String(km + intervalo);
+  }
 
   function handleEdit(o: (typeof items)[number]) {
     setEditingId(o.id);
+    // Em edição, preserva o valor salvo — não recalcula a sugestão.
+    setKmProximaManual(true);
     setForm({
       vehicleId: o.vehicleId,
       data: o.data.slice(0, 10),
@@ -54,6 +67,7 @@ export default function TrocaOleoPage() {
   function cancelEdit() {
     setEditingId(null);
     setForm(emptyForm);
+    setKmProximaManual(false);
   }
 
   async function handleAdd() {
@@ -145,7 +159,14 @@ export default function TrocaOleoPage() {
               <Label>Veículo *</Label>
               <VehicleSelect
                 value={form.vehicleId}
-                onChange={(v) => setForm({ ...form, vehicleId: v })}
+                onChange={(v) =>
+                  setForm({
+                    ...form,
+                    vehicleId: v,
+                    kmProximaTroca:
+                      suggestKmProxima(v, form.km, kmProximaManual) ?? form.kmProximaTroca,
+                  })
+                }
               />
             </div>
             <div className="space-y-1">
@@ -156,7 +177,15 @@ export default function TrocaOleoPage() {
               <Label>KM *</Label>
               <NumberInput
                 value={form.km ? Number(form.km) : undefined}
-                onValueChange={(v) => setForm({ ...form, km: v === undefined ? "" : String(v) })}
+                onValueChange={(v) => {
+                  const km = v === undefined ? "" : String(v);
+                  setForm({
+                    ...form,
+                    km,
+                    kmProximaTroca:
+                      suggestKmProxima(form.vehicleId, km, kmProximaManual) ?? form.kmProximaTroca,
+                  });
+                }}
               />
             </div>
             <div className="space-y-1">
@@ -171,7 +200,10 @@ export default function TrocaOleoPage() {
               <Label>Próxima troca (KM)</Label>
               <NumberInput
                 value={form.kmProximaTroca ? Number(form.kmProximaTroca) : undefined}
-                onValueChange={(v) => setForm({ ...form, kmProximaTroca: v === undefined ? "" : String(v) })}
+                onValueChange={(v) => {
+                  setKmProximaManual(v !== undefined);
+                  setForm({ ...form, kmProximaTroca: v === undefined ? "" : String(v) });
+                }}
               />
             </div>
             <div className="space-y-1">
