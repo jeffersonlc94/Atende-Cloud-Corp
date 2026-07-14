@@ -23,7 +23,7 @@ RUN npm run build
 ##### Etapa 3: runtime #####
 FROM node:22-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl tzdata
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 

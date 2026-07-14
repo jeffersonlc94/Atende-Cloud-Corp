@@ -423,8 +423,13 @@ model SystemSettings {
   smtpFrom               String?
   notificationEmails     String?
   notificationDays       String?
+  notificationTime       String?
+  smtpEnabled            Boolean?
   telegramBotToken       String?
   telegramChatIds        String?
+  telegramEnabled        Boolean?
+  telegramDays           String?
+  telegramTime           String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 

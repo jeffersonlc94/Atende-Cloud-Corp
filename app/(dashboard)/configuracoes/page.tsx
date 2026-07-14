@@ -56,6 +56,8 @@ type SmtpSettings = {
   smtpFrom: string;
   notificationEmails: string;
   notificationDays: string;
+  notificationTime: string;
+  smtpEnabled: boolean;
 };
 
 const DIAS_SEMANA = [
@@ -208,6 +210,8 @@ function SmtpConfigCard() {
   const [hasPassword, setHasPassword] = useState(false);
   // Dias da semana habilitados (0=Dom..6=Sáb). Vazio = todos os dias.
   const [dias, setDias] = useState<number[]>([]);
+  const [horario, setHorario] = useState("08:00");
+  const [ativo, setAtivo] = useState(true);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [testEmail, setTestEmail] = useState("");
@@ -232,6 +236,8 @@ function SmtpConfigCard() {
           .map((d) => parseInt(d.trim(), 10))
           .filter((d) => !Number.isNaN(d))
       );
+      setHorario(smtpConfig.notificationTime || "08:00");
+      setAtivo(smtpConfig.smtpEnabled);
     }
   }, [smtpConfig]);
 
@@ -251,6 +257,8 @@ function SmtpConfigCard() {
           ...form,
           smtpPort: form.smtpPort ? parseInt(form.smtpPort, 10) : undefined,
           notificationDays: dias.join(","),
+          notificationTime: horario,
+          smtpEnabled: ativo,
         }),
       });
       const body = await res.json().catch(() => null);
@@ -304,6 +312,15 @@ function SmtpConfigCard() {
         {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
         {!isLoading && (
           <>
+            <label className="flex w-fit cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm font-medium">
+              <Checkbox checked={ativo} onCheckedChange={(v) => setAtivo(v === true)} />
+              <span>
+                Envio por e-mail {ativo ? "ativado" : "pausado"}
+                <span className="block text-xs font-normal text-muted-foreground">
+                  Desmarque para pausar os avisos por e-mail sem perder a configuração
+                </span>
+              </span>
+            </label>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>Servidor (host)</Label>
@@ -384,7 +401,7 @@ function SmtpConfigCard() {
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label>Dias de envio dos avisos</Label>
+              <Label>Dias e horário dos disparos automáticos</Label>
               <div className="flex flex-wrap gap-2">
                 {DIAS_SEMANA.map((d) => {
                   const ativo = dias.length === 0 || dias.includes(d.value);
@@ -408,12 +425,22 @@ function SmtpConfigCard() {
                   );
                 })}
               </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Label className="text-xs text-muted-foreground">Horário do disparo:</Label>
+                <Input
+                  type="time"
+                  className="w-28"
+                  value={horario}
+                  onChange={(e) => setHorario(e.target.value)}
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
                 {dias.length === 0
-                  ? "Nenhum dia selecionado = avisos enviados todos os dias."
-                  : `Avisos enviados apenas: ${DIAS_SEMANA.filter((d) => dias.includes(d.value))
+                  ? `Todos os dias às ${horario}.`
+                  : `${DIAS_SEMANA.filter((d) => dias.includes(d.value))
                       .map((d) => d.label)
-                      .join(", ")}.`}
+                      .join(", ")} às ${horario}.`}{" "}
+                O disparo automático acontece nesse horário; o botão de teste envia na hora.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t pt-4">
@@ -462,11 +489,21 @@ function TelegramConfigCard() {
   const queryClient = useQueryClient();
   const { data: tgConfig, isLoading } = useQuery({
     queryKey: ["telegram-config"],
-    queryFn: () => fetchJson<{ hasToken: boolean; telegramChatIds: string }>("/api/config/telegram"),
+    queryFn: () =>
+      fetchJson<{
+        hasToken: boolean;
+        telegramChatIds: string;
+        telegramEnabled: boolean;
+        telegramDays: string;
+        telegramTime: string;
+      }>("/api/config/telegram"),
   });
   const [token, setToken] = useState("");
   const [chatIds, setChatIds] = useState("");
   const [hasToken, setHasToken] = useState(false);
+  const [tgAtivo, setTgAtivo] = useState(true);
+  const [tgDias, setTgDias] = useState<number[]>([]);
+  const [tgHorario, setTgHorario] = useState("08:00");
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [testChatId, setTestChatId] = useState("");
@@ -477,8 +514,22 @@ function TelegramConfigCard() {
       setChatIds(tgConfig.telegramChatIds);
       setHasToken(tgConfig.hasToken);
       setToken("");
+      setTgAtivo(tgConfig.telegramEnabled);
+      setTgDias(
+        (tgConfig.telegramDays || "")
+          .split(",")
+          .map((d) => parseInt(d.trim(), 10))
+          .filter((d) => !Number.isNaN(d))
+      );
+      setTgHorario(tgConfig.telegramTime || "08:00");
     }
   }, [tgConfig]);
+
+  function toggleTgDia(value: number) {
+    setTgDias((prev) =>
+      prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value].sort()
+    );
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -486,7 +537,13 @@ function TelegramConfigCard() {
       const res = await fetch("/api/config/telegram", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telegramBotToken: token, telegramChatIds: chatIds }),
+        body: JSON.stringify({
+          telegramBotToken: token,
+          telegramChatIds: chatIds,
+          telegramEnabled: tgAtivo,
+          telegramDays: tgDias.join(","),
+          telegramTime: tgHorario,
+        }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(typeof body?.error === "string" ? body.error : "Erro ao salvar");
@@ -572,6 +629,56 @@ function TelegramConfigCard() {
                   Além destes, cada usuário com chat ID no cadastro também recebe.
                 </p>
               </div>
+            </div>
+            <label className="flex w-fit cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm font-medium">
+              <Checkbox checked={tgAtivo} onCheckedChange={(v) => setTgAtivo(v === true)} />
+              <span>
+                Envio pelo Telegram {tgAtivo ? "ativado" : "pausado"}
+                <span className="block text-xs font-normal text-muted-foreground">
+                  Desmarque para pausar os avisos no Telegram sem perder a configuração
+                </span>
+              </span>
+            </label>
+            <div className="space-y-1.5">
+              <Label>Dias e horário dos disparos automáticos</Label>
+              <div className="flex flex-wrap gap-2">
+                {DIAS_SEMANA.map((d) => {
+                  const selecionado = tgDias.includes(d.value);
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => toggleTgDia(d.value)}
+                      className={
+                        selecionado
+                          ? "rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground"
+                          : tgDias.length === 0
+                            ? "rounded-full border border-dashed bg-muted/50 px-3.5 py-1.5 text-xs font-medium text-muted-foreground"
+                            : "rounded-full border px-3.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted"
+                      }
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Label className="text-xs text-muted-foreground">Horário do disparo:</Label>
+                <Input
+                  type="time"
+                  className="w-28"
+                  value={tgHorario}
+                  onChange={(e) => setTgHorario(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {tgDias.length === 0
+                  ? `Todos os dias às ${tgHorario}.`
+                  : `${DIAS_SEMANA.filter((d) => tgDias.includes(d.value))
+                      .map((d) => d.label)
+                      .join(", ")} às ${tgHorario}.`}{" "}
+                O disparo automático acontece nesse horário; o botão de teste envia na hora.
+              </p>
             </div>
             <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Como descobrir o chat ID de um usuário:</p>

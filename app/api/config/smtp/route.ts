@@ -18,6 +18,9 @@ const smtpSettingsSchema = z.object({
   notificationEmails: z.string().trim().optional().default(""),
   // Dias da semana (0=domingo ... 6=sábado) habilitados para envio.
   notificationDays: z.string().trim().optional().default(""),
+  // Horário do disparo agendado (HH:MM).
+  notificationTime: z.string().trim().optional().default(""),
+  smtpEnabled: z.boolean().optional().default(true),
 });
 
 // Somente administradores: a configuração inclui credenciais.
@@ -51,6 +54,8 @@ export async function GET() {
     smtpFrom: settings?.smtpFrom ?? "",
     notificationEmails: settings?.notificationEmails ?? "",
     notificationDays: settings?.notificationDays ?? "",
+    notificationTime: settings?.notificationTime ?? "",
+    smtpEnabled: settings?.smtpEnabled ?? true,
   });
 }
 
@@ -74,6 +79,8 @@ export async function PUT(req: NextRequest) {
     smtpFrom: data.smtpFrom || null,
     notificationEmails: data.notificationEmails || null,
     notificationDays: data.notificationDays || null,
+    notificationTime: data.notificationTime || null,
+    smtpEnabled: data.smtpEnabled,
   };
   if (data.smtpPass) updateData.smtpPass = data.smtpPass;
 

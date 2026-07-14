@@ -11,6 +11,9 @@ const telegramSettingsSchema = z.object({
   telegramBotToken: z.string().trim().optional().default(""),
   telegramChatIds: z.string().trim().optional().default(""),
   removeToken: z.boolean().optional().default(false),
+  telegramEnabled: z.boolean().optional().default(true),
+  telegramDays: z.string().trim().optional().default(""),
+  telegramTime: z.string().trim().optional().default(""),
 });
 
 async function requireAdmin() {
@@ -36,6 +39,9 @@ export async function GET() {
   return NextResponse.json({
     hasToken: Boolean(settings?.telegramBotToken),
     telegramChatIds: settings?.telegramChatIds ?? "",
+    telegramEnabled: settings?.telegramEnabled ?? true,
+    telegramDays: settings?.telegramDays ?? "",
+    telegramTime: settings?.telegramTime ?? "",
   });
 }
 
@@ -52,6 +58,9 @@ export async function PUT(req: NextRequest) {
   const data = parsed.data;
   const updateData: Record<string, unknown> = {
     telegramChatIds: data.telegramChatIds || null,
+    telegramEnabled: data.telegramEnabled,
+    telegramDays: data.telegramDays || null,
+    telegramTime: data.telegramTime || null,
   };
   if (data.removeToken) {
     updateData.telegramBotToken = null;
