@@ -55,7 +55,18 @@ type SmtpSettings = {
   smtpAllowInvalidCert: boolean;
   smtpFrom: string;
   notificationEmails: string;
+  notificationDays: string;
 };
+
+const DIAS_SEMANA = [
+  { value: 0, label: "Dom" },
+  { value: 1, label: "Seg" },
+  { value: 2, label: "Ter" },
+  { value: 3, label: "Qua" },
+  { value: 4, label: "Qui" },
+  { value: 5, label: "Sex" },
+  { value: 6, label: "Sáb" },
+];
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
@@ -195,6 +206,8 @@ function SmtpConfigCard() {
     notificationEmails: "",
   });
   const [hasPassword, setHasPassword] = useState(false);
+  // Dias da semana habilitados (0=Dom..6=Sáb). Vazio = todos os dias.
+  const [dias, setDias] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [testEmail, setTestEmail] = useState("");
@@ -213,8 +226,20 @@ function SmtpConfigCard() {
         notificationEmails: smtpConfig.notificationEmails,
       });
       setHasPassword(smtpConfig.hasPassword);
+      setDias(
+        (smtpConfig.notificationDays || "")
+          .split(",")
+          .map((d) => parseInt(d.trim(), 10))
+          .filter((d) => !Number.isNaN(d))
+      );
     }
   }, [smtpConfig]);
+
+  function toggleDia(value: number) {
+    setDias((prev) =>
+      prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value].sort()
+    );
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -225,6 +250,7 @@ function SmtpConfigCard() {
         body: JSON.stringify({
           ...form,
           smtpPort: form.smtpPort ? parseInt(form.smtpPort, 10) : undefined,
+          notificationDays: dias.join(","),
         }),
       });
       const body = await res.json().catch(() => null);
@@ -352,7 +378,42 @@ function SmtpConfigCard() {
               />
               <p className="text-xs text-muted-foreground">
                 Separe múltiplos e-mails por vírgula. Eles recebem os alertas de checklist,
-                documentos e troca de óleo.
+                documentos e troca de óleo. Os usuários cadastrados também recebem — controle
+                individualmente pela opção &quot;Receber notificações por e-mail&quot; na tela de
+                Usuários.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Dias de envio dos avisos</Label>
+              <div className="flex flex-wrap gap-2">
+                {DIAS_SEMANA.map((d) => {
+                  const ativo = dias.length === 0 || dias.includes(d.value);
+                  const selecionado = dias.includes(d.value);
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => toggleDia(d.value)}
+                      className={
+                        selecionado
+                          ? "rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground"
+                          : dias.length === 0
+                            ? "rounded-full border border-dashed bg-muted/50 px-3.5 py-1.5 text-xs font-medium text-muted-foreground"
+                            : "rounded-full border px-3.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted"
+                      }
+                      title={ativo ? "Envia neste dia" : "Não envia neste dia"}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {dias.length === 0
+                  ? "Nenhum dia selecionado = avisos enviados todos os dias."
+                  : `Avisos enviados apenas: ${DIAS_SEMANA.filter((d) => dias.includes(d.value))
+                      .map((d) => d.label)
+                      .join(", ")}.`}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t pt-4">

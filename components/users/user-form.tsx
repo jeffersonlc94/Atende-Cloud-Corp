@@ -36,6 +36,7 @@ import {
   Briefcase,
   FileText,
   Truck,
+  BellRing,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -77,6 +78,7 @@ const emptyValues: UserFormValues = {
   cargo: undefined,
   canAccessOrcamentos: true,
   canAccessFrota: true,
+  receiveNotifications: true,
 };
 
 export function UserForm({ initialData }: { initialData?: AppUser }) {
@@ -103,6 +105,7 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
   const cargo = watch("cargo");
   const canAccessOrcamentos = watch("canAccessOrcamentos");
   const canAccessFrota = watch("canAccessFrota");
+  const receiveNotifications = watch("receiveNotifications");
   const isEditing = !!initialData;
 
   async function persist(data: UserFormValues) {
@@ -249,6 +252,19 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
               />
               <Truck className="h-4 w-4 text-muted-foreground" />
               Controle de Veículos
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium sm:col-span-2">
+              <Checkbox
+                checked={!!receiveNotifications}
+                onCheckedChange={(v) => setValue("receiveNotifications", v === true)}
+              />
+              <BellRing className="h-4 w-4 text-muted-foreground" />
+              <span>
+                Receber notificações por e-mail
+                <span className="block text-xs font-normal text-muted-foreground">
+                  Alertas de checklist, documentos e troca de óleo da frota
+                </span>
+              </span>
             </label>
           </CardContent>
         </Card>

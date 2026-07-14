@@ -311,6 +311,7 @@ export const userSchema = z.object({
   cargo: z.enum(cargoOptions).optional(),
   canAccessOrcamentos: z.boolean().optional().default(true),
   canAccessFrota: z.boolean().optional().default(true),
+  receiveNotifications: z.boolean().optional().default(true),
 });
 
 export type UserFormValues = z.input<typeof userSchema>;

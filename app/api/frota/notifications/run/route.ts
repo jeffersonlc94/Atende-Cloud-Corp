@@ -53,6 +53,7 @@ async function recipientsForAlert(
   if (!tipoNotificacao) return envRecipients;
 
   const users = await prisma.user.findMany({
+    where: { receiveNotifications: true },
     select: { email: true, cargo: true },
   });
 
@@ -125,6 +126,27 @@ export async function POST() {
 
   const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
   const prefs = (settings?.notificationCargoPrefs as NotificationCargoPrefs | null) ?? null;
+
+  // Dias da semana habilitados para envio (Configurações > Notificações).
+  // Vazio/não configurado = envia todos os dias.
+  const diasHabilitados = (settings?.notificationDays || "")
+    .split(",")
+    .map((d) => parseInt(d.trim(), 10))
+    .filter((d) => !Number.isNaN(d));
+  const hoje = new Date().getDay();
+  if (diasHabilitados.length > 0 && !diasHabilitados.includes(hoje)) {
+    return NextResponse.json({
+      ok: true,
+      smtpConfigured,
+      skippedByDay: true,
+      message: "Hoje não é um dia habilitado para envio de avisos.",
+      processed: 0,
+      sent: 0,
+      skippedDuplicate: 0,
+      skippedNoSmtp: 0,
+      errors: [],
+    });
+  }
 
   const brand = await getBrandName();
   const alerts = relevantAlerts(await computeFleetAlerts());

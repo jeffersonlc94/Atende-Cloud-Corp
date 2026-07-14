@@ -43,6 +43,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       cargo: data.cargo ?? null,
       canAccessOrcamentos: data.canAccessOrcamentos ?? true,
       canAccessFrota: data.canAccessFrota ?? true,
+      receiveNotifications: data.receiveNotifications ?? true,
       ...(data.password ? { passwordHash: await bcrypt.hash(data.password, 10) } : {}),
     },
     select: {
@@ -53,6 +54,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       cargo: true,
       canAccessOrcamentos: true,
       canAccessFrota: true,
+      receiveNotifications: true,
       avatarUrl: true,
       createdAt: true,
       updatedAt: true,

@@ -30,6 +30,7 @@ model User {
   avatarUrl           String?
   canAccessOrcamentos Boolean  @default(true)
   canAccessFrota      Boolean  @default(true)
+  receiveNotifications Boolean @default(true)
   hidden              Boolean  @default(false)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -420,6 +421,7 @@ model SystemSettings {
   smtpAllowInvalidCert   Boolean?
   smtpFrom               String?
   notificationEmails     String?
+  notificationDays       String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 

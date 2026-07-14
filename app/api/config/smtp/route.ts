@@ -16,6 +16,8 @@ const smtpSettingsSchema = z.object({
   smtpAllowInvalidCert: z.boolean().optional().default(false),
   smtpFrom: z.string().trim().optional().default(""),
   notificationEmails: z.string().trim().optional().default(""),
+  // Dias da semana (0=domingo ... 6=sábado) habilitados para envio.
+  notificationDays: z.string().trim().optional().default(""),
 });
 
 // Somente administradores: a configuração inclui credenciais.
@@ -48,6 +50,7 @@ export async function GET() {
     smtpAllowInvalidCert: settings?.smtpAllowInvalidCert ?? false,
     smtpFrom: settings?.smtpFrom ?? "",
     notificationEmails: settings?.notificationEmails ?? "",
+    notificationDays: settings?.notificationDays ?? "",
   });
 }
 
@@ -70,6 +73,7 @@ export async function PUT(req: NextRequest) {
     smtpAllowInvalidCert: data.smtpAllowInvalidCert,
     smtpFrom: data.smtpFrom || null,
     notificationEmails: data.notificationEmails || null,
+    notificationDays: data.notificationDays || null,
   };
   if (data.smtpPass) updateData.smtpPass = data.smtpPass;
 

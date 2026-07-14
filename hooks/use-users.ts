@@ -11,6 +11,7 @@ export type AppUser = {
   cargo: "TECNICO" | "VENDEDOR" | null;
   canAccessOrcamentos: boolean;
   canAccessFrota: boolean;
+  receiveNotifications: boolean;
   avatarUrl?: string | null;
   createdAt: string;
   updatedAt: string;
