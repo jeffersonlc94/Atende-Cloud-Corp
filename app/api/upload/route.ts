@@ -6,7 +6,17 @@ import crypto from "crypto";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB (alinhado ao texto de ajuda da tela de veículos)
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+const ALLOWED_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/svg+xml",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -20,7 +30,10 @@ export async function POST(req: NextRequest) {
   }
 
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: "Tipo de arquivo não suportado" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Tipo de arquivo não suportado (envie imagem, PDF, Word ou Excel)" },
+      { status: 400 }
+    );
   }
 
   if (file.size > MAX_SIZE) {
@@ -29,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   await mkdir(UPLOAD_DIR, { recursive: true });
 
-  const ext = file.name.split(".").pop() || "png";
+  const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
   const filename = `${crypto.randomUUID()}.${ext}`;
   const filePath = path.join(UPLOAD_DIR, filename);
 

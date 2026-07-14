@@ -167,11 +167,15 @@ function NovoDocumentoDialog({
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) throw new Error();
-      const { url } = await res.json();
-      setArquivoUrl(url);
-    } catch {
-      toast.error("Erro ao enviar arquivo");
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(
+          typeof body?.error === "string" ? body.error : "Erro ao enviar arquivo"
+        );
+      }
+      setArquivoUrl(body.url);
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : "Erro ao enviar arquivo");
     } finally {
       setUploading(false);
     }
