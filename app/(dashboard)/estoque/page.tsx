@@ -17,13 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NumberInput } from "@/components/ui/number-input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -46,6 +39,23 @@ import {
   Undo2,
   BadgeDollarSign,
 } from "lucide-react";
+
+function PersonChip({ nome }: { nome: string }) {
+  const iniciais = nome
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+        {iniciais}
+      </span>
+      <span className="truncate">{nome}</span>
+    </span>
+  );
+}
 
 const emptyForm = {
   cod: "",
@@ -76,6 +86,8 @@ export default function EstoquePage() {
     dataInicial: dataInicial || undefined,
     dataFinal: dataFinal || undefined,
   });
+  // Lista completa apenas para os contadores dos cards e chips.
+  const { data: allItems = [] } = useStockMovements({});
   const createMov = useCreateStockMovement();
   const updateMov = useUpdateStockMovement();
   const deleteMov = useDeleteStockMovement();
@@ -93,13 +105,13 @@ export default function EstoquePage() {
     let pend = 0;
     let dev = 0;
     let ven = 0;
-    for (const m of items) {
+    for (const m of allItems) {
       if (m.status === "Devolvido") dev++;
       else if (m.status === "Vendido") ven++;
       else pend++;
     }
-    return { total: items.length, pendentes: pend, devolvidos: dev, vendidos: ven };
-  }, [items]);
+    return { total: allItems.length, pendentes: pend, devolvidos: dev, vendidos: ven };
+  }, [allItems]);
 
   function handleEdit(m: StockMovementRecord) {
     setEditingId(m.id);
@@ -370,24 +382,37 @@ export default function EstoquePage() {
                 onChange={(e) => setBusca(e.target.value)}
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Status</Label>
-              <Select
-                value={statusFiltro}
-                onValueChange={(v) => setStatusFiltro(v as typeof statusFiltro)}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue>
-                    {(v: string) => (v === "todos" ? "Todos" : v === "Pendente" ? "Em aberto" : v)}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="Pendente">Em aberto</SelectItem>
-                  <SelectItem value="Devolvido">Devolvido</SelectItem>
-                  <SelectItem value="Vendido">Vendido</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-1.5 rounded-lg border p-1">
+              {(
+                [
+                  { value: "todos", label: "Todos", count: total },
+                  { value: "Pendente", label: "Em aberto", count: pendentes },
+                  { value: "Devolvido", label: "Devolvidos", count: devolvidos },
+                  { value: "Vendido", label: "Vendidos", count: vendidos },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setStatusFiltro(opt.value)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                    statusFiltro === opt.value
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {opt.label}
+                  <span
+                    className={cn(
+                      "rounded-full px-1.5 text-[10px] font-bold",
+                      statusFiltro === opt.value ? "bg-white/20" : "bg-muted"
+                    )}
+                  >
+                    {opt.count}
+                  </span>
+                </button>
+              ))}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">De</Label>
@@ -440,10 +465,20 @@ export default function EstoquePage() {
                         {m.descricao}
                       </TableCell>
                       <TableCell>{m.qtd}</TableCell>
-                      <TableCell>{m.respRetirada}</TableCell>
-                      <TableCell>{m.respEntrega || "—"}</TableCell>
+                      <TableCell>
+                        <PersonChip nome={m.respRetirada} />
+                      </TableCell>
+                      <TableCell>{m.respEntrega ? <PersonChip nome={m.respEntrega} /> : "—"}</TableCell>
                       <TableCell>{formatDateBR(m.data)}</TableCell>
-                      <TableCell className="font-mono text-xs">{m.numeroSerie || "—"}</TableCell>
+                      <TableCell>
+                        {m.numeroSerie ? (
+                          <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs">
+                            {m.numeroSerie}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
                       <TableCell className="max-w-[160px] truncate" title={m.destino || ""}>
                         {m.destino || "—"}
                       </TableCell>
