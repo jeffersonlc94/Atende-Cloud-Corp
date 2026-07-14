@@ -960,14 +960,33 @@ function NotificationCargoPrefsCard() {
                 {notificationTipoOptions.map((tipo) => (
                   <tr key={tipo} className="border-b last:border-0">
                     <td className="py-2 pr-4">{notificationTipoLabels[tipo]}</td>
-                    {CARGOS.map((cargo) => (
-                      <td key={cargo} className="py-2 px-4">
-                        <Checkbox
-                          checked={isChecked(tipo, cargo)}
-                          onCheckedChange={() => toggle(tipo, cargo)}
-                        />
-                      </td>
-                    ))}
+                    {CARGOS.map((cargo) => {
+                      const ativo = isChecked(tipo, cargo);
+                      return (
+                        <td key={cargo} className="py-2 px-4">
+                          <button
+                            type="button"
+                            onClick={() => toggle(tipo, cargo)}
+                            title={ativo ? "Recebe — clique para desativar" : "Não recebe — clique para ativar"}
+                            className={
+                              ativo
+                                ? "inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
+                                : "inline-flex items-center gap-1.5 rounded-full border border-dashed px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
+                            }
+                          >
+                            {ativo ? (
+                              <>
+                                <MailCheck className="h-3.5 w-3.5" /> Recebe
+                              </>
+                            ) : (
+                              <>
+                                <MailX className="h-3.5 w-3.5" /> Não recebe
+                              </>
+                            )}
+                          </button>
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
