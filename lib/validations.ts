@@ -332,6 +332,8 @@ export type ProfileFormValues = z.input<typeof profileSchema>;
 // Controle de Estoque
 // ---------------------------------------------------------------------------
 
+export const stockStatusOptions = ["Pendente", "Devolvido", "Vendido"] as const;
+
 export const stockMovementSchema = z.object({
   cod: z.string().min(1, "Código obrigatório"),
   descricao: z.string().min(1, "Descrição obrigatória"),
@@ -342,6 +344,7 @@ export const stockMovementSchema = z.object({
   numeroSerie: z.string().optional().default(""),
   destino: z.string().optional().default(""),
   devolvido: z.boolean().optional().default(false),
+  status: z.enum(stockStatusOptions).optional().default("Pendente"),
   observacoes: z.string().optional().default(""),
 });
 

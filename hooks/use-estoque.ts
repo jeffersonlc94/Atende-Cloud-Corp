@@ -14,6 +14,7 @@ export type StockMovementRecord = {
   numeroSerie: string | null;
   destino: string | null;
   devolvido: boolean;
+  status: string;
   observacoes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -22,6 +23,7 @@ export type StockMovementRecord = {
 export type StockFilters = {
   q?: string;
   devolvido?: "sim" | "nao" | "";
+  status?: string;
   dataInicial?: string;
   dataFinal?: string;
 };
@@ -44,6 +46,7 @@ export function useStockMovements(filters: StockFilters = {}) {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
   if (filters.devolvido) params.set("devolvido", filters.devolvido);
+  if (filters.status) params.set("status", filters.status);
   if (filters.dataInicial) params.set("dataInicial", filters.dataInicial);
   if (filters.dataFinal) params.set("dataFinal", filters.dataFinal);
 

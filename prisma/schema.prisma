@@ -453,6 +453,7 @@ model StockMovement {
   numeroSerie   String?
   destino       String?
   devolvido     Boolean  @default(false)
+  status        String   @default("Pendente")
   observacoes   String?
   createdByUserId String?
   createdAt     DateTime @default(now())

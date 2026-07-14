@@ -44,6 +44,7 @@ import {
   X,
   CheckCircle2,
   Undo2,
+  BadgeDollarSign,
 } from "lucide-react";
 
 const emptyForm = {
@@ -56,6 +57,7 @@ const emptyForm = {
   numeroSerie: "",
   destino: "",
   devolvido: false,
+  status: "Pendente" as "Pendente" | "Devolvido" | "Vendido",
   observacoes: "",
 };
 
@@ -64,13 +66,13 @@ export default function EstoquePage() {
   const canDelete = canDeleteRecords(session);
 
   const [busca, setBusca] = useState("");
-  const [statusFiltro, setStatusFiltro] = useState<"todos" | "sim" | "nao">("todos");
+  const [statusFiltro, setStatusFiltro] = useState<"todos" | "Pendente" | "Devolvido" | "Vendido">("todos");
   const [dataInicial, setDataInicial] = useState("");
   const [dataFinal, setDataFinal] = useState("");
 
   const { data: items = [], isLoading } = useStockMovements({
     q: busca || undefined,
-    devolvido: statusFiltro === "todos" ? "" : statusFiltro,
+    status: statusFiltro === "todos" ? undefined : statusFiltro,
     dataInicial: dataInicial || undefined,
     dataFinal: dataFinal || undefined,
   });
@@ -82,16 +84,21 @@ export default function EstoquePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<StockMovementRecord | null>(null);
-  const [pendingToggle, setPendingToggle] = useState<StockMovementRecord | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<{
+    m: StockMovementRecord;
+    status: "Pendente" | "Devolvido" | "Vendido";
+  } | null>(null);
 
-  const { total, pendentes, devolvidos } = useMemo(() => {
+  const { total, pendentes, devolvidos, vendidos } = useMemo(() => {
     let pend = 0;
     let dev = 0;
+    let ven = 0;
     for (const m of items) {
-      if (m.devolvido) dev++;
+      if (m.status === "Devolvido") dev++;
+      else if (m.status === "Vendido") ven++;
       else pend++;
     }
-    return { total: items.length, pendentes: pend, devolvidos: dev };
+    return { total: items.length, pendentes: pend, devolvidos: dev, vendidos: ven };
   }, [items]);
 
   function handleEdit(m: StockMovementRecord) {
@@ -106,6 +113,7 @@ export default function EstoquePage() {
       numeroSerie: m.numeroSerie || "",
       destino: m.destino || "",
       devolvido: m.devolvido,
+      status: (m.status as typeof emptyForm.status) || "Pendente",
       observacoes: m.observacoes || "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -127,6 +135,7 @@ export default function EstoquePage() {
       numeroSerie: f.numeroSerie,
       destino: f.destino,
       devolvido: f.devolvido,
+      status: f.status,
       observacoes: f.observacoes,
     };
   }
@@ -146,9 +155,7 @@ export default function EstoquePage() {
     }
   }
 
-  async function handleToggleDevolvido() {
-    if (!pendingToggle) return;
-    const m = pendingToggle;
+  async function applyStatus(m: StockMovementRecord, status: "Pendente" | "Devolvido" | "Vendido") {
     try {
       await updateMov.mutateAsync({
         id: m.id,
@@ -161,15 +168,20 @@ export default function EstoquePage() {
           data: m.data.slice(0, 10),
           numeroSerie: m.numeroSerie || "",
           destino: m.destino || "",
-          devolvido: !m.devolvido,
+          devolvido: status === "Devolvido",
+          status,
           observacoes: m.observacoes || "",
         },
       });
-      toast.success(!m.devolvido ? "Marcado como devolvido" : "Devolução desfeita");
+      toast.success(
+        status === "Vendido"
+          ? "Baixa registrada: item vendido"
+          : status === "Devolvido"
+            ? "Marcado como devolvido"
+            : "Lançamento reaberto"
+      );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao atualizar devolução");
-    } finally {
-      setPendingToggle(null);
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar status");
     }
   }
 
@@ -194,7 +206,7 @@ export default function EstoquePage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="border-l-4 border-l-sky-400 dark:border-l-sky-600">
           <CardContent className="flex items-center gap-3 p-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400">
@@ -212,7 +224,7 @@ export default function EstoquePage() {
               <PackageX className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Não devolvidos</p>
+              <p className="text-xs text-muted-foreground">Em aberto</p>
               <p className="text-xl font-bold">{pendentes}</p>
             </div>
           </CardContent>
@@ -225,6 +237,17 @@ export default function EstoquePage() {
             <div>
               <p className="text-xs text-muted-foreground">Devolvidos</p>
               <p className="text-xl font-bold">{devolvidos}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-violet-400 dark:border-l-violet-600">
+          <CardContent className="flex items-center gap-3 p-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400">
+              <BadgeDollarSign className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Vendidos (baixa)</p>
+              <p className="text-xl font-bold">{vendidos}</p>
             </div>
           </CardContent>
         </Card>
@@ -348,20 +371,21 @@ export default function EstoquePage() {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Devolvido</Label>
+              <Label className="text-xs">Status</Label>
               <Select
                 value={statusFiltro}
                 onValueChange={(v) => setStatusFiltro(v as typeof statusFiltro)}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-36">
                   <SelectValue>
-                    {(v: string) => (v === "todos" ? "Todos" : v === "sim" ? "Sim" : "Não")}
+                    {(v: string) => (v === "todos" ? "Todos" : v === "Pendente" ? "Em aberto" : v)}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="sim">Sim</SelectItem>
-                  <SelectItem value="nao">Não</SelectItem>
+                  <SelectItem value="Pendente">Em aberto</SelectItem>
+                  <SelectItem value="Devolvido">Devolvido</SelectItem>
+                  <SelectItem value="Vendido">Vendido</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -404,7 +428,7 @@ export default function EstoquePage() {
                     <TableHead>Data</TableHead>
                     <TableHead>Nº de série</TableHead>
                     <TableHead>Destino</TableHead>
-                    <TableHead>Devolvido</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -427,29 +451,50 @@ export default function EstoquePage() {
                         <span
                           className={cn(
                             "inline-flex w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                            m.devolvido
+                            m.status === "Devolvido"
                               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+                              : m.status === "Vendido"
+                                ? "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-400"
+                                : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
                           )}
                         >
-                          {m.devolvido ? "Sim" : "Não"}
+                          {m.status === "Pendente" ? "Em aberto" : m.status}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={m.devolvido ? "Desfazer devolução" : "Marcar como devolvido"}
-                            className={cn(
-                              m.devolvido
-                                ? "text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-500/10"
-                                : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
-                            )}
-                            onClick={() => setPendingToggle(m)}
-                          >
-                            {m.devolvido ? <Undo2 className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                          </Button>
+                          {m.status === "Pendente" ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Dar baixa: vendido"
+                                className="text-violet-600 hover:bg-violet-50 hover:text-violet-700 dark:hover:bg-violet-500/10"
+                                onClick={() => setPendingStatus({ m, status: "Vendido" })}
+                              >
+                                <BadgeDollarSign className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Marcar como devolvido"
+                                className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-500/10"
+                                onClick={() => setPendingStatus({ m, status: "Devolvido" })}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Reabrir lançamento"
+                              className="text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-500/10"
+                              onClick={() => setPendingStatus({ m, status: "Pendente" })}
+                            >
+                              <Undo2 className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -489,15 +534,26 @@ export default function EstoquePage() {
         onConfirm={handleSave}
       />
       <ConfirmDialog
-        open={!!pendingToggle}
-        onOpenChange={(o) => !o && setPendingToggle(null)}
+        open={!!pendingStatus}
+        onOpenChange={(o) => !o && setPendingStatus(null)}
         title={
-          pendingToggle?.devolvido
-            ? "Desfazer a devolução deste item?"
-            : "Confirmar a devolução deste item?"
+          pendingStatus?.status === "Vendido"
+            ? "Confirmar a baixa deste item como vendido?"
+            : pendingStatus?.status === "Devolvido"
+              ? "Confirmar a devolução deste item?"
+              : "Reabrir este lançamento?"
         }
-        confirmLabel={pendingToggle?.devolvido ? "Desfazer" : "Confirmar"}
-        onConfirm={handleToggleDevolvido}
+        confirmLabel={
+          pendingStatus?.status === "Vendido"
+            ? "Dar baixa"
+            : pendingStatus?.status === "Devolvido"
+              ? "Confirmar"
+              : "Reabrir"
+        }
+        onConfirm={() => {
+          if (pendingStatus) applyStatus(pendingStatus.m, pendingStatus.status);
+          setPendingStatus(null);
+        }}
       />
       <ConfirmDialog
         open={!!pendingDelete}

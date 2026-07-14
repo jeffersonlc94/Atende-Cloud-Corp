@@ -33,7 +33,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
       data: new Date(data.data),
       numeroSerie: data.numeroSerie || null,
       destino: data.destino || null,
-      devolvido: data.devolvido,
+      status: data.status,
+      devolvido: data.status === "Devolvido",
       observacoes: data.observacoes || null,
     },
   });

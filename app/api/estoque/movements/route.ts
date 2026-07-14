@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const q = sp.get("q")?.trim();
   const devolvido = sp.get("devolvido")?.trim();
+  const status = sp.get("status")?.trim();
   const dataInicial = sp.get("dataInicial")?.trim();
   const dataFinal = sp.get("dataFinal")?.trim();
 
@@ -32,6 +33,7 @@ export async function GET(req: NextRequest) {
   }
   if (devolvido === "sim") where.devolvido = true;
   if (devolvido === "nao") where.devolvido = false;
+  if (status) where.status = status;
   if (dataInicial || dataFinal) {
     where.data = {};
     if (dataInicial) where.data.gte = new Date(dataInicial);
@@ -74,7 +76,8 @@ export async function POST(req: NextRequest) {
       data: new Date(data.data),
       numeroSerie: data.numeroSerie || null,
       destino: data.destino || null,
-      devolvido: data.devolvido,
+      status: data.status,
+      devolvido: data.status === "Devolvido",
       observacoes: data.observacoes || null,
       createdByUserId: session.user.id,
     },
