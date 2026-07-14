@@ -17,13 +17,22 @@ export async function GET() {
 
   // Nunca expor credenciais SMTP neste endpoint público — a configuração
   // de e-mail é servida apenas para admins em /api/config/smtp.
-  const { smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, smtpFrom, ...publicSettings } =
-    settings;
+  const {
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    smtpPass,
+    smtpSecure,
+    smtpAllowInvalidCert,
+    smtpFrom,
+    ...publicSettings
+  } = settings;
   void smtpHost;
   void smtpPort;
   void smtpUser;
   void smtpPass;
   void smtpSecure;
+  void smtpAllowInvalidCert;
   void smtpFrom;
 
   return NextResponse.json(publicSettings);

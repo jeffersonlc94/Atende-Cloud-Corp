@@ -13,6 +13,7 @@ const smtpSettingsSchema = z.object({
   // Senha vazia = manter a senha já salva.
   smtpPass: z.string().optional().default(""),
   smtpSecure: z.boolean().optional().default(false),
+  smtpAllowInvalidCert: z.boolean().optional().default(false),
   smtpFrom: z.string().trim().optional().default(""),
   notificationEmails: z.string().trim().optional().default(""),
 });
@@ -44,6 +45,7 @@ export async function GET() {
     smtpUser: settings?.smtpUser ?? "",
     hasPassword: Boolean(settings?.smtpPass),
     smtpSecure: settings?.smtpSecure ?? false,
+    smtpAllowInvalidCert: settings?.smtpAllowInvalidCert ?? false,
     smtpFrom: settings?.smtpFrom ?? "",
     notificationEmails: settings?.notificationEmails ?? "",
   });
@@ -65,6 +67,7 @@ export async function PUT(req: NextRequest) {
     smtpPort: data.smtpPort ?? null,
     smtpUser: data.smtpUser || null,
     smtpSecure: data.smtpSecure,
+    smtpAllowInvalidCert: data.smtpAllowInvalidCert,
     smtpFrom: data.smtpFrom || null,
     notificationEmails: data.notificationEmails || null,
   };

@@ -52,6 +52,7 @@ type SmtpSettings = {
   smtpUser: string;
   hasPassword: boolean;
   smtpSecure: boolean;
+  smtpAllowInvalidCert: boolean;
   smtpFrom: string;
   notificationEmails: string;
 };
@@ -189,6 +190,7 @@ function SmtpConfigCard() {
     smtpUser: "",
     smtpPass: "",
     smtpSecure: false,
+    smtpAllowInvalidCert: false,
     smtpFrom: "",
     notificationEmails: "",
   });
@@ -206,6 +208,7 @@ function SmtpConfigCard() {
         smtpUser: smtpConfig.smtpUser,
         smtpPass: "",
         smtpSecure: smtpConfig.smtpSecure,
+        smtpAllowInvalidCert: smtpConfig.smtpAllowInvalidCert,
         smtpFrom: smtpConfig.smtpFrom,
         notificationEmails: smtpConfig.notificationEmails,
       });
@@ -318,13 +321,25 @@ function SmtpConfigCard() {
                   onChange={(e) => setForm({ ...form, smtpFrom: e.target.value })}
                 />
               </div>
-              <div className="flex items-end pb-2">
+              <div className="flex flex-col justify-end gap-2 pb-2">
                 <label className="flex cursor-pointer items-center gap-2 text-sm">
                   <Checkbox
                     checked={form.smtpSecure}
                     onCheckedChange={(v) => setForm({ ...form, smtpSecure: v === true })}
                   />
                   Conexão segura (SSL/TLS — porta 465)
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={form.smtpAllowInvalidCert}
+                    onCheckedChange={(v) => setForm({ ...form, smtpAllowInvalidCert: v === true })}
+                  />
+                  <span>
+                    Ignorar validação de certificado
+                    <span className="block text-xs text-muted-foreground">
+                      Use quando o servidor apresenta certificado de outro domínio
+                    </span>
+                  </span>
                 </label>
               </div>
             </div>

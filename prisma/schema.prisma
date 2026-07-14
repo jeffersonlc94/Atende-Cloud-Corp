@@ -417,6 +417,7 @@ model SystemSettings {
   smtpUser               String?
   smtpPass               String?
   smtpSecure             Boolean?
+  smtpAllowInvalidCert   Boolean?
   smtpFrom               String?
   notificationEmails     String?
   createdAt              DateTime @default(now())

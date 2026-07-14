@@ -14,6 +14,7 @@ export type SmtpConfig = {
   user: string;
   pass: string;
   secure: boolean;
+  allowInvalidCert: boolean;
   from: string;
   recipients: string[];
   source: "painel" | "ambiente";
@@ -41,6 +42,7 @@ export async function getSmtpConfig(): Promise<SmtpConfig | null> {
       user: settings.smtpUser,
       pass: settings.smtpPass,
       secure: settings.smtpSecure ?? false,
+      allowInvalidCert: settings.smtpAllowInvalidCert ?? false,
       from: settings.smtpFrom,
       recipients,
       source: "painel",
@@ -60,6 +62,7 @@ export async function getSmtpConfig(): Promise<SmtpConfig | null> {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
       secure: process.env.SMTP_SECURE === "true",
+      allowInvalidCert: process.env.SMTP_ALLOW_INVALID_CERT === "true",
       from: process.env.SMTP_FROM,
       recipients,
       source: "ambiente",
@@ -97,6 +100,10 @@ export async function sendMail({ to, subject, html }: SendMailInput): Promise<Se
       port: config.port,
       secure: config.secure,
       auth: { user: config.user, pass: config.pass },
+      // Alguns provedores compartilhados (ex.: revendas) apresentam
+      // certificado de outro domínio; esta opção replica o comportamento
+      // tolerante de clientes como o Outlook quando habilitada no painel.
+      tls: config.allowInvalidCert ? { rejectUnauthorized: false } : undefined,
     });
     await t.sendMail({ from: config.from, to, subject, html });
     return { sent: true };
