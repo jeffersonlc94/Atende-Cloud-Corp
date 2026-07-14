@@ -8,9 +8,12 @@ async function main() {
   const adminName = process.env.SEED_ADMIN_NAME || "Administrador";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || "admin123";
 
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  // Cria o admin de emergência apenas se não existir NENHUM administrador.
+  // Buscar pelo e-mail recriava o usuário a cada reinício quando o admin
+  // era renomeado/editado — agora ele pode ser editado e continuar em uso.
+  const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
 
-  if (!existingAdmin) {
+  if (adminCount === 0) {
     const passwordHash = await bcrypt.hash(adminPassword, 10);
     await prisma.user.create({
       data: {
