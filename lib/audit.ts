@@ -11,7 +11,8 @@ export type AuditEntity =
   | "OilChange"
   | "Checklist"
   | "User"
-  | "SystemSettings";
+  | "SystemSettings"
+  | "StockMovement";
 
 export type RegisterAuditParams = {
   userId?: string | null;

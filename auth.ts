@@ -40,6 +40,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           cargo: user.cargo,
           canAccessOrcamentos: user.canAccessOrcamentos,
           canAccessFrota: user.canAccessFrota,
+          canAccessEstoque: user.canAccessEstoque,
         };
       },
     }),
@@ -55,6 +56,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.cargo = fresh.cargo ?? null;
           token.canAccessOrcamentos = fresh.canAccessOrcamentos;
           token.canAccessFrota = fresh.canAccessFrota;
+          token.canAccessEstoque = fresh.canAccessEstoque;
           token.picture = fresh.avatarUrl ?? null;
           token.name = fresh.name;
           token.email = fresh.email;
@@ -68,11 +70,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           cargo?: string | null;
           canAccessOrcamentos?: boolean;
           canAccessFrota?: boolean;
+          canAccessEstoque?: boolean;
         };
         token.role = u.role;
         token.cargo = u.cargo ?? null;
         token.canAccessOrcamentos = u.canAccessOrcamentos ?? true;
         token.canAccessFrota = u.canAccessFrota ?? true;
+        token.canAccessEstoque = u.canAccessEstoque ?? true;
         token.id = user.id;
         token.picture = user.image ?? null;
       }
@@ -85,6 +89,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.cargo = (token.cargo as string | null | undefined) ?? null;
         session.user.canAccessOrcamentos = (token.canAccessOrcamentos as boolean | undefined) ?? true;
         session.user.canAccessFrota = (token.canAccessFrota as boolean | undefined) ?? true;
+        session.user.canAccessEstoque = (token.canAccessEstoque as boolean | undefined) ?? true;
         session.user.image = (token.picture as string | null) ?? null;
       }
       return session;

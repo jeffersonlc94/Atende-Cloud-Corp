@@ -31,6 +31,7 @@ model User {
   canAccessOrcamentos Boolean  @default(true)
   canAccessFrota      Boolean  @default(true)
   receiveNotifications Boolean @default(true)
+  canAccessEstoque    Boolean  @default(true)
   telegramChatId      String?
   hidden              Boolean  @default(false)
   createdAt           DateTime @default(now())
@@ -435,4 +436,30 @@ model SystemSettings {
   updatedAt              DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+// ==========================================================================
+// Controle de Estoque — movimentações de produtos com número de série
+// ==========================================================================
+
+model StockMovement {
+  id            String   @id @default(cuid())
+  cod           String
+  descricao     String
+  qtd           Int      @default(1)
+  respRetirada  String
+  respEntrega   String?
+  data          DateTime
+  numeroSerie   String?
+  destino       String?
+  devolvido     Boolean  @default(false)
+  observacoes   String?
+  createdByUserId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([data])
+  @@index([cod])
+  @@index([numeroSerie])
+  @@map("stock_movements")
 }

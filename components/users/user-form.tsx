@@ -36,6 +36,7 @@ import {
   Briefcase,
   FileText,
   Truck,
+  Boxes,
   BellRing,
   Send,
   type LucideIcon,
@@ -79,6 +80,7 @@ const emptyValues: UserFormValues = {
   cargo: undefined,
   canAccessOrcamentos: true,
   canAccessFrota: true,
+  canAccessEstoque: true,
   receiveNotifications: true,
   telegramChatId: "",
 };
@@ -107,6 +109,7 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
   const cargo = watch("cargo");
   const canAccessOrcamentos = watch("canAccessOrcamentos");
   const canAccessFrota = watch("canAccessFrota");
+  const canAccessEstoque = watch("canAccessEstoque");
   const receiveNotifications = watch("receiveNotifications");
   const isEditing = !!initialData;
 
@@ -254,6 +257,14 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
               />
               <Truck className="h-4 w-4 text-muted-foreground" />
               Controle de Veículos
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium">
+              <Checkbox
+                checked={!!canAccessEstoque}
+                onCheckedChange={(v) => setValue("canAccessEstoque", v === true)}
+              />
+              <Boxes className="h-4 w-4 text-muted-foreground" />
+              Controle de Estoque
             </label>
             <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium sm:col-span-2">
               <Checkbox

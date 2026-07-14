@@ -14,6 +14,7 @@ import {
   Fuel,
   CalendarDays,
   BarChart3,
+  Boxes,
   Users,
   ShieldCheck,
   Settings,
@@ -54,6 +55,11 @@ export const navItems: NavItem[] = [
     label: "Gestão de Frota",
     href: "/frota",
     icon: Truck,
+  },
+  {
+    label: "Controle de Estoque",
+    href: "/estoque",
+    icon: Boxes,
   },
   {
     label: "Usuários",

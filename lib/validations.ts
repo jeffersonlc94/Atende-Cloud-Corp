@@ -311,6 +311,7 @@ export const userSchema = z.object({
   cargo: z.enum(cargoOptions).optional(),
   canAccessOrcamentos: z.boolean().optional().default(true),
   canAccessFrota: z.boolean().optional().default(true),
+  canAccessEstoque: z.boolean().optional().default(true),
   receiveNotifications: z.boolean().optional().default(true),
   telegramChatId: z.string().optional().default(""),
 });
@@ -326,3 +327,22 @@ export const profileSchema = z.object({
 });
 
 export type ProfileFormValues = z.input<typeof profileSchema>;
+
+// ---------------------------------------------------------------------------
+// Controle de Estoque
+// ---------------------------------------------------------------------------
+
+export const stockMovementSchema = z.object({
+  cod: z.string().min(1, "Código obrigatório"),
+  descricao: z.string().min(1, "Descrição obrigatória"),
+  qtd: z.number().int().positive().default(1),
+  respRetirada: z.string().min(1, "Responsável pela retirada obrigatório"),
+  respEntrega: z.string().optional().default(""),
+  data: z.string().min(1, "Informe a data"),
+  numeroSerie: z.string().optional().default(""),
+  destino: z.string().optional().default(""),
+  devolvido: z.boolean().optional().default(false),
+  observacoes: z.string().optional().default(""),
+});
+
+export type StockMovementFormValues = z.input<typeof stockMovementSchema>;

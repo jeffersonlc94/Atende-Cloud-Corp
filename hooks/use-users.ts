@@ -11,6 +11,7 @@ export type AppUser = {
   cargo: "TECNICO" | "VENDEDOR" | null;
   canAccessOrcamentos: boolean;
   canAccessFrota: boolean;
+  canAccessEstoque: boolean;
   receiveNotifications: boolean;
   telegramChatId: string | null;
   avatarUrl?: string | null;

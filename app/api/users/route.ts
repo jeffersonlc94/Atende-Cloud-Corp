@@ -15,7 +15,7 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     where: { hidden: false },
-    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, canAccessEstoque: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
     orderBy: { name: "asc" },
   });
 
@@ -59,10 +59,11 @@ export async function POST(req: NextRequest) {
       cargo: data.cargo ?? null,
       canAccessOrcamentos: data.canAccessOrcamentos ?? true,
       canAccessFrota: data.canAccessFrota ?? true,
+      canAccessEstoque: data.canAccessEstoque ?? true,
       receiveNotifications: data.receiveNotifications ?? true,
       telegramChatId: data.telegramChatId || null,
     },
-    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, canAccessEstoque: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
   });
 
   await registerAudit({

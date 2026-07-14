@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { navItems, orcamentosNavItems, frotaNavItems, type NavItem } from "./nav-items";
 import { useSystemSettings } from "@/hooks/use-settings";
-import { ChevronDown, Leaf, FileText, Truck, type LucideIcon } from "lucide-react";
+import { ChevronDown, Leaf, FileText, Truck, Boxes, type LucideIcon } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -25,6 +25,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const isAdmin = session?.user?.role === "ADMIN";
   const canOrcamentos = isAdmin || session?.user?.canAccessOrcamentos !== false;
   const canFrota = isAdmin || session?.user?.canAccessFrota !== false;
+  const canEstoque = isAdmin || session?.user?.canAccessEstoque !== false;
 
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
@@ -68,6 +69,16 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             items={frotaNavItems}
             onNavigate={onNavigate}
             isActive={(item) => pathname === item.href}
+          />
+        )}
+
+        {canEstoque && (
+          <NavLink
+            href="/estoque"
+            label="Controle de Estoque"
+            Icon={Boxes}
+            active={pathname === "/estoque"}
+            onNavigate={onNavigate}
           />
         )}
 

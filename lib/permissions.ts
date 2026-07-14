@@ -1,5 +1,5 @@
 export type UserRole = "ADMIN" | "USER";
-export type ModuleName = "orcamentos" | "frota";
+export type ModuleName = "orcamentos" | "frota" | "estoque";
 
 type SessionLike =
   | {
@@ -7,6 +7,7 @@ type SessionLike =
         role?: string | null;
         canAccessOrcamentos?: boolean | null;
         canAccessFrota?: boolean | null;
+        canAccessEstoque?: boolean | null;
       } | null;
     }
   | null
@@ -24,6 +25,7 @@ export function canAccessModule(session: SessionLike, module: ModuleName): boole
   if (isAdmin(session)) return true;
   if (module === "orcamentos") return session?.user?.canAccessOrcamentos !== false;
   if (module === "frota") return session?.user?.canAccessFrota !== false;
+  if (module === "estoque") return session?.user?.canAccessEstoque !== false;
   return false;
 }
 
