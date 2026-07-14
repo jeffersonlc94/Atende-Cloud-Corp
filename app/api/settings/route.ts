@@ -15,7 +15,18 @@ export async function GET() {
     create: { id: SETTINGS_ID },
   });
 
-  return NextResponse.json(settings);
+  // Nunca expor credenciais SMTP neste endpoint público — a configuração
+  // de e-mail é servida apenas para admins em /api/config/smtp.
+  const { smtpHost, smtpPort, smtpUser, smtpPass, smtpSecure, smtpFrom, ...publicSettings } =
+    settings;
+  void smtpHost;
+  void smtpPort;
+  void smtpUser;
+  void smtpPass;
+  void smtpSecure;
+  void smtpFrom;
+
+  return NextResponse.json(publicSettings);
 }
 
 export async function PUT(req: NextRequest) {

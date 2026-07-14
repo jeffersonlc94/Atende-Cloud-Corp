@@ -9,7 +9,7 @@ import {
   type NotificationCargoPrefs,
 } from "@/lib/notification-prefs";
 import {
-  isSmtpConfigured,
+  getSmtpConfig,
   sendMail,
   templateChecklistNaoRealizado,
   templateDocumentoVencendo,
@@ -110,8 +110,11 @@ export async function POST() {
     return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
   }
 
-  const smtpConfigured = isSmtpConfigured();
-  const envRecipients = destinationEmails();
+  const smtpConfig = await getSmtpConfig();
+  const smtpConfigured = smtpConfig !== null;
+  // Destinatários fixos: os do painel de configurações têm prioridade sobre
+  // a variável de ambiente FROTA_NOTIFICATION_EMAILS.
+  const envRecipients = smtpConfig?.recipients?.length ? smtpConfig.recipients : destinationEmails();
 
   const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
   const prefs = (settings?.notificationCargoPrefs as NotificationCargoPrefs | null) ?? null;

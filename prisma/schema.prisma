@@ -412,6 +412,13 @@ model SystemSettings {
   accentColor            String?
   autoLogoutMinutes      Int?
   notificationCargoPrefs Json?
+  smtpHost               String?
+  smtpPort               Int?
+  smtpUser               String?
+  smtpPass               String?
+  smtpSecure             Boolean?
+  smtpFrom               String?
+  notificationEmails     String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 

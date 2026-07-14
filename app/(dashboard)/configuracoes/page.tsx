@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -42,7 +42,18 @@ type SmtpStatus = {
   port: string | null;
   from: string | null;
   secure: boolean;
+  source: "painel" | "ambiente" | null;
   recipients: string[];
+};
+
+type SmtpSettings = {
+  smtpHost: string;
+  smtpPort: number | null;
+  smtpUser: string;
+  hasPassword: boolean;
+  smtpSecure: boolean;
+  smtpFrom: string;
+  notificationEmails: string;
 };
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -96,7 +107,8 @@ function NotificacoesTab() {
             <div className="flex items-center gap-2">
               {smtp.configured ? (
                 <Badge className="gap-1">
-                  <MailCheck className="h-3.5 w-3.5" /> Configurado
+                  <MailCheck className="h-3.5 w-3.5" />
+                  Configurado{smtp.source ? ` (via ${smtp.source})` : ""}
                 </Badge>
               ) : (
                 <Badge variant="secondary" className="gap-1">
@@ -132,8 +144,8 @@ function NotificacoesTab() {
 
             {!smtp.configured && (
               <p className="text-sm text-muted-foreground">
-                Defina as variáveis SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM e
-                SMTP_SECURE no ambiente para habilitar o envio de e-mails.
+                Preencha os dados do servidor SMTP no cartão acima (ou defina as variáveis
+                SMTP_* no ambiente) para habilitar o envio de e-mails.
               </p>
             )}
           </>
@@ -165,9 +177,217 @@ function NotificacoesTab() {
   );
 }
 
+function SmtpConfigCard() {
+  const queryClient = useQueryClient();
+  const { data: smtpConfig, isLoading } = useQuery({
+    queryKey: ["smtp-config"],
+    queryFn: () => fetchJson<SmtpSettings>("/api/config/smtp"),
+  });
+  const [form, setForm] = useState({
+    smtpHost: "",
+    smtpPort: "",
+    smtpUser: "",
+    smtpPass: "",
+    smtpSecure: false,
+    smtpFrom: "",
+    notificationEmails: "",
+  });
+  const [hasPassword, setHasPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
+
+  useEffect(() => {
+    if (smtpConfig) {
+      setForm({
+        smtpHost: smtpConfig.smtpHost,
+        smtpPort: smtpConfig.smtpPort ? String(smtpConfig.smtpPort) : "",
+        smtpUser: smtpConfig.smtpUser,
+        smtpPass: "",
+        smtpSecure: smtpConfig.smtpSecure,
+        smtpFrom: smtpConfig.smtpFrom,
+        notificationEmails: smtpConfig.notificationEmails,
+      });
+      setHasPassword(smtpConfig.hasPassword);
+    }
+  }, [smtpConfig]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/config/smtp", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          smtpPort: form.smtpPort ? parseInt(form.smtpPort, 10) : undefined,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(typeof body?.error === "string" ? body.error : "Erro ao salvar");
+      toast.success("Configuração SMTP salva");
+      queryClient.invalidateQueries({ queryKey: ["smtp-config"] });
+      queryClient.invalidateQueries({ queryKey: ["smtp-status"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar configuração SMTP");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSendTest() {
+    if (!testEmail.trim()) {
+      toast.error("Informe o e-mail de destino do teste");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const res = await fetch("/api/config/smtp-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: testEmail.trim() }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(typeof body?.error === "string" ? body.error : "Falha no envio de teste");
+      }
+      toast.success(`E-mail de teste enviado para ${testEmail.trim()}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar e-mail de teste");
+    } finally {
+      setSendingTest(false);
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Mail className="h-4 w-4" /> Configurar servidor SMTP
+        </CardTitle>
+        <CardDescription>
+          Dados do servidor de e-mail usados para enviar as notificações do sistema. A
+          configuração salva aqui tem prioridade sobre as variáveis de ambiente.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4 pb-5">
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!isLoading && (
+          <>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label>Servidor (host)</Label>
+                <Input
+                  placeholder="smtp.gmail.com"
+                  value={form.smtpHost}
+                  onChange={(e) => setForm({ ...form, smtpHost: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Porta</Label>
+                <Input
+                  type="number"
+                  placeholder="587"
+                  value={form.smtpPort}
+                  onChange={(e) => setForm({ ...form, smtpPort: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Usuário</Label>
+                <Input
+                  placeholder="usuario@dominio.com"
+                  value={form.smtpUser}
+                  onChange={(e) => setForm({ ...form, smtpUser: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Senha</Label>
+                <Input
+                  type="password"
+                  placeholder={hasPassword ? "•••••• (deixe em branco para manter)" : ""}
+                  value={form.smtpPass}
+                  onChange={(e) => setForm({ ...form, smtpPass: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Remetente (from)</Label>
+                <Input
+                  placeholder='"Atende Cloud" <nao-responda@dominio.com>'
+                  value={form.smtpFrom}
+                  onChange={(e) => setForm({ ...form, smtpFrom: e.target.value })}
+                />
+              </div>
+              <div className="flex items-end pb-2">
+                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={form.smtpSecure}
+                    onCheckedChange={(v) => setForm({ ...form, smtpSecure: v === true })}
+                  />
+                  Conexão segura (SSL/TLS — porta 465)
+                </label>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Destinatários das notificações de frota</Label>
+              <Input
+                placeholder="email1@dominio.com, email2@dominio.com"
+                value={form.notificationEmails}
+                onChange={(e) => setForm({ ...form, notificationEmails: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Separe múltiplos e-mails por vírgula. Eles recebem os alertas de checklist,
+                documentos e troca de óleo.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+              <Button onClick={() => setConfirmOpen(true)} disabled={saving}>
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Salvar configuração
+              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Input
+                  type="email"
+                  placeholder="destino do teste"
+                  className="w-52"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                />
+                <Button variant="outline" onClick={handleSendTest} disabled={sendingTest}>
+                  {sendingTest ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Enviar teste
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma salvar a configuração SMTP?"
+        confirmLabel="Salvar"
+        onConfirm={handleSave}
+      />
+    </Card>
+  );
+}
+
 function NotificacoesTabWrapper() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   return (
     <div className="space-y-4">
+      {isAdmin && <SmtpConfigCard />}
       <NotificacoesTab />
       <NotificationCargoPrefsCard />
     </div>

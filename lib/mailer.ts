@@ -1,38 +1,76 @@
-import nodemailer, { type Transporter } from "nodemailer";
+import nodemailer from "nodemailer";
+import { prisma } from "@/lib/prisma";
 
 // ---------------------------------------------------------------------------
 // Configuração de envio de e-mail via SMTP.
-// Se as variáveis de ambiente não estiverem configuradas, o envio é
-// ignorado silenciosamente (apenas logado), sem quebrar a aplicação.
+// A configuração salva no painel (SystemSettings) tem prioridade; as
+// variáveis de ambiente funcionam como fallback. Sem configuração, o envio
+// é ignorado silenciosamente (apenas logado), sem quebrar a aplicação.
 // ---------------------------------------------------------------------------
 
-export function isSmtpConfigured(): boolean {
-  return Boolean(
+export type SmtpConfig = {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  secure: boolean;
+  from: string;
+  recipients: string[];
+  source: "painel" | "ambiente";
+};
+
+export async function getSmtpConfig(): Promise<SmtpConfig | null> {
+  const settings = await prisma.systemSettings
+    .findUnique({ where: { id: "default" } })
+    .catch(() => null);
+
+  const dbRecipients = (settings?.notificationEmails || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const envRecipients = (process.env.FROTA_NOTIFICATION_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const recipients = dbRecipients.length > 0 ? dbRecipients : envRecipients;
+
+  if (settings?.smtpHost && settings.smtpPort && settings.smtpUser && settings.smtpPass && settings.smtpFrom) {
+    return {
+      host: settings.smtpHost,
+      port: settings.smtpPort,
+      user: settings.smtpUser,
+      pass: settings.smtpPass,
+      secure: settings.smtpSecure ?? false,
+      from: settings.smtpFrom,
+      recipients,
+      source: "painel",
+    };
+  }
+
+  if (
     process.env.SMTP_HOST &&
-      process.env.SMTP_PORT &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS &&
-      process.env.SMTP_FROM
-  );
-}
-
-let transporter: Transporter | null = null;
-
-function getTransporter(): Transporter | null {
-  if (!isSmtpConfigured()) return null;
-  if (transporter) return transporter;
-
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: process.env.SMTP_SECURE === "true",
-    auth: {
+    process.env.SMTP_PORT &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS &&
+    process.env.SMTP_FROM
+  ) {
+    return {
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
-    },
-  });
+      secure: process.env.SMTP_SECURE === "true",
+      from: process.env.SMTP_FROM,
+      recipients,
+      source: "ambiente",
+    };
+  }
 
-  return transporter;
+  return null;
+}
+
+export async function isSmtpConfigured(): Promise<boolean> {
+  return (await getSmtpConfig()) !== null;
 }
 
 export type SendMailInput = {
@@ -44,9 +82,9 @@ export type SendMailInput = {
 export type SendMailResult = { sent: boolean; reason?: string };
 
 export async function sendMail({ to, subject, html }: SendMailInput): Promise<SendMailResult> {
-  const t = getTransporter();
+  const config = await getSmtpConfig();
 
-  if (!t) {
+  if (!config) {
     console.warn(
       `[mailer] SMTP não configurado — e-mail "${subject}" para ${to} não foi enviado.`
     );
@@ -54,12 +92,13 @@ export async function sendMail({ to, subject, html }: SendMailInput): Promise<Se
   }
 
   try {
-    await t.sendMail({
-      from: process.env.SMTP_FROM,
-      to,
-      subject,
-      html,
+    const t = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: { user: config.user, pass: config.pass },
     });
+    await t.sendMail({ from: config.from, to, subject, html });
     return { sent: true };
   } catch (err) {
     console.error("[mailer] Falha ao enviar e-mail:", err);
