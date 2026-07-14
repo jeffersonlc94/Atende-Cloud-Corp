@@ -23,6 +23,21 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
   const limiteDocumento = new Date(now.getTime() + DIAS_ALERTA_DOCUMENTO * 24 * 60 * 60 * 1000);
   const seteDiasAtras = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+  // Dias da semana em que o checklist é obrigatório (Configurações >
+  // Notificações). Com dias configurados, o alerta dispara quando o
+  // checklist do dia ainda não foi feito; sem configuração, mantém a
+  // regra antiga de 7 dias sem checklist.
+  const settings = await prisma.systemSettings
+    .findUnique({ where: { id: "default" } })
+    .catch(() => null);
+  const checklistDays = (settings?.checklistDays || "")
+    .split(",")
+    .map((d) => parseInt(d.trim(), 10))
+    .filter((d) => !Number.isNaN(d));
+  const hojeEDiaDeChecklist = checklistDays.length > 0 && checklistDays.includes(now.getDay());
+  const inicioDoDia = new Date(now);
+  inicioDoDia.setHours(0, 0, 0, 0);
+
   const vehicles = await prisma.vehicle.findMany({
     where: { situacao: { not: "Inativo" } },
     include: {
@@ -89,7 +104,20 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
     }
 
     const lastChecklist = v.checklists[0];
-    if (!lastChecklist || lastChecklist.data < seteDiasAtras) {
+    if (checklistDays.length > 0) {
+      // Regra por dias configurados: alerta no dia de checklist ainda sem registro.
+      if (hojeEDiaDeChecklist && (!lastChecklist || lastChecklist.data < inicioDoDia)) {
+        alerts.push({
+          id: `checklist-${v.id}`,
+          tipo: "checklist",
+          severidade: "atencao",
+          titulo: "Checklist do dia não realizado",
+          descricao: `${label}: o checklist de hoje ainda não foi registrado`,
+          veiculo: label,
+          vehicleId: v.id,
+        });
+      }
+    } else if (!lastChecklist || lastChecklist.data < seteDiasAtras) {
       alerts.push({
         id: `checklist-${v.id}`,
         tipo: "checklist",

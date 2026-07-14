@@ -766,6 +766,120 @@ function TelegramConfigCard() {
   );
 }
 
+function ChecklistDaysCard() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["checklist-days"],
+    queryFn: () => fetchJson<{ checklistDays: string }>("/api/config/checklist-days"),
+  });
+  const [dias, setDias] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setDias(
+        (data.checklistDays || "")
+          .split(",")
+          .map((d) => parseInt(d.trim(), 10))
+          .filter((d) => !Number.isNaN(d))
+      );
+    }
+  }, [data]);
+
+  function toggle(value: number) {
+    setDias((prev) =>
+      prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value].sort()
+    );
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/config/checklist-days", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checklistDays: dias.join(",") }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(typeof body?.error === "string" ? body.error : "Erro ao salvar");
+      toast.success("Dias de checklist salvos");
+      queryClient.invalidateQueries({ queryKey: ["checklist-days"] });
+      queryClient.invalidateQueries({ queryKey: ["fleet-alerts"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar dias de checklist");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <BellRing className="h-4 w-4" /> Dias de checklist obrigatório
+        </CardTitle>
+        <CardDescription>
+          Selecione em quais dias da semana o checklist dos veículos deve ser feito. Nos dias
+          marcados, veículos sem checklist registrado geram alerta (sininho e notificações).
+          Sem dias marcados, vale a regra padrão: alerta após 7 dias sem checklist.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4 pb-5">
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!isLoading && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {DIAS_SEMANA.map((d) => {
+                const selecionado = dias.includes(d.value);
+                return (
+                  <button
+                    key={d.value}
+                    type="button"
+                    onClick={() => toggle(d.value)}
+                    className={
+                      selecionado
+                        ? "rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground"
+                        : dias.length === 0
+                          ? "rounded-full border border-dashed bg-muted/50 px-3.5 py-1.5 text-xs font-medium text-muted-foreground"
+                          : "rounded-full border px-3.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted"
+                    }
+                  >
+                    {d.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dias.length === 0
+                ? "Nenhum dia selecionado — regra padrão de 7 dias sem checklist."
+                : `Checklist obrigatório: ${DIAS_SEMANA.filter((d) => dias.includes(d.value))
+                    .map((d) => d.label)
+                    .join(", ")}. Veículos sem checklist nesses dias geram alerta.`}
+            </p>
+            <Button onClick={() => setConfirmOpen(true)} disabled={saving}>
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Salvar
+            </Button>
+          </>
+        )}
+      </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma salvar os dias de checklist obrigatório?"
+        confirmLabel="Salvar"
+        onConfirm={handleSave}
+      />
+    </Card>
+  );
+}
+
 function NotificacoesTabWrapper() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -773,6 +887,7 @@ function NotificacoesTabWrapper() {
     <div className="space-y-4">
       {isAdmin && <SmtpConfigCard />}
       {isAdmin && <TelegramConfigCard />}
+      {isAdmin && <ChecklistDaysCard />}
       <NotificacoesTab />
       <NotificationCargoPrefsCard />
     </div>

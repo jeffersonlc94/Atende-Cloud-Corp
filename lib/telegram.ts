@@ -117,9 +117,14 @@ export function tgChecklistNaoRealizado(params: {
     title: "Checklist não realizado",
     severidade: "atencao",
     veiculo,
-    linhas: [{ label: "Sem checklist há", valor: `${dias} dia(s)` }],
+    linhas:
+      dias === 0
+        ? [{ label: "Checklist de hoje", valor: "pendente" }]
+        : [{ label: "Sem checklist há", valor: `${dias} dia(s)` }],
     mensagem:
-      "Este veículo está sem checklist registrado. Regularize o quanto antes para manter o histórico de inspeções em dia.",
+      dias === 0
+        ? "Hoje é dia de checklist e ele ainda não foi registrado para este veículo."
+        : "Este veículo está sem checklist registrado. Regularize o quanto antes para manter o histórico de inspeções em dia.",
   });
 }
 

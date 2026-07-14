@@ -112,7 +112,7 @@ function buildEmail(alert: FleetAlert, brand: string): { subject: string; html: 
   const veiculo = alert.veiculo ?? alert.descricao;
 
   if (alert.tipo === "checklist") {
-    return templateChecklistNaoRealizado({ brand, veiculo, dias: 7 });
+    return templateChecklistNaoRealizado({ brand, veiculo, dias: alert.titulo.includes("do dia") ? 0 : 7 });
   }
 
   if (alert.tipo === "documento") {
@@ -142,7 +142,7 @@ function buildTelegramMessage(alert: FleetAlert, brand: string): string | null {
   const veiculo = alert.veiculo ?? alert.descricao;
 
   if (alert.tipo === "checklist") {
-    return tgChecklistNaoRealizado({ brand, veiculo, dias: 7 });
+    return tgChecklistNaoRealizado({ brand, veiculo, dias: alert.titulo.includes("do dia") ? 0 : 7 });
   }
 
   if (alert.tipo === "documento") {
