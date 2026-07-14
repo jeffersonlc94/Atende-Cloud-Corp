@@ -32,7 +32,12 @@ import {
 // permitindo horários/dias diferentes para e-mail e Telegram.
 // ---------------------------------------------------------------------------
 
-export type RunChannels = { email: boolean; telegram: boolean };
+export type RunChannels = {
+  email: boolean;
+  telegram: boolean;
+  /** true = ignora o anti-reenvio diário e dispara novamente (reenvio manual). */
+  force?: boolean;
+};
 
 export type RunSummary = {
   ok: true;
@@ -193,10 +198,13 @@ export async function runFleetNotifications(channels: RunChannels): Promise<RunS
   for (const alert of alerts) {
     processed++;
 
-    // Anti-reenvio por canal e por dia.
-    const emailDuplicate = !channels.email || (await alreadySentToday(alert.tipo, `email:${alert.id}`));
+    // Anti-reenvio por canal e por dia (ignorado no reenvio forçado).
+    const emailDuplicate =
+      !channels.email ||
+      (!channels.force && (await alreadySentToday(alert.tipo, `email:${alert.id}`)));
     const telegramDuplicate =
-      !channels.telegram || (await alreadySentToday(alert.tipo, `telegram:${alert.id}`));
+      !channels.telegram ||
+      (!channels.force && (await alreadySentToday(alert.tipo, `telegram:${alert.id}`)));
 
     if (emailDuplicate && telegramDuplicate) {
       skippedDuplicate++;

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -11,16 +11,24 @@ import { runFleetNotifications } from "@/lib/notifications-runner";
 // agendador interno (instrumentation.ts).
 // ---------------------------------------------------------------------------
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canAccessModule(session, "frota")) {
     return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
   }
 
+  // Corpo opcional: { channel: "email" | "telegram" | "both", force: boolean }
+  const body = (await req.json().catch(() => ({}))) as {
+    channel?: "email" | "telegram" | "both";
+    force?: boolean;
+  };
+  const channel = body.channel ?? "both";
+  const force = body.force === true;
+
   const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
-  const emailEnabled = settings?.smtpEnabled ?? true;
-  const telegramEnabled = settings?.telegramEnabled ?? true;
+  const emailEnabled = (settings?.smtpEnabled ?? true) && channel !== "telegram";
+  const telegramEnabled = (settings?.telegramEnabled ?? true) && channel !== "email";
 
   if (!emailEnabled && !telegramEnabled) {
     return NextResponse.json({
@@ -38,6 +46,7 @@ export async function POST() {
   const summary = await runFleetNotifications({
     email: emailEnabled,
     telegram: telegramEnabled,
+    force,
   });
 
   return NextResponse.json(summary);

@@ -81,26 +81,31 @@ function NotificacoesTab() {
     queryKey: ["smtp-status"],
     queryFn: () => fetchJson<SmtpStatus>("/api/config/smtp-status"),
   });
-  const [testing, setTesting] = useState(false);
+  const [testing, setTesting] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<Record<string, unknown> | null>(null);
 
-  async function handleTest() {
-    setTesting(true);
+  async function handleTest(channel: "both" | "email" | "telegram", force: boolean) {
+    setTesting(force ? channel : "both");
     setLastResult(null);
     try {
-      const res = await fetch("/api/frota/notifications/run", { method: "POST" });
+      const res = await fetch("/api/frota/notifications/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel, force }),
+      });
       const body = await res.json();
       if (!res.ok) throw new Error(body?.error || "Erro ao executar rotina de notificações");
       setLastResult(body);
+      const total = (body.sent ?? 0) + (body.sentTelegram ?? 0);
       toast.success(
-        body.sent > 0
-          ? `${body.sent} e-mail(s) enviado(s) com sucesso.`
-          : "Rotina executada. Nenhum e-mail novo foi enviado (ver detalhes abaixo)."
+        total > 0
+          ? `Enviado: ${body.sent ?? 0} e-mail(s) e ${body.sentTelegram ?? 0} mensagem(ns) no Telegram.`
+          : "Rotina executada. Nenhum aviso novo foi enviado (ver detalhes abaixo)."
       );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao testar notificações");
     } finally {
-      setTesting(false);
+      setTesting(null);
     }
   }
 
@@ -171,14 +176,44 @@ function NotificacoesTab() {
             Dispara e-mails para checklists não realizados, documentos e trocas de óleo
             vencendo/vencidos, evitando reenvio no mesmo dia.
           </p>
-          <Button onClick={handleTest} disabled={testing}>
-            {testing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-4 w-4" />
-            )}
-            Testar envio de notificações
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => handleTest("both", false)} disabled={testing !== null}>
+              {testing === "both" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Testar envio de notificações
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleTest("telegram", true)}
+              disabled={testing !== null}
+            >
+              {testing === "telegram" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Reenviar agora no Telegram
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleTest("email", true)}
+              disabled={testing !== null}
+            >
+              {testing === "email" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              Reenviar agora por e-mail
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            &quot;Testar envio&quot; respeita o bloqueio de duplicados do dia; os botões de
+            reenvio forçam o disparo imediato dos alertas pendentes no canal escolhido.
+          </p>
 
           {lastResult && (
             <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs">
