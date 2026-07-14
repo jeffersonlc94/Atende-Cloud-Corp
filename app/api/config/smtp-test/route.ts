@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { sendMail } from "@/lib/mailer";
+import { sendMail, getBrandName, templateTeste } from "@/lib/mailer";
 import { z } from "zod";
 
 const testSchema = z.object({ to: z.string().email("Informe um e-mail válido") });
@@ -21,11 +21,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Informe um e-mail válido" }, { status: 400 });
   }
 
+  const template = templateTeste(await getBrandName());
   const result = await sendMail({
     to: parsed.data.to,
-    subject: "Teste de configuração SMTP",
-    html: `<p>Este é um e-mail de teste enviado pelo painel de configurações.</p>
-           <p>Se você recebeu esta mensagem, a configuração SMTP está funcionando.</p>`,
+    subject: template.subject,
+    html: template.html,
   });
 
   if (!result.sent) {

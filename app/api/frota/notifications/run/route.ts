@@ -10,6 +10,7 @@ import {
 } from "@/lib/notification-prefs";
 import {
   getSmtpConfig,
+  getBrandName,
   sendMail,
   templateChecklistNaoRealizado,
   templateDocumentoVencendo,
@@ -81,9 +82,11 @@ async function alreadySentToday(tipo: string, referencia: string): Promise<boole
   return Boolean(existing);
 }
 
-function buildEmail(alert: FleetAlert): { subject: string; html: string } | null {
+function buildEmail(alert: FleetAlert, brand: string): { subject: string; html: string } | null {
+  const veiculo = alert.veiculo ?? alert.descricao;
+
   if (alert.tipo === "checklist") {
-    return templateChecklistNaoRealizado({ veiculo: alert.descricao, dias: 7 });
+    return templateChecklistNaoRealizado({ brand, veiculo, dias: 7 });
   }
 
   if (alert.tipo === "documento") {
@@ -91,8 +94,8 @@ function buildEmail(alert: FleetAlert): { subject: string; html: string } | null
     const tipoDocumento = alert.titulo.replace(/^Documento (vencido|vencendo) \(/, "").replace(/\)$/, "");
     const dataVencimento = alert.data ? new Date(alert.data).toLocaleDateString("pt-BR") : "—";
     return vencido
-      ? templateDocumentoVencido({ veiculo: alert.descricao, tipoDocumento, dataVencimento })
-      : templateDocumentoVencendo({ veiculo: alert.descricao, tipoDocumento, dataVencimento });
+      ? templateDocumentoVencido({ brand, veiculo, tipoDocumento, dataVencimento })
+      : templateDocumentoVencendo({ brand, veiculo, tipoDocumento, dataVencimento });
   }
 
   if (alert.tipo === "troca_oleo") {
@@ -100,8 +103,8 @@ function buildEmail(alert: FleetAlert): { subject: string; html: string } | null
     const match = alert.descricao.match(/(\d+)/g);
     const numero = match ? Number(match[match.length - 1]) : 0;
     return vencido
-      ? templateTrocaOleoVencida({ veiculo: alert.descricao, kmExcedente: numero })
-      : templateTrocaOleoProxima({ veiculo: alert.descricao, kmRestante: numero });
+      ? templateTrocaOleoVencida({ brand, veiculo, kmExcedente: numero })
+      : templateTrocaOleoProxima({ brand, veiculo, kmRestante: numero });
   }
 
   return null;
@@ -123,6 +126,7 @@ export async function POST() {
   const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
   const prefs = (settings?.notificationCargoPrefs as NotificationCargoPrefs | null) ?? null;
 
+  const brand = await getBrandName();
   const alerts = relevantAlerts(await computeFleetAlerts());
 
   let processed = 0;
@@ -141,7 +145,7 @@ export async function POST() {
       continue;
     }
 
-    const email = buildEmail(alert);
+    const email = buildEmail(alert, brand);
     if (!email) continue;
 
     const recipients = await recipientsForAlert(alert, envRecipients, prefs);

@@ -6,6 +6,8 @@ export type FleetAlert = {
   severidade: "atencao" | "critico";
   titulo: string;
   descricao: string;
+  /** Identificação limpa do veículo (placa — marca modelo) para e-mails. */
+  veiculo?: string;
   vehicleId: string | null;
   data?: string;
 };
@@ -42,6 +44,7 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
           severidade: "critico",
           titulo: `Documento vencido (${doc.tipo})`,
           descricao: `${label}: ${doc.tipo} venceu em ${doc.dataVencimento.toLocaleDateString("pt-BR")}`,
+          veiculo: label,
           vehicleId: v.id,
           data: doc.dataVencimento.toISOString(),
         });
@@ -52,6 +55,7 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
           severidade: "atencao",
           titulo: `Documento vencendo (${doc.tipo})`,
           descricao: `${label}: ${doc.tipo} vence em ${doc.dataVencimento.toLocaleDateString("pt-BR")}`,
+          veiculo: label,
           vehicleId: v.id,
           data: doc.dataVencimento.toISOString(),
         });
@@ -68,6 +72,7 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
           severidade: "critico",
           titulo: "Troca de óleo vencida",
           descricao: `${label}: km atual (${v.kmAtual}) já ultrapassou o previsto (${lastOil.kmProximaTroca})`,
+          veiculo: label,
           vehicleId: v.id,
         });
       } else if (diff <= KM_ALERTA_TROCA_OLEO) {
@@ -77,6 +82,7 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
           severidade: "atencao",
           titulo: "Troca de óleo próxima",
           descricao: `${label}: faltam ${diff} km para a próxima troca`,
+          veiculo: label,
           vehicleId: v.id,
         });
       }
@@ -90,6 +96,7 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
         severidade: "atencao",
         titulo: "Checklist não realizado esta semana",
         descricao: `${label}: nenhum checklist registrado nos últimos 7 dias`,
+        veiculo: label,
         vehicleId: v.id,
       });
     }
@@ -101,6 +108,7 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
         severidade: "atencao",
         titulo: "Veículo em manutenção",
         descricao: `${label}: situação atual é "Em manutenção"`,
+        veiculo: label,
         vehicleId: v.id,
       });
     }

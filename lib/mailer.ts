@@ -114,99 +114,198 @@ export async function sendMail({ to, subject, html }: SendMailInput): Promise<Se
 }
 
 // ---------------------------------------------------------------------------
-// Templates simples de e-mail (HTML)
+// Templates de e-mail (HTML)
 // ---------------------------------------------------------------------------
 
-function baseTemplate(title: string, bodyHtml: string): string {
+/**
+ * Nome exibido no cabeçalho dos e-mails: nome do sistema definido no painel,
+ * senão a empresa emissora padrão cadastrada, senão o nome padrão.
+ */
+export async function getBrandName(): Promise<string> {
+  const settings = await prisma.systemSettings
+    .findUnique({ where: { id: "default" } })
+    .catch(() => null);
+  if (settings?.systemName) return settings.systemName;
+
+  const company = await prisma.company
+    .findFirst({ where: { isDefault: true } })
+    .catch(() => null);
+  if (company) return company.nomeFantasia || company.razaoSocial;
+
+  return "Atende Cloud Corp";
+}
+
+type Severidade = "critico" | "atencao" | "info";
+
+const severidadeStyle: Record<Severidade, { bg: string; fg: string; label: string }> = {
+  critico: { bg: "#fee2e2", fg: "#b91c1c", label: "URGENTE" },
+  atencao: { bg: "#fef3c7", fg: "#b45309", label: "ATENÇÃO" },
+  info: { bg: "#dcfce7", fg: "#15803d", label: "INFORMATIVO" },
+};
+
+function baseTemplate(params: {
+  brand: string;
+  title: string;
+  severidade: Severidade;
+  veiculo?: string;
+  linhas: { label: string; valor: string }[];
+  mensagem: string;
+}): string {
+  const { brand, title, severidade, veiculo, linhas, mensagem } = params;
+  const sev = severidadeStyle[severidade];
+
+  const detalhes = [
+    ...(veiculo ? [{ label: "Veículo", valor: veiculo }] : []),
+    ...linhas,
+  ]
+    .map(
+      (l) => `
+        <tr>
+          <td style="padding:8px 0; color:#6b7280; font-size:13px; width:140px; vertical-align:top;">${l.label}</td>
+          <td style="padding:8px 0; color:#111827; font-size:14px; font-weight:bold;">${l.valor}</td>
+        </tr>`
+    )
+    .join("");
+
   return `
-    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 560px; margin: 0 auto; color: #1f2937;">
-      <div style="background:#0f172a; padding:16px 24px;">
-        <span style="color:#fff; font-size:16px; font-weight:bold;">Atende Cloud Corp</span>
+  <div style="background:#f3f4f6; padding:24px 12px; font-family: Arial, Helvetica, sans-serif;">
+    <div style="max-width:560px; margin:0 auto;">
+      <div style="background:#14532d; border-radius:12px 12px 0 0; padding:20px 28px;">
+        <span style="color:#ffffff; font-size:18px; font-weight:bold; letter-spacing:0.3px;">${brand}</span>
+        <span style="display:block; color:#86efac; font-size:12px; margin-top:2px;">Gestão de Frota</span>
       </div>
-      <div style="padding:24px; border:1px solid #e5e7eb; border-top:none;">
-        <h2 style="margin-top:0; font-size:18px;">${title}</h2>
-        ${bodyHtml}
+      <div style="background:#ffffff; border:1px solid #e5e7eb; border-top:none; border-radius:0 0 12px 12px; padding:28px;">
+        <span style="display:inline-block; background:${sev.bg}; color:${sev.fg}; font-size:11px; font-weight:bold; letter-spacing:0.5px; padding:4px 10px; border-radius:999px;">${sev.label}</span>
+        <h2 style="margin:14px 0 6px; font-size:20px; color:#111827;">${title}</h2>
+        <p style="margin:0 0 18px; color:#4b5563; font-size:14px; line-height:1.6;">${mensagem}</p>
+        ${
+          detalhes
+            ? `<table style="width:100%; border-collapse:collapse; border-top:1px solid #f3f4f6;">${detalhes}</table>`
+            : ""
+        }
       </div>
-      <p style="color:#9ca3af; font-size:12px; padding:12px 24px;">
-        Esta é uma notificação automática do módulo de Gestão de Frota. Não responda a este e-mail.
+      <p style="color:#9ca3af; font-size:12px; text-align:center; padding:16px 24px 0; line-height:1.5;">
+        Notificação automática do módulo de Gestão de Frota — ${brand}.<br/>Não responda a este e-mail.
       </p>
     </div>
+  </div>
   `;
 }
 
 export function templateChecklistNaoRealizado(params: {
+  brand: string;
   veiculo: string;
   dias: number;
 }): { subject: string; html: string } {
-  const { veiculo, dias } = params;
+  const { brand, veiculo, dias } = params;
   return {
     subject: `Checklist pendente — ${veiculo}`,
-    html: baseTemplate(
-      "Checklist não realizado",
-      `<p>O veículo <strong>${veiculo}</strong> está há <strong>${dias} dia(s)</strong> sem checklist registrado.</p>
-       <p>Regularize o quanto antes para manter o histórico de inspeções em dia.</p>`
-    ),
+    html: baseTemplate({
+      brand,
+      title: "Checklist não realizado",
+      severidade: "atencao",
+      veiculo,
+      linhas: [{ label: "Sem checklist há", valor: `${dias} dia(s)` }],
+      mensagem:
+        "Este veículo está sem checklist registrado. Regularize o quanto antes para manter o histórico de inspeções em dia.",
+    }),
   };
 }
 
 export function templateDocumentoVencendo(params: {
+  brand: string;
   veiculo: string;
   tipoDocumento: string;
   dataVencimento: string;
 }): { subject: string; html: string } {
-  const { veiculo, tipoDocumento, dataVencimento } = params;
+  const { brand, veiculo, tipoDocumento, dataVencimento } = params;
   return {
     subject: `Documento vencendo em breve — ${veiculo}`,
-    html: baseTemplate(
-      "Documento próximo do vencimento",
-      `<p>O documento <strong>${tipoDocumento}</strong> do veículo <strong>${veiculo}</strong> vence em <strong>${dataVencimento}</strong>.</p>
-       <p>Providencie a renovação para evitar problemas de conformidade.</p>`
-    ),
+    html: baseTemplate({
+      brand,
+      title: "Documento próximo do vencimento",
+      severidade: "atencao",
+      veiculo,
+      linhas: [
+        { label: "Documento", valor: tipoDocumento },
+        { label: "Vence em", valor: dataVencimento },
+      ],
+      mensagem: "Providencie a renovação para evitar problemas de conformidade.",
+    }),
   };
 }
 
 export function templateDocumentoVencido(params: {
+  brand: string;
   veiculo: string;
   tipoDocumento: string;
   dataVencimento: string;
 }): { subject: string; html: string } {
-  const { veiculo, tipoDocumento, dataVencimento } = params;
+  const { brand, veiculo, tipoDocumento, dataVencimento } = params;
   return {
     subject: `Documento vencido — ${veiculo}`,
-    html: baseTemplate(
-      "Documento vencido",
-      `<p>O documento <strong>${tipoDocumento}</strong> do veículo <strong>${veiculo}</strong> venceu em <strong>${dataVencimento}</strong>.</p>
-       <p>Regularize imediatamente.</p>`
-    ),
+    html: baseTemplate({
+      brand,
+      title: "Documento vencido",
+      severidade: "critico",
+      veiculo,
+      linhas: [
+        { label: "Documento", valor: tipoDocumento },
+        { label: "Venceu em", valor: dataVencimento },
+      ],
+      mensagem: "O documento está vencido. Regularize imediatamente.",
+    }),
   };
 }
 
 export function templateTrocaOleoProxima(params: {
+  brand: string;
   veiculo: string;
   kmRestante: number;
 }): { subject: string; html: string } {
-  const { veiculo, kmRestante } = params;
+  const { brand, veiculo, kmRestante } = params;
   return {
     subject: `Troca de óleo próxima — ${veiculo}`,
-    html: baseTemplate(
-      "Troca de óleo próxima",
-      `<p>Faltam <strong>${kmRestante} km</strong> para a próxima troca de óleo do veículo <strong>${veiculo}</strong>.</p>
-       <p>Agende a manutenção preventiva.</p>`
-    ),
+    html: baseTemplate({
+      brand,
+      title: "Troca de óleo próxima",
+      severidade: "atencao",
+      veiculo,
+      linhas: [{ label: "Faltam", valor: `${kmRestante.toLocaleString("pt-BR")} km` }],
+      mensagem: "A próxima troca de óleo está se aproximando. Agende a manutenção preventiva.",
+    }),
   };
 }
 
 export function templateTrocaOleoVencida(params: {
+  brand: string;
   veiculo: string;
   kmExcedente: number;
 }): { subject: string; html: string } {
-  const { veiculo, kmExcedente } = params;
+  const { brand, veiculo, kmExcedente } = params;
   return {
     subject: `Troca de óleo vencida — ${veiculo}`,
-    html: baseTemplate(
-      "Troca de óleo vencida",
-      `<p>O veículo <strong>${veiculo}</strong> já rodou <strong>${kmExcedente} km</strong> além do previsto para a troca de óleo.</p>
-       <p>Providencie a manutenção o quanto antes.</p>`
-    ),
+    html: baseTemplate({
+      brand,
+      title: "Troca de óleo vencida",
+      severidade: "critico",
+      veiculo,
+      linhas: [{ label: "Km além do previsto", valor: `${kmExcedente.toLocaleString("pt-BR")} km` }],
+      mensagem: "O veículo ultrapassou a quilometragem prevista para a troca. Providencie a manutenção o quanto antes.",
+    }),
+  };
+}
+
+export function templateTeste(brand: string): { subject: string; html: string } {
+  return {
+    subject: "Teste de configuração SMTP",
+    html: baseTemplate({
+      brand,
+      title: "Configuração SMTP funcionando",
+      severidade: "info",
+      linhas: [],
+      mensagem:
+        "Este é um e-mail de teste enviado pelo painel de configurações. Se você recebeu esta mensagem, o envio de e-mails está configurado corretamente.",
+    }),
   };
 }
