@@ -84,6 +84,7 @@ export function VehicleCard({
             </p>
             <p className="text-sm text-muted-foreground">
               {vehicle.placa} • {vehicle.ano}
+              {vehicle.cor ? ` • ${vehicle.cor}` : ""}
             </p>
           </div>
         </div>
