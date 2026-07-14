@@ -458,12 +458,179 @@ function SmtpConfigCard() {
   );
 }
 
+function TelegramConfigCard() {
+  const queryClient = useQueryClient();
+  const { data: tgConfig, isLoading } = useQuery({
+    queryKey: ["telegram-config"],
+    queryFn: () => fetchJson<{ hasToken: boolean; telegramChatIds: string }>("/api/config/telegram"),
+  });
+  const [token, setToken] = useState("");
+  const [chatIds, setChatIds] = useState("");
+  const [hasToken, setHasToken] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [testChatId, setTestChatId] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
+
+  useEffect(() => {
+    if (tgConfig) {
+      setChatIds(tgConfig.telegramChatIds);
+      setHasToken(tgConfig.hasToken);
+      setToken("");
+    }
+  }, [tgConfig]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/config/telegram", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegramBotToken: token, telegramChatIds: chatIds }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(typeof body?.error === "string" ? body.error : "Erro ao salvar");
+      toast.success("Configuração do Telegram salva");
+      queryClient.invalidateQueries({ queryKey: ["telegram-config"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar configuração do Telegram");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSendTest() {
+    if (!testChatId.trim()) {
+      toast.error("Informe o chat ID de destino do teste");
+      return;
+    }
+    setSendingTest(true);
+    try {
+      const res = await fetch("/api/config/telegram-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId: testChatId.trim() }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(typeof body?.error === "string" ? body.error : "Falha no envio de teste");
+      }
+      toast.success("Mensagem de teste enviada no Telegram");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao enviar teste do Telegram");
+    } finally {
+      setSendingTest(false);
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Send className="h-4 w-4" /> Notificações pelo Telegram
+        </CardTitle>
+        <CardDescription>
+          Crie um bot com o @BotFather no Telegram (comando /newbot), cole o token aqui e os
+          avisos da frota também serão enviados pelo Telegram — com os mesmos conteúdos dos
+          e-mails.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4 pb-5">
+        {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!isLoading && (
+          <>
+            <div className="flex items-center gap-2">
+              {hasToken ? (
+                <Badge className="gap-1">
+                  <MailCheck className="h-3.5 w-3.5" /> Bot configurado
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="gap-1">
+                  <MailX className="h-3.5 w-3.5" /> Bot não configurado
+                </Badge>
+              )}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>Token do bot</Label>
+                <Input
+                  type="password"
+                  placeholder={hasToken ? "•••••• (deixe em branco para manter)" : "123456789:AAH..."}
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Chats fixos (opcional)</Label>
+                <Input
+                  placeholder="-100123456789, 987654321"
+                  value={chatIds}
+                  onChange={(e) => setChatIds(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  IDs de grupos ou pessoas que recebem todos os avisos, separados por vírgula.
+                  Além destes, cada usuário com chat ID no cadastro também recebe.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Como descobrir o chat ID de um usuário:</p>
+              <p>
+                1. O usuário abre o bot no Telegram e aperta <strong>Iniciar</strong> (ou envia
+                qualquer mensagem). 2. Acesse{" "}
+                <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> no navegador — o
+                número em <code>&quot;chat&quot;:&#123;&quot;id&quot;:...&#125;</code> é o chat ID. 3. Cole no cadastro do
+                usuário (Usuários › Editar › Telegram).
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-t pt-4">
+              <Button onClick={() => setConfirmOpen(true)} disabled={saving}>
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                Salvar configuração
+              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Input
+                  placeholder="chat ID do teste"
+                  className="w-44"
+                  value={testChatId}
+                  onChange={(e) => setTestChatId(e.target.value)}
+                />
+                <Button variant="outline" onClick={handleSendTest} disabled={sendingTest}>
+                  {sendingTest ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Enviar teste
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Confirma salvar a configuração do Telegram?"
+        confirmLabel="Salvar"
+        onConfirm={handleSave}
+      />
+    </Card>
+  );
+}
+
 function NotificacoesTabWrapper() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
   return (
     <div className="space-y-4">
       {isAdmin && <SmtpConfigCard />}
+      {isAdmin && <TelegramConfigCard />}
       <NotificacoesTab />
       <NotificationCargoPrefsCard />
     </div>

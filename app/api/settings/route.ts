@@ -25,6 +25,8 @@ export async function GET() {
     smtpSecure,
     smtpAllowInvalidCert,
     smtpFrom,
+    telegramBotToken,
+    telegramChatIds,
     ...publicSettings
   } = settings;
   void smtpHost;
@@ -34,6 +36,8 @@ export async function GET() {
   void smtpSecure;
   void smtpAllowInvalidCert;
   void smtpFrom;
+  void telegramBotToken;
+  void telegramChatIds;
 
   return NextResponse.json(publicSettings);
 }

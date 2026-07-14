@@ -44,6 +44,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       canAccessOrcamentos: data.canAccessOrcamentos ?? true,
       canAccessFrota: data.canAccessFrota ?? true,
       receiveNotifications: data.receiveNotifications ?? true,
+      telegramChatId: data.telegramChatId || null,
       ...(data.password ? { passwordHash: await bcrypt.hash(data.password, 10) } : {}),
     },
     select: {
@@ -55,6 +56,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       canAccessOrcamentos: true,
       canAccessFrota: true,
       receiveNotifications: true,
+      telegramChatId: true,
       avatarUrl: true,
       createdAt: true,
       updatedAt: true,

@@ -18,6 +18,15 @@ import {
   templateTrocaOleoProxima,
   templateTrocaOleoVencida,
 } from "@/lib/mailer";
+import {
+  getTelegramConfig,
+  sendTelegram,
+  tgChecklistNaoRealizado,
+  tgDocumentoVencendo,
+  tgDocumentoVencido,
+  tgTrocaOleoProxima,
+  tgTrocaOleoVencida,
+} from "@/lib/telegram";
 
 // ---------------------------------------------------------------------------
 // Rotina de notificações da Frota.
@@ -48,24 +57,31 @@ async function recipientsForAlert(
   alert: FleetAlert,
   envRecipients: string[],
   prefs: NotificationCargoPrefs | null
-): Promise<string[]> {
+): Promise<{ emails: string[]; telegramChatIds: string[] }> {
   const tipoNotificacao = alertToNotificationTipo(alert.tipo, alert.severidade);
-  if (!tipoNotificacao) return envRecipients;
+  if (!tipoNotificacao) return { emails: envRecipients, telegramChatIds: [] };
 
   const users = await prisma.user.findMany({
     where: { receiveNotifications: true },
-    select: { email: true, cargo: true },
+    select: { email: true, cargo: true, telegramChatId: true },
   });
 
-  const userEmails = users
-    .filter((u) => isNotificationAllowedForCargo(prefs, u.cargo, tipoNotificacao))
-    .map((u) => u.email);
+  const allowed = users.filter((u) =>
+    isNotificationAllowedForCargo(prefs, u.cargo, tipoNotificacao)
+  );
+
+  const userEmails = allowed.map((u) => u.email);
+  const telegramChatIds = allowed
+    .map((u) => u.telegramChatId?.trim())
+    .filter((id): id is string => Boolean(id));
 
   // Domínios internos (ex.: admin@atende.local do seed) não são entregáveis
   // e fazem o servidor SMTP rejeitar o envio inteiro.
-  return Array.from(new Set([...envRecipients, ...userEmails])).filter(
+  const emails = Array.from(new Set([...envRecipients, ...userEmails])).filter(
     (email) => !email.toLowerCase().endsWith(".local")
   );
+
+  return { emails, telegramChatIds: Array.from(new Set(telegramChatIds)) };
 }
 
 function relevantAlerts(alerts: FleetAlert[]): FleetAlert[] {
@@ -111,6 +127,34 @@ function buildEmail(alert: FleetAlert, brand: string): { subject: string; html: 
   return null;
 }
 
+function buildTelegramMessage(alert: FleetAlert, brand: string): string | null {
+  const veiculo = alert.veiculo ?? alert.descricao;
+
+  if (alert.tipo === "checklist") {
+    return tgChecklistNaoRealizado({ brand, veiculo, dias: 7 });
+  }
+
+  if (alert.tipo === "documento") {
+    const vencido = alert.severidade === "critico";
+    const tipoDocumento = alert.titulo.replace(/^Documento (vencido|vencendo) \(/, "").replace(/\)$/, "");
+    const dataVencimento = alert.data ? new Date(alert.data).toLocaleDateString("pt-BR") : "—";
+    return vencido
+      ? tgDocumentoVencido({ brand, veiculo, tipoDocumento, dataVencimento })
+      : tgDocumentoVencendo({ brand, veiculo, tipoDocumento, dataVencimento });
+  }
+
+  if (alert.tipo === "troca_oleo") {
+    const vencido = alert.severidade === "critico";
+    const match = alert.descricao.match(/(\d+)/g);
+    const numero = match ? Number(match[match.length - 1]) : 0;
+    return vencido
+      ? tgTrocaOleoVencida({ brand, veiculo, kmExcedente: numero })
+      : tgTrocaOleoProxima({ brand, veiculo, kmRestante: numero });
+  }
+
+  return null;
+}
+
 export async function POST() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -149,10 +193,12 @@ export async function POST() {
   }
 
   const brand = await getBrandName();
+  const telegramConfig = await getTelegramConfig();
   const alerts = relevantAlerts(await computeFleetAlerts());
 
   let processed = 0;
   let sent = 0;
+  let sentTelegram = 0;
   let skippedDuplicate = 0;
   let skippedNoSmtp = 0;
   const errors: string[] = [];
@@ -170,20 +216,45 @@ export async function POST() {
     const email = buildEmail(alert, brand);
     if (!email) continue;
 
-    const recipients = await recipientsForAlert(alert, envRecipients, prefs);
+    const { emails, telegramChatIds } = await recipientsForAlert(alert, envRecipients, prefs);
 
-    if (!smtpConfigured || recipients.length === 0) {
+    // Telegram: chats fixos do painel + chats dos usuários habilitados.
+    const allChatIds = telegramConfig
+      ? Array.from(new Set([...telegramConfig.chatIds, ...telegramChatIds]))
+      : [];
+
+    const canEmail = smtpConfigured && emails.length > 0;
+    const canTelegram = telegramConfig !== null && allChatIds.length > 0;
+
+    if (!canEmail && !canTelegram) {
       skippedNoSmtp++;
       continue;
     }
 
-    for (const to of recipients) {
-      allRecipientsUsed.add(to);
-      const result = await sendMail({ to, subject: email.subject, html: email.html });
-      if (result.sent) {
-        sent++;
-      } else if (result.reason) {
-        errors.push(result.reason);
+    if (canEmail) {
+      for (const to of emails) {
+        allRecipientsUsed.add(to);
+        const result = await sendMail({ to, subject: email.subject, html: email.html });
+        if (result.sent) {
+          sent++;
+        } else if (result.reason) {
+          errors.push(result.reason);
+        }
+      }
+    }
+
+    if (canTelegram) {
+      const message = buildTelegramMessage(alert, brand);
+      if (message) {
+        for (const chatId of allChatIds) {
+          allRecipientsUsed.add(`telegram:${chatId}`);
+          const result = await sendTelegram(telegramConfig!.botToken, chatId, message);
+          if (result.sent) {
+            sentTelegram++;
+          } else if (result.reason) {
+            errors.push(`Telegram (${chatId}): ${result.reason}`);
+          }
+        }
       }
     }
 
@@ -191,7 +262,10 @@ export async function POST() {
       data: {
         tipo: alert.tipo,
         referencia: alert.id,
-        destinatario: recipients.join(", "),
+        destinatario: [
+          ...emails,
+          ...allChatIds.map((id) => `telegram:${id}`),
+        ].join(", "),
       },
     });
   }
@@ -199,9 +273,11 @@ export async function POST() {
   return NextResponse.json({
     ok: true,
     smtpConfigured,
+    telegramConfigured: telegramConfig !== null,
     recipients: Array.from(allRecipientsUsed),
     processed,
     sent,
+    sentTelegram,
     skippedDuplicate,
     skippedNoSmtp,
     errors: errors.slice(0, 10),

@@ -37,6 +37,7 @@ import {
   FileText,
   Truck,
   BellRing,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -79,6 +80,7 @@ const emptyValues: UserFormValues = {
   canAccessOrcamentos: true,
   canAccessFrota: true,
   receiveNotifications: true,
+  telegramChatId: "",
 };
 
 export function UserForm({ initialData }: { initialData?: AppUser }) {
@@ -97,7 +99,7 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
     defaultValues: initialData
-      ? { ...initialData, password: "", cargo: initialData.cargo ?? undefined }
+      ? { ...initialData, password: "", cargo: initialData.cargo ?? undefined, telegramChatId: initialData.telegramChatId ?? "" }
       : emptyValues,
   });
 
@@ -260,12 +262,21 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
               />
               <BellRing className="h-4 w-4 text-muted-foreground" />
               <span>
-                Receber notificações por e-mail
+                Receber notificações
                 <span className="block text-xs font-normal text-muted-foreground">
-                  Alertas de checklist, documentos e troca de óleo da frota
+                  Alertas de checklist, documentos e troca de óleo da frota (e-mail e Telegram)
                 </span>
               </span>
             </label>
+            <div className="space-y-2 sm:col-span-2">
+              <FieldLabel icon={Send}>Telegram (chat ID)</FieldLabel>
+              <Input placeholder="Ex: 123456789" {...register("telegramChatId")} />
+              <p className="text-xs text-muted-foreground">
+                Para receber os avisos no Telegram: o usuário abre o bot da empresa, aperta
+                Iniciar, e você cola aqui o chat ID dele (obtido em Configurações › Notificações).
+                Deixe em branco para receber apenas por e-mail.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

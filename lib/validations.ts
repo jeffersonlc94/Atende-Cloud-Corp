@@ -312,6 +312,7 @@ export const userSchema = z.object({
   canAccessOrcamentos: z.boolean().optional().default(true),
   canAccessFrota: z.boolean().optional().default(true),
   receiveNotifications: z.boolean().optional().default(true),
+  telegramChatId: z.string().optional().default(""),
 });
 
 export type UserFormValues = z.input<typeof userSchema>;
