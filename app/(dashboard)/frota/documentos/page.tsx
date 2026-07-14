@@ -254,6 +254,37 @@ function NovoDocumentoDialog({
   );
 }
 
+function VehicleThumb({
+  vehicle,
+  className,
+}: {
+  vehicle: VehicleDocumentWithVehicle["vehicle"];
+  className?: string;
+}) {
+  const [fotoError, setFotoError] = useState(false);
+  if (vehicle.fotoUrl && !fotoError) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={vehicle.fotoUrl}
+        alt={vehicle.placa}
+        onError={() => setFotoError(true)}
+        className={cn("shrink-0 rounded-lg border bg-muted object-contain", className)}
+      />
+    );
+  }
+  return (
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground",
+        className
+      )}
+    >
+      <FileText className="h-5 w-5" />
+    </div>
+  );
+}
+
 function DocumentCard({
   doc,
   onView,
@@ -271,9 +302,7 @@ function DocumentCard({
       <CardContent className="flex flex-1 flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
-              <FileText className="h-5 w-5" />
-            </div>
+            <VehicleThumb vehicle={doc.vehicle} className="h-10 w-12" />
             <div className="min-w-0">
               <p className="truncate text-sm font-bold">{doc.tipo}</p>
               <p className="truncate text-xs text-muted-foreground">
@@ -460,7 +489,17 @@ export default function DocumentosPage() {
                     const status = getDocStatus(doc);
                     return (
                       <TableRow key={doc.id} className="transition-colors odd:bg-muted/20 hover:bg-muted/40">
-                        <TableCell className="font-medium">{doc.vehicle.placa}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <VehicleThumb vehicle={doc.vehicle} className="h-9 w-11" />
+                            <div className="min-w-0">
+                              <p>{doc.vehicle.placa}</p>
+                              <p className="truncate text-xs font-normal text-muted-foreground">
+                                {doc.vehicle.marca} {doc.vehicle.modelo}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell>{doc.tipo}</TableCell>
                         <TableCell>{doc.dataEmissao ? formatDateBR(doc.dataEmissao) : "—"}</TableCell>
                         <TableCell>{doc.dataVencimento ? formatDateBR(doc.dataVencimento) : "—"}</TableCell>

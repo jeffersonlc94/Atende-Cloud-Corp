@@ -343,7 +343,7 @@ export type VehicleDocumentRecord = {
 };
 
 export type VehicleDocumentWithVehicle = VehicleDocumentRecord & {
-  vehicle: { id: string; placa: string; marca: string; modelo: string };
+  vehicle: { id: string; placa: string; marca: string; modelo: string; fotoUrl: string | null };
 };
 
 export function useAllVehicleDocuments() {
@@ -371,6 +371,7 @@ export function useCreateVehicleDocument(vehicleId: string) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] });
+      qc.invalidateQueries({ queryKey: ["vehicle-documents-all"] });
       qc.invalidateQueries({ queryKey: ["fleet-dashboard"] });
       qc.invalidateQueries({ queryKey: ["vehicles", vehicleId] });
     },
@@ -397,7 +398,10 @@ export function useDeleteVehicleDocument(vehicleId: string) {
   return useMutation({
     mutationFn: (docId: string) =>
       fetchJson(`/api/frota/vehicles/${vehicleId}/documents/${docId}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] });
+      qc.invalidateQueries({ queryKey: ["vehicle-documents-all"] });
+    },
   });
 }
 
