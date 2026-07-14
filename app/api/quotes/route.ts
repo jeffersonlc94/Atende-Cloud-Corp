@@ -26,8 +26,6 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
   const pageSize = Math.min(100, parseInt(sp.get("pageSize") ?? "20", 10) || 20);
 
-  const isAdmin = session.user.role === "ADMIN";
-
   const where: Prisma.QuoteWhereInput = {};
 
   if (numero) where.numero = { contains: numero, mode: "insensitive" };
@@ -45,16 +43,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Escopo "Meus Orçamentos": tudo que o usuário criou (Global ou Privado).
-  // Admin vê tudo em ambos os modos, mas mantém o mesmo toggle na UI.
-  // Escopo "Orçamentos Globais": todos os orçamentos marcados como Global no sistema.
-  if (!isAdmin) {
-    if (scope === "mine") {
-      where.createdByUserId = session.user.id;
-    } else {
-      where.visibilidade = "Global";
-    }
-  } else if (scope === "global") {
+  // Escopo "Meus Orçamentos": tudo que o próprio usuário criou (Global ou
+  // Privado), inclusive para admins — cada um vê os seus.
+  // Escopo "Orçamentos Globais": todos os orçamentos marcados como Global,
+  // de qualquer usuário.
+  if (scope === "mine") {
+    // O filtro por usuário explícito (admin filtrando por criador) tem prioridade.
+    if (!createdByUserId) where.createdByUserId = session.user.id;
+  } else {
     where.visibilidade = "Global";
   }
 

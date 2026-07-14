@@ -58,7 +58,6 @@ export default function OrcamentosPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const canDelete = canDeleteRecords(session);
-  const isAdmin = session?.user?.role === "ADMIN";
   const { data: companies = [] } = useCompanies();
   const [filters, setFilters] = useState<QuoteFilters>({ scope: "mine" });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -110,9 +109,7 @@ export default function OrcamentosPage() {
             onValueChange={(v) => setFilters((f) => ({ ...f, scope: v as "mine" | "global" }))}
           >
             <TabsList>
-              <TabsTrigger value="mine">
-                {isAdmin ? "Todos os Orçamentos" : "Meus Orçamentos"}
-              </TabsTrigger>
+              <TabsTrigger value="mine">Meus Orçamentos</TabsTrigger>
               <TabsTrigger value="global">Orçamentos Globais</TabsTrigger>
             </TabsList>
           </Tabs>
