@@ -52,7 +52,10 @@ import {
   Eye,
   Download,
   Printer,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 const VIEW_MODE_KEY = "atende:documentos:viewMode";
@@ -407,6 +410,232 @@ function DocumentCard({
   );
 }
 
+const tipoOrdem = ["CRLV", "IPVA", "Seguro", "Licenciamento", "Outro"] as const;
+
+function VehicleDocsCard({
+  vehicle,
+  docs,
+  onOpen,
+}: {
+  vehicle: VehicleDocumentWithVehicle["vehicle"];
+  docs: VehicleDocumentWithVehicle[];
+  onOpen: () => void;
+}) {
+  const ativos = docs.filter((d) => !d.arquivado);
+  const arquivados = docs.length - ativos.length;
+  const vencidos = ativos.filter((d) => getDocStatus(d).label === "Vencido").length;
+  const vencendo = ativos.filter((d) => getDocStatus(d).label === "Vencendo").length;
+
+  return (
+    <button type="button" onClick={onOpen} className="text-left">
+      <Card className="flex h-full flex-col overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+        <CardContent className="flex flex-1 flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <VehicleThumb vehicle={vehicle} className="h-12 w-14" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">{vehicle.placa}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {vehicle.marca} {vehicle.modelo}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-400">
+              {ativos.length} documento(s)
+            </span>
+            {vencidos > 0 && (
+              <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-400">
+                {vencidos} vencido(s)
+              </span>
+            )}
+            {vencendo > 0 && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                {vencendo} vencendo
+              </span>
+            )}
+            {arquivados > 0 && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:bg-slate-500/15 dark:text-slate-400">
+                {arquivados} arquivado(s)
+              </span>
+            )}
+          </div>
+          <p className="mt-auto text-xs text-sky-600">Clique para abrir os documentos →</p>
+        </CardContent>
+      </Card>
+    </button>
+  );
+}
+
+function VehicleDocsDialog({
+  vehicle,
+  docs,
+  open,
+  onOpenChange,
+  onView,
+  onEdit,
+  onDelete,
+  onArchive,
+}: {
+  vehicle: VehicleDocumentWithVehicle["vehicle"] | null;
+  docs: VehicleDocumentWithVehicle[];
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onView: (d: VehicleDocumentWithVehicle) => void;
+  onEdit: (d: VehicleDocumentWithVehicle) => void;
+  onDelete: (d: VehicleDocumentWithVehicle) => void;
+  onArchive: (d: VehicleDocumentWithVehicle) => void;
+}) {
+  const [tab, setTab] = useState<string>("CRLV");
+
+  useEffect(() => {
+    if (open) {
+      // Abre na primeira aba que tiver documento ativo.
+      const ativos = docs.filter((d) => !d.arquivado);
+      const primeiro = tipoOrdem.find((t) => ativos.some((d) => d.tipo === t));
+      setTab(primeiro ?? "CRLV");
+    }
+  }, [open, docs]);
+
+  if (!vehicle) return null;
+
+  const arquivados = docs.filter((d) => d.arquivado);
+
+  function DocRow({ doc }: { doc: VehicleDocumentWithVehicle }) {
+    const status = getDocStatus(doc);
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm">
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-2 font-medium">
+            {doc.tipo}
+            {doc.arquivado ? (
+              <Badge variant="secondary">Arquivado</Badge>
+            ) : (
+              <Badge variant={status.variant}>{status.label}</Badge>
+            )}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Emissão: {doc.dataEmissao ? formatDateBR(doc.dataEmissao) : "—"} • Vencimento:{" "}
+            {doc.dataVencimento ? formatDateBR(doc.dataVencimento) : "—"}
+            {doc.versoes && doc.versoes.length > 0 && ` • ${doc.versoes.length} versão(ões) antiga(s)`}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          {doc.arquivoUrl && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Visualizar / imprimir"
+              className="text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-500/10"
+              onClick={() => onView(doc)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          {!doc.arquivado && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Editar"
+              className="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+              onClick={() => onEdit(doc)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            title={doc.arquivado ? "Restaurar (desarquivar)" : "Arquivar"}
+            className={cn(
+              doc.arquivado
+                ? "text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                : "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+            )}
+            onClick={() => onArchive(doc)}
+          >
+            {doc.arquivado ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Excluir"
+            className="text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+            onClick={() => onDelete(doc)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            <VehicleThumb vehicle={vehicle} className="h-10 w-12" />
+            <span>
+              Documentos — {vehicle.placa}
+              <span className="block text-xs font-normal text-muted-foreground">
+                {vehicle.marca} {vehicle.modelo}
+              </span>
+            </span>
+          </DialogTitle>
+        </DialogHeader>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="flex w-full flex-wrap">
+            {tipoOrdem.map((t) => {
+              const count = docs.filter((d) => d.tipo === t && !d.arquivado).length;
+              return (
+                <TabsTrigger key={t} value={t} className="gap-1.5">
+                  {t}
+                  {count > 0 && (
+                    <span className="rounded-full bg-muted px-1.5 text-[10px] font-bold">{count}</span>
+                  )}
+                </TabsTrigger>
+              );
+            })}
+            <TabsTrigger value="arquivados" className="gap-1.5">
+              <Archive className="h-3.5 w-3.5" /> Arquivados
+              {arquivados.length > 0 && (
+                <span className="rounded-full bg-muted px-1.5 text-[10px] font-bold">
+                  {arquivados.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {tipoOrdem.map((t) => {
+            const docsDoTipo = docs.filter((d) => d.tipo === t && !d.arquivado);
+            return (
+              <TabsContent key={t} value={t} className="space-y-2 pt-3">
+                {docsDoTipo.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhum documento de {t} ativo para este veículo.
+                  </p>
+                ) : (
+                  docsDoTipo.map((d) => <DocRow key={d.id} doc={d} />)
+                )}
+              </TabsContent>
+            );
+          })}
+          <TabsContent value="arquivados" className="space-y-2 pt-3">
+            {arquivados.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nenhum documento arquivado. Ao receber um documento novo (ex.: CRLV do ano),
+                arquive o antigo — ele fica aqui para consulta e reimpressão.
+              </p>
+            ) : (
+              arquivados.map((d) => <DocRow key={d.id} doc={d} />)
+            )}
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function DocumentosPage() {
   const { data: vehicles = [] } = useVehicles();
   const { data: allDocs = [], isLoading } = useAllVehicleDocuments();
@@ -416,7 +645,10 @@ export default function DocumentosPage() {
   const [editingDoc, setEditingDoc] = useState<VehicleDocumentWithVehicle | null>(null);
   const [previewingDoc, setPreviewingDoc] = useState<VehicleDocumentWithVehicle | null>(null);
   const [pendingDelete, setPendingDelete] = useState<VehicleDocumentWithVehicle | null>(null);
+  const [openVehicleId, setOpenVehicleId] = useState<string | null>(null);
+  const [pendingArchive, setPendingArchive] = useState<VehicleDocumentWithVehicle | null>(null);
   const deleteDoc = useDeleteVehicleDocument(pendingDelete?.vehicle.id ?? "");
+  const updateDocArchive = useUpdateVehicleDocument(pendingArchive?.vehicle.id ?? "");
 
   useEffect(() => {
     const stored = window.localStorage.getItem(VIEW_MODE_KEY);
@@ -441,6 +673,40 @@ export default function DocumentosPage() {
   }
 
   const filtered = !vehicleId ? allDocs : allDocs.filter((d) => d.vehicle.id === vehicleId);
+  const filteredAtivos = filtered.filter((d) => !d.arquivado);
+
+  // Agrupa documentos por veículo para o modo grade (um card por veículo).
+  const porVeiculo = new Map<string, { vehicle: VehicleDocumentWithVehicle["vehicle"]; docs: VehicleDocumentWithVehicle[] }>();
+  for (const d of filtered) {
+    const g = porVeiculo.get(d.vehicle.id);
+    if (g) g.docs.push(d);
+    else porVeiculo.set(d.vehicle.id, { vehicle: d.vehicle, docs: [d] });
+  }
+  const grupos = Array.from(porVeiculo.values());
+  const veiculoAberto = openVehicleId ? porVeiculo.get(openVehicleId) : null;
+
+  async function handleConfirmArchive() {
+    if (!pendingArchive) return;
+    const d = pendingArchive;
+    try {
+      await updateDocArchive.mutateAsync({
+        id: d.id,
+        data: {
+          vehicleId: d.vehicle.id,
+          tipo: d.tipo as never,
+          dataEmissao: d.dataEmissao ? d.dataEmissao.slice(0, 10) : "",
+          dataVencimento: d.dataVencimento ? d.dataVencimento.slice(0, 10) : "",
+          arquivoUrl: d.arquivoUrl || "",
+          arquivado: !d.arquivado,
+        },
+      });
+      toast.success(d.arquivado ? "Documento restaurado" : "Documento arquivado");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao arquivar documento");
+    } finally {
+      setPendingArchive(null);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -504,13 +770,12 @@ export default function DocumentosPage() {
         </Card>
       ) : viewMode === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((doc) => (
-            <DocumentCard
-              key={doc.id}
-              doc={doc}
-              onView={() => setPreviewingDoc(doc)}
-              onEdit={() => setEditingDoc(doc)}
-              onDelete={() => setPendingDelete(doc)}
+          {grupos.map((g) => (
+            <VehicleDocsCard
+              key={g.vehicle.id}
+              vehicle={g.vehicle}
+              docs={g.docs}
+              onOpen={() => setOpenVehicleId(g.vehicle.id)}
             />
           ))}
         </div>
@@ -530,7 +795,7 @@ export default function DocumentosPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((doc) => {
+                  {filteredAtivos.map((doc) => {
                     const status = getDocStatus(doc);
                     return (
                       <TableRow key={doc.id} className="transition-colors odd:bg-muted/20 hover:bg-muted/40">
@@ -605,6 +870,32 @@ export default function DocumentosPage() {
         doc={previewingDoc}
         open={!!previewingDoc}
         onOpenChange={(o) => !o && setPreviewingDoc(null)}
+      />
+      <VehicleDocsDialog
+        vehicle={veiculoAberto?.vehicle ?? null}
+        docs={veiculoAberto?.docs ?? []}
+        open={!!veiculoAberto}
+        onOpenChange={(o) => !o && setOpenVehicleId(null)}
+        onView={(d) => setPreviewingDoc(d)}
+        onEdit={(d) => setEditingDoc(d)}
+        onDelete={(d) => setPendingDelete(d)}
+        onArchive={(d) => setPendingArchive(d)}
+      />
+      <ConfirmDialog
+        open={!!pendingArchive}
+        onOpenChange={(o) => !o && setPendingArchive(null)}
+        title={
+          pendingArchive?.arquivado
+            ? "Restaurar este documento arquivado?"
+            : "Arquivar este documento?"
+        }
+        description={
+          pendingArchive?.arquivado
+            ? "Ele volta a aparecer como documento ativo do veículo."
+            : "Documentos arquivados saem dos alertas de vencimento, mas continuam disponíveis para consulta e reimpressão na aba Arquivados."
+        }
+        confirmLabel={pendingArchive?.arquivado ? "Restaurar" : "Arquivar"}
+        onConfirm={handleConfirmArchive}
       />
 
       <ConfirmDialog

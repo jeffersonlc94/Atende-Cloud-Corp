@@ -213,6 +213,7 @@ export type VehicleFormValues = z.input<typeof vehicleSchema>;
 export const vehicleDocumentSchema = z.object({
   vehicleId: z.string().min(1),
   tipo: z.enum(tipoDocumentoOptions).default("Outro"),
+  arquivado: z.boolean().optional().default(false),
   arquivoUrl: z.string().optional().default(""),
   dataEmissao: z.string().optional().default(""),
   dataVencimento: z.string().optional().default(""),

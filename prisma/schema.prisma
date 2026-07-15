@@ -254,6 +254,7 @@ model VehicleDocument {
   arquivoUrl     String?
   /// Histórico de arquivos substituídos: [{ url, substituidaEm }]
   versoes        Json?
+  arquivado      Boolean              @default(false)
   dataEmissao    DateTime?
   dataVencimento DateTime?
   createdAt      DateTime             @default(now())

@@ -51,6 +51,7 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
     const label = `${v.placa} — ${v.marca} ${v.modelo}`;
 
     for (const doc of v.documentos) {
+      if (doc.arquivado) continue;
       if (!doc.dataVencimento) continue;
       if (doc.dataVencimento < now) {
         alerts.push({

@@ -43,6 +43,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       tipo: data.tipo,
       arquivoUrl: data.arquivoUrl || null,
       versoes,
+      arquivado: data.arquivado,
       dataEmissao: data.dataEmissao ? new Date(data.dataEmissao) : null,
       dataVencimento: data.dataVencimento ? new Date(data.dataVencimento) : null,
     },
