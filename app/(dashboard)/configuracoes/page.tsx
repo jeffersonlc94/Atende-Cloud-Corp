@@ -19,6 +19,8 @@ import {
   MailX,
   Send,
   Settings,
+  Search,
+  Copy,
   Building2,
   BellRing,
   ShieldCheck,
@@ -543,6 +545,26 @@ function TelegramConfigCard() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [testChatId, setTestChatId] = useState("");
   const [sendingTest, setSendingTest] = useState(false);
+  const [detecting, setDetecting] = useState(false);
+  const [detectedChats, setDetectedChats] = useState<
+    { id: string; nome: string; tipo: string }[] | null
+  >(null);
+
+  async function handleDetectChats() {
+    setDetecting(true);
+    try {
+      const res = await fetch("/api/config/telegram-chats");
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(typeof body?.error === "string" ? body.error : "Falha ao detectar chats");
+      }
+      setDetectedChats(body.chats ?? []);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao detectar chats");
+    } finally {
+      setDetecting(false);
+    }
+  }
 
   useEffect(() => {
     if (tgConfig) {
@@ -715,15 +737,90 @@ function TelegramConfigCard() {
                 O disparo automático acontece nesse horário; o botão de teste envia na hora.
               </p>
             </div>
-            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Como descobrir o chat ID de um usuário:</p>
-              <p>
-                1. O usuário abre o bot no Telegram e aperta <strong>Iniciar</strong> (ou envia
-                qualquer mensagem). 2. Acesse{" "}
-                <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> no navegador — o
-                número em <code>&quot;chat&quot;:&#123;&quot;id&quot;:...&#125;</code> é o chat ID. 3. Cole no cadastro do
-                usuário (Usuários › Editar › Telegram).
-              </p>
+            <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium">Chats detectados</p>
+                  <p className="text-xs text-muted-foreground">
+                    Peça para o grupo/pessoa mandar qualquer mensagem ao bot e clique em
+                    detectar — o ID aparece pronto para copiar.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDetectChats}
+                  disabled={detecting || !hasToken}
+                >
+                  {detecting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="mr-2 h-4 w-4" />
+                  )}
+                  Detectar chats
+                </Button>
+              </div>
+              {detectedChats !== null && detectedChats.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Nenhum chat encontrado. Envie uma mensagem nova para o bot (ou no grupo com o
+                  bot dentro) e detecte novamente.
+                </p>
+              )}
+              {detectedChats && detectedChats.length > 0 && (
+                <div className="space-y-1.5">
+                  {detectedChats.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex flex-wrap items-center gap-2 rounded-md border bg-background p-2 text-sm"
+                    >
+                      <span
+                        className={
+                          c.tipo === "Pessoa"
+                            ? "rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-400"
+                            : "rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/15 dark:text-violet-400"
+                        }
+                      >
+                        {c.tipo}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{c.nome}</span>
+                      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{c.id}</code>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(c.id);
+                          toast.success(`ID de "${c.nome}" copiado`);
+                        }}
+                      >
+                        <Copy className="mr-1 h-3.5 w-3.5" /> Copiar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700"
+                        onClick={() => {
+                          const atuais = chatIds
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean);
+                          if (atuais.includes(c.id)) {
+                            toast.info("Este chat já está nos chats fixos");
+                            return;
+                          }
+                          setChatIds([...atuais, c.id].join(", "));
+                          toast.success(`"${c.nome}" adicionado aos chats fixos — salve a configuração`);
+                        }}
+                      >
+                        + Chats fixos
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t pt-4">
               <Button onClick={() => setConfirmOpen(true)} disabled={saving}>
