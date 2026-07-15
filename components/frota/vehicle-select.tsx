@@ -15,12 +15,13 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useVehicles, type VehicleRecord } from "@/hooks/use-vehicles";
 
-/** Formata um veículo como "PLACA - MARCA MODELO", nunca exibindo o id. */
+/** Formata um veículo como "PLACA - MARCA MODELO - COR", nunca exibindo o id. */
 export function formatVehicleLabel(
-  vehicle: Pick<VehicleRecord, "placa" | "marca" | "modelo"> | null | undefined
+  vehicle: (Pick<VehicleRecord, "placa" | "marca" | "modelo"> & { cor?: string | null }) | null | undefined
 ) {
   if (!vehicle) return "";
-  return `${vehicle.placa} - ${vehicle.marca} ${vehicle.modelo}`.trim().toUpperCase();
+  const cor = vehicle.cor ? ` - ${vehicle.cor}` : "";
+  return `${vehicle.placa} - ${vehicle.marca} ${vehicle.modelo}${cor}`.trim().toUpperCase();
 }
 
 export function VehicleSelect({
@@ -66,7 +67,7 @@ export function VehicleSelect({
       />
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
-          <CommandInput placeholder="Buscar por placa, marca ou modelo..." />
+          <CommandInput placeholder="Buscar por placa, marca, modelo ou cor..." />
           <CommandList>
             <CommandEmpty>Nenhum veículo encontrado.</CommandEmpty>
             <CommandGroup>
@@ -85,7 +86,7 @@ export function VehicleSelect({
               {vehicles.map((v) => (
                 <CommandItem
                   key={v.id}
-                  value={`${v.placa} ${v.marca} ${v.modelo}`}
+                  value={`${v.placa} ${v.marca} ${v.modelo} ${v.cor ?? ""}`}
                   onSelect={() => {
                     onChange(v.id);
                     setOpen(false);
