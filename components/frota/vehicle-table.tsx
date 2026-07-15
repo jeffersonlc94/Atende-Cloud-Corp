@@ -131,14 +131,45 @@ export function VehicleTable({
                 <TableCell>{v.kmAtual.toLocaleString("pt-BR")} km</TableCell>
                 <TableCell>
                   {oilStatus.hasData ? (
-                    <span
-                      className={cn(
-                        "text-xs font-medium",
-                        oilStatus.overdue ? "text-red-600" : "text-amber-600"
-                      )}
-                    >
-                      {oilStatus.label}
-                    </span>
+                    <div className="min-w-32 space-y-1">
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          oilStatus.overdue ? "text-red-600" : "text-amber-600"
+                        )}
+                      >
+                        {oilStatus.label}
+                      </span>
+                      {(() => {
+                        // Barra de progresso do KM atual até o KM de referência.
+                        const lastOil = v.oilChanges?.[0];
+                        if (!lastOil?.kmProximaTroca || lastOil.kmProximaTroca <= lastOil.km) {
+                          return null;
+                        }
+                        const pct = Math.min(
+                          100,
+                          Math.max(
+                            0,
+                            ((v.kmAtual - lastOil.km) / (lastOil.kmProximaTroca - lastOil.km)) * 100
+                          )
+                        );
+                        return (
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={cn(
+                                "h-full rounded-full",
+                                oilStatus.overdue
+                                  ? "bg-red-500"
+                                  : pct >= 80
+                                    ? "bg-amber-500"
+                                    : "bg-emerald-500"
+                              )}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        );
+                      })()}
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}

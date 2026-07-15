@@ -129,17 +129,51 @@ export function VehicleCard({
         </div>
 
         {oilStatus.hasData && (
-          <p
+          <div
             className={cn(
-              "rounded-md px-2 py-1 text-xs font-medium",
+              "space-y-1.5 rounded-md px-2 py-1.5 text-xs font-medium",
               oilStatus.overdue
                 ? "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400"
                 : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
             )}
           >
-            {oilStatus.overdue ? "Manutenção " : ""}
-            {oilStatus.label}
-          </p>
+            <div className="flex items-center justify-between gap-2">
+              <span>
+                {oilStatus.overdue ? "Manutenção " : ""}
+                {oilStatus.label}
+              </span>
+              {(() => {
+                const lastOil = vehicle.oilChanges?.[0];
+                if (!lastOil?.kmProximaTroca) return null;
+                return (
+                  <span className="shrink-0 font-normal opacity-80">
+                    {vehicle.kmAtual.toLocaleString("pt-BR")} /{" "}
+                    {lastOil.kmProximaTroca.toLocaleString("pt-BR")} km
+                  </span>
+                );
+              })()}
+            </div>
+            {(() => {
+              // Barra de progresso do KM atual até o KM de referência da troca.
+              const lastOil = vehicle.oilChanges?.[0];
+              if (!lastOil?.kmProximaTroca || lastOil.kmProximaTroca <= lastOil.km) return null;
+              const pct = Math.min(
+                100,
+                Math.max(0, ((vehicle.kmAtual - lastOil.km) / (lastOil.kmProximaTroca - lastOil.km)) * 100)
+              );
+              return (
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/60 dark:bg-black/20">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      oilStatus.overdue ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500"
+                    )}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              );
+            })()}
+          </div>
         )}
 
         {vehicle.observacoes && (
