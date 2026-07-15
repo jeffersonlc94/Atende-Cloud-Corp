@@ -79,6 +79,12 @@ function DocumentPreviewDialog({
   onOpenChange: (o: boolean) => void;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Permite alternar entre o arquivo atual e as versões antigas do histórico.
+  const [versaoUrl, setVersaoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) setVersaoUrl(null);
+  }, [open]);
 
   function handlePrint() {
     const win = iframeRef.current?.contentWindow;
@@ -88,7 +94,8 @@ function DocumentPreviewDialog({
   }
 
   if (!doc?.arquivoUrl) return null;
-  const url = doc.arquivoUrl;
+  const url = versaoUrl ?? doc.arquivoUrl;
+  const versoes = doc.versoes ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,9 +105,47 @@ function DocumentPreviewDialog({
             {doc.tipo} — {doc.vehicle.placa}
           </DialogTitle>
         </DialogHeader>
+        {versaoUrl && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+            <span>Você está vendo uma versão antiga deste documento.</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setVersaoUrl(null)}
+            >
+              Voltar para a versão atual
+            </Button>
+          </div>
+        )}
         <div className="h-[70vh] w-full overflow-hidden rounded-md border bg-muted">
-          <iframe ref={iframeRef} src={url} title={doc.tipo} className="h-full w-full bg-white" />
+          <iframe key={url} ref={iframeRef} src={url} title={doc.tipo} className="h-full w-full bg-white" />
         </div>
+        {versoes.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Histórico de versões ({versoes.length})
+            </p>
+            <div className="flex max-h-24 flex-col gap-1 overflow-y-auto">
+              {versoes.map((v, i) => (
+                <button
+                  key={`${v.url}-${i}`}
+                  type="button"
+                  onClick={() => setVersaoUrl(v.url)}
+                  className={cn(
+                    "flex items-center justify-between rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-muted",
+                    versaoUrl === v.url && "border-primary bg-primary/5"
+                  )}
+                >
+                  <span className="truncate text-muted-foreground">
+                    Versão substituída em {formatDateBR(v.substituidaEm)}
+                  </span>
+                  <span className="ml-2 shrink-0 text-sky-600">Visualizar / imprimir</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap justify-end gap-2">
           <a
             href={url}

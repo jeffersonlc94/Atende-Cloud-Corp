@@ -43,7 +43,18 @@ export async function POST(req: NextRequest) {
   await mkdir(UPLOAD_DIR, { recursive: true });
 
   const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
-  const filename = `${crypto.randomUUID()}.${ext}`;
+  // Mantém o nome original (sanitizado) e acrescenta um sufixo aleatório,
+  // garantindo que uploads com o mesmo nome nunca sobrescrevam o anterior.
+  // Ex.: clv01.pdf -> clv01-k3f9a2xq.pdf
+  const base = (file.name.replace(/\.[^.]*$/, "") || "arquivo")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "arquivo";
+  const sufixo = crypto.randomBytes(5).toString("hex");
+  const filename = `${base}-${sufixo}.${ext}`;
   const filePath = path.join(UPLOAD_DIR, filename);
 
   const buffer = Buffer.from(await file.arrayBuffer());

@@ -21,11 +21,28 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 
   const data = parsed.data;
+
+  // Se o arquivo foi substituído, guarda o anterior no histórico de versões
+  // para permitir reimpressão de documentos antigos.
+  const existente = await prisma.vehicleDocument.findUnique({ where: { id: docId } });
+  let versoes = (existente?.versoes as { url: string; substituidaEm: string }[] | null) ?? [];
+  if (
+    existente?.arquivoUrl &&
+    data.arquivoUrl &&
+    existente.arquivoUrl !== data.arquivoUrl
+  ) {
+    versoes = [
+      { url: existente.arquivoUrl, substituidaEm: new Date().toISOString() },
+      ...versoes,
+    ].slice(0, 20);
+  }
+
   const doc = await prisma.vehicleDocument.update({
     where: { id: docId },
     data: {
       tipo: data.tipo,
       arquivoUrl: data.arquivoUrl || null,
+      versoes,
       dataEmissao: data.dataEmissao ? new Date(data.dataEmissao) : null,
       dataVencimento: data.dataVencimento ? new Date(data.dataVencimento) : null,
     },

@@ -338,6 +338,7 @@ export type VehicleDocumentRecord = {
   vehicleId: string;
   tipo: string;
   arquivoUrl: string | null;
+  versoes: { url: string; substituidaEm: string }[] | null;
   dataEmissao: string | null;
   dataVencimento: string | null;
 };

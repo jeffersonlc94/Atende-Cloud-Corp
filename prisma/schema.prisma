@@ -252,6 +252,8 @@ model VehicleDocument {
   vehicle        Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   tipo           TipoDocumentoVeiculo @default(Outro)
   arquivoUrl     String?
+  /// Histórico de arquivos substituídos: [{ url, substituidaEm }]
+  versoes        Json?
   dataEmissao    DateTime?
   dataVencimento DateTime?
   createdAt      DateTime             @default(now())
