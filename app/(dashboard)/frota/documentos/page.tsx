@@ -436,6 +436,7 @@ function VehicleDocsCard({
               <p className="truncate text-sm font-bold">{vehicle.placa}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {vehicle.marca} {vehicle.modelo}
+                {vehicle.cor ? ` • ${vehicle.cor}` : ""}
               </p>
             </div>
           </div>
@@ -579,6 +580,7 @@ function VehicleDocsDialog({
               Documentos — {vehicle.placa}
               <span className="block text-xs font-normal text-muted-foreground">
                 {vehicle.marca} {vehicle.modelo}
+                {vehicle.cor ? ` • ${vehicle.cor}` : ""}
               </span>
             </span>
           </DialogTitle>

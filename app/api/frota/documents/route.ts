@@ -11,7 +11,7 @@ export async function GET() {
   }
 
   const documentos = await prisma.vehicleDocument.findMany({
-    include: { vehicle: { select: { id: true, placa: true, marca: true, modelo: true, fotoUrl: true } } },
+    include: { vehicle: { select: { id: true, placa: true, marca: true, modelo: true, cor: true, fotoUrl: true } } },
     orderBy: { dataVencimento: "asc" },
   });
 

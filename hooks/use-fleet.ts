@@ -345,7 +345,7 @@ export type VehicleDocumentRecord = {
 };
 
 export type VehicleDocumentWithVehicle = VehicleDocumentRecord & {
-  vehicle: { id: string; placa: string; marca: string; modelo: string; fotoUrl: string | null };
+  vehicle: { id: string; placa: string; marca: string; modelo: string; cor: string | null; fotoUrl: string | null };
 };
 
 export function useAllVehicleDocuments() {
