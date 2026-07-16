@@ -56,7 +56,11 @@ export function VehicleCard({
   return (
     <Card className="flex flex-col overflow-hidden transition-shadow duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <CardContent className="flex flex-1 flex-col gap-3">
-        <div className="flex items-stretch gap-3">
+        <Link
+          href={`/frota/veiculos/${vehicle.id}`}
+          title="Abrir detalhes do veículo"
+          className="group flex items-stretch gap-3"
+        >
           {vehicle.fotoUrl && !fotoError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -79,7 +83,7 @@ export function VehicleCard({
             >
               {badge.label}
             </span>
-            <p className="truncate text-base font-bold leading-tight">
+            <p className="truncate text-base font-bold leading-tight group-hover:text-primary group-hover:underline">
               {vehicle.marca} {vehicle.modelo}
             </p>
             <p className="text-sm text-muted-foreground">
@@ -87,7 +91,7 @@ export function VehicleCard({
               {vehicle.cor ? ` • ${vehicle.cor}` : ""}
             </p>
           </div>
-        </div>
+        </Link>
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-xs">
           <div className="flex items-start gap-1.5">
@@ -212,7 +216,7 @@ export function VehicleCard({
             className: "justify-start text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-500/10",
           })}
         >
-          <History className="mr-1 h-4 w-4" /> Histórico
+          <History className="mr-1 h-4 w-4" /> Detalhes / Histórico
         </Link>
         <Link
           href="/frota/documentos"

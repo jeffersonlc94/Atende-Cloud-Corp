@@ -195,7 +195,7 @@ export function VehicleTable({
                     </Link>
                     <Link
                       href={`/frota/veiculos/${v.id}`}
-                      title="Histórico"
+                      title="Detalhes / Histórico"
                       className={cn(actionLinkClass, "text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10")}
                     >
                       <History className="h-4 w-4" />
