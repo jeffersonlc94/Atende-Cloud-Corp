@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -23,8 +24,17 @@ export function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("atende:rememberedEmail");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,6 +52,12 @@ export function LoginForm() {
     if (res?.error) {
       setError("E-mail ou senha inválidos.");
       return;
+    }
+
+    if (rememberMe) {
+      localStorage.setItem("atende:rememberedEmail", email);
+    } else {
+      localStorage.removeItem("atende:rememberedEmail");
     }
 
     router.push(callbackUrl);
@@ -77,6 +93,16 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="remember-me"
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked === true)}
+            />
+            <Label htmlFor="remember-me" className="font-normal cursor-pointer">
+              Salvar login
+            </Label>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
         </CardContent>
