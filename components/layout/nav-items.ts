@@ -18,6 +18,7 @@ import {
   Users,
   ShieldCheck,
   Settings,
+  Info,
 } from "lucide-react";
 
 export type NavItem = {
@@ -77,6 +78,11 @@ export const navItems: NavItem[] = [
     label: "Configurações",
     href: "/configuracoes",
     icon: Settings,
+  },
+  {
+    label: "Sobre",
+    href: "/sobre",
+    icon: Info,
   },
 ];
 

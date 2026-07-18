@@ -30,6 +30,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
   const configuracoesItem = navItems.find((i) => i.href === "/configuracoes");
+  const sobreItem = navItems.find((i) => i.href === "/sobre");
 
   return (
     <>
@@ -108,6 +109,16 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             label={configuracoesItem.label}
             Icon={configuracoesItem.icon}
             active={pathname === "/configuracoes"}
+            onNavigate={onNavigate}
+          />
+        )}
+
+        {sobreItem && (
+          <NavLink
+            href={sobreItem.href}
+            label={sobreItem.label}
+            Icon={sobreItem.icon}
+            active={pathname === "/sobre"}
             onNavigate={onNavigate}
           />
         )}
