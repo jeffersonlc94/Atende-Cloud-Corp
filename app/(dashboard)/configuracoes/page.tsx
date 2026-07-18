@@ -1185,6 +1185,17 @@ function ConfiguracoesContent() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
 
+  if (!isAdmin) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-2 p-10 text-center text-muted-foreground">
+          <ShieldCheck className="h-8 w-8" />
+          <p>Apenas administradores podem acessar as configurações.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div>

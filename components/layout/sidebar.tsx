@@ -102,7 +102,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           />
         )}
 
-        {configuracoesItem && (
+        {isAdmin && configuracoesItem && (
           <NavLink
             href={configuracoesItem.href}
             label={configuracoesItem.label}
