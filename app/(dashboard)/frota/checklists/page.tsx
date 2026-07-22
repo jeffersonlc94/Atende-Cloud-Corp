@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useChecklists, useCreateChecklist, useDeleteChecklist, type ChecklistRecord } from "@/hooks/use-fleet";
 import {
@@ -54,11 +55,17 @@ function FotoThumb({ url, alt, className }: { url: string; alt: string; classNam
 }
 
 export default function ChecklistsPage() {
+  const searchParams = useSearchParams();
   const { data: checklists = [], isLoading } = useChecklists();
   const createChecklist = useCreateChecklist();
   const deleteChecklist = useDeleteChecklist();
 
   const [vehicleId, setVehicleId] = useState("");
+
+  useEffect(() => {
+    const vehicleIdParam = searchParams.get("vehicleId");
+    if (vehicleIdParam) setVehicleId(vehicleIdParam);
+  }, [searchParams]);
   const [km, setKm] = useState("");
   const [tipo, setTipo] = useState<(typeof tipoChecklistOptions)[number]>("Diario");
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
