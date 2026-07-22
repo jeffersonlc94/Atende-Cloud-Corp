@@ -121,7 +121,11 @@ export function Header() {
                     type="button"
                     onClick={() => {
                       setNotifOpen(false);
-                      router.push(`/frota/veiculos/${a.vehicleId}`);
+                      const destination =
+                        a.tipo === "checklist"
+                          ? `/frota/checklists?vehicleId=${a.vehicleId}`
+                          : `/frota/veiculos/${a.vehicleId}`;
+                      router.push(destination);
                     }}
                     className="flex w-full items-start gap-2 rounded-md px-1 py-1.5 text-left text-sm hover:bg-muted"
                   >
