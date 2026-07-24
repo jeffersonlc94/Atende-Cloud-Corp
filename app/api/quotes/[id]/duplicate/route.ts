@@ -61,6 +61,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
           createMany: {
             data: original.itens.map((i) => ({
               ordem: i.ordem,
+              tipoItem: i.tipoItem,
               descricao: i.descricao,
               quantidade: i.quantidade,
               valorUnitario: i.valorUnitario,

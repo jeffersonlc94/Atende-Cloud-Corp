@@ -41,6 +41,7 @@ export function QuoteItemsTable({
   function addItem() {
     append({
       ordem: fields.length,
+      tipoItem: "Produto",
       descricao: "",
       quantidade: 1,
       valorUnitario: undefined,
@@ -56,6 +57,7 @@ export function QuoteItemsTable({
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">#</TableHead>
+              <TableHead className="w-32">Tipo</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead className="w-28">Qtd.</TableHead>
               <TableHead className="w-36">Valor Unit.</TableHead>
@@ -77,6 +79,26 @@ export function QuoteItemsTable({
               return (
                 <TableRow key={field.id}>
                   <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                  <TableCell>
+                    <Controller
+                      control={control}
+                      name={`itens.${index}.tipoItem`}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? "Produto"}
+                          onValueChange={(v) => field.onChange(v)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Produto">Produto</SelectItem>
+                            <SelectItem value="Servico">Serviço</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Input
                       {...register(`itens.${index}.descricao`)}

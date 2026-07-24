@@ -29,7 +29,7 @@ export function QuotePrintLayoutModerno({
 
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, subtotalNum, totalNum, hasDescontoGeral, descontoGeralNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
@@ -162,19 +162,21 @@ export function QuotePrintLayoutModerno({
         {/* Totais */}
         <div className="mt-4 flex justify-end">
           <div className="w-64 space-y-1 rounded-lg bg-slate-50 p-4 text-sm">
+            <div className="flex justify-between text-slate-500">
+              <span>Produtos</span>
+              <span>{formatCurrencyBRL(totalProdutosNum)}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Serviços</span>
+              <span>{formatCurrencyBRL(totalServicosNum)}</span>
+            </div>
             {hasDescontoGeral && (
-              <>
-                <div className="flex justify-between text-slate-500">
-                  <span>Subtotal</span>
-                  <span>{formatCurrencyBRL(subtotalNum ?? totalNum)}</span>
-                </div>
-                <div className="flex justify-between text-slate-500">
-                  <span>Desconto</span>
-                  <span>- {formatCurrencyBRL(descontoGeralNum)}</span>
-                </div>
-                <div className="border-t border-slate-200 pt-1" />
-              </>
+              <div className="flex justify-between text-slate-500">
+                <span>Desconto</span>
+                <span>- {formatCurrencyBRL(descontoGeralNum)}</span>
+              </div>
             )}
+            <div className="border-t border-slate-200 pt-1" />
             <div className="flex justify-between text-base font-bold text-slate-800">
               <span>Total</span>
               <span>{formatCurrencyBRL(totalNum)}</span>

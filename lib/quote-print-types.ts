@@ -19,6 +19,7 @@ export type QuotePrintCompany = {
 
 export type QuotePrintItem = {
   descricao: string;
+  tipoItem?: "Produto" | "Servico" | null;
   quantidade: number | string;
   valorUnitario: number | string;
   descontoTipo?: "Valor" | "Percentual" | null;
@@ -68,5 +69,20 @@ export function getQuotePrintTotals(quote: QuotePrintData) {
     !!(quote.descontoGeralTipo && Number(quote.descontoGeralValor) > 0);
   const descontoGeralNum = subtotalNum !== null ? Math.max(0, subtotalNum - totalNum) : 0;
 
-  return { hasItemDesconto, subtotalNum, totalNum, hasDescontoGeral, descontoGeralNum };
+  const totalProdutosNum = quote.itens
+    .filter((item) => (item.tipoItem ?? "Produto") === "Produto")
+    .reduce((acc, item) => acc + Number(item.valorTotal), 0);
+  const totalServicosNum = quote.itens
+    .filter((item) => item.tipoItem === "Servico")
+    .reduce((acc, item) => acc + Number(item.valorTotal), 0);
+
+  return {
+    hasItemDesconto,
+    subtotalNum,
+    totalNum,
+    hasDescontoGeral,
+    descontoGeralNum,
+    totalProdutosNum,
+    totalServicosNum,
+  };
 }

@@ -6,6 +6,7 @@ import type { QuoteFormValues } from "@/lib/validations";
 export type QuoteItemRecord = {
   id: string;
   ordem: number;
+  tipoItem: "Produto" | "Servico";
   descricao: string;
   quantidade: string;
   valorUnitario: string;

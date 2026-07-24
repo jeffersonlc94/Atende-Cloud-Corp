@@ -21,21 +21,21 @@ enum Cargo {
 }
 
 model User {
-  id                  String   @id @default(cuid())
-  name                String
-  email               String   @unique
-  passwordHash        String
-  role                Role     @default(USER)
-  cargo               Cargo?
-  avatarUrl           String?
-  canAccessOrcamentos Boolean  @default(true)
-  canAccessFrota      Boolean  @default(true)
-  receiveNotifications Boolean @default(true)
-  canAccessEstoque    Boolean  @default(true)
-  telegramChatId      String?
-  hidden              Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  name                 String
+  email                String   @unique
+  passwordHash         String
+  role                 Role     @default(USER)
+  cargo                Cargo?
+  avatarUrl            String?
+  canAccessOrcamentos  Boolean  @default(true)
+  canAccessFrota       Boolean  @default(true)
+  receiveNotifications Boolean  @default(true)
+  canAccessEstoque     Boolean  @default(true)
+  telegramChatId       String?
+  hidden               Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   quotes       Quote[]
   mileageLogs  MileageLog[]
@@ -93,6 +93,11 @@ enum DescontoTipo {
   Percentual
 }
 
+enum TipoItem {
+  Produto
+  Servico
+}
+
 model Quote {
   id                 String        @id @default(cuid())
   numero             String        @unique
@@ -127,6 +132,7 @@ model QuoteItem {
   quoteId       String
   quote         Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   ordem         Int
+  tipoItem      TipoItem      @default(Produto)
   descricao     String
   quantidade    Decimal       @db.Decimal(14, 3)
   valorUnitario Decimal       @db.Decimal(14, 2)
@@ -446,21 +452,21 @@ model SystemSettings {
 // ==========================================================================
 
 model StockMovement {
-  id            String   @id @default(cuid())
-  cod           String
-  descricao     String
-  qtd           Int      @default(1)
-  respRetirada  String
-  respEntrega   String?
-  data          DateTime
-  numeroSerie   String?
-  destino       String?
-  devolvido     Boolean  @default(false)
-  status        String   @default("Pendente")
-  observacoes   String?
+  id              String   @id @default(cuid())
+  cod             String
+  descricao       String
+  qtd             Int      @default(1)
+  respRetirada    String
+  respEntrega     String?
+  data            DateTime
+  numeroSerie     String?
+  destino         String?
+  devolvido       Boolean  @default(false)
+  status          String   @default("Pendente")
+  observacoes     String?
   createdByUserId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([data])
   @@index([cod])

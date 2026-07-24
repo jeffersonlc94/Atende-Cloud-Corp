@@ -30,7 +30,7 @@ export function QuotePrintLayoutClassico({
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" | ");
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, subtotalNum, totalNum, hasDescontoGeral, descontoGeralNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
@@ -144,43 +144,40 @@ export function QuotePrintLayoutClassico({
           ))}
         </tbody>
         <tfoot>
-          {hasDescontoGeral ? (
-            <>
-              <tr className="bg-gray-100">
-                <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
-                  Subtotal
-                </td>
-                <td className="border border-gray-400 p-1.5 text-center">
-                  {formatCurrencyBRL(subtotalNum ?? totalNum)}
-                </td>
-              </tr>
-              <tr className="bg-gray-100">
-                <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
-                  Desconto
-                </td>
-                <td className="border border-gray-400 p-1.5 text-center">
-                  {formatCurrencyBRL(descontoGeralNum)}
-                </td>
-              </tr>
-              <tr className="bg-gray-200 font-bold">
-                <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
-                  TOTAL
-                </td>
-                <td className="border border-gray-400 p-1.5 text-center">
-                  {formatCurrencyBRL(totalNum)}
-                </td>
-              </tr>
-            </>
-          ) : (
-            <tr className="bg-gray-200 font-bold">
+          <tr className="bg-gray-100">
+            <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
+              Produtos
+            </td>
+            <td className="border border-gray-400 p-1.5 text-center">
+              {formatCurrencyBRL(totalProdutosNum)}
+            </td>
+          </tr>
+          <tr className="bg-gray-100">
+            <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
+              Serviços
+            </td>
+            <td className="border border-gray-400 p-1.5 text-center">
+              {formatCurrencyBRL(totalServicosNum)}
+            </td>
+          </tr>
+          {hasDescontoGeral && (
+            <tr className="bg-gray-100">
               <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
-                TOTAL
+                Desconto
               </td>
               <td className="border border-gray-400 p-1.5 text-center">
-                {formatCurrencyBRL(totalNum)}
+                {formatCurrencyBRL(descontoGeralNum)}
               </td>
             </tr>
           )}
+          <tr className="bg-gray-200 font-bold">
+            <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
+              TOTAL
+            </td>
+            <td className="border border-gray-400 p-1.5 text-center">
+              {formatCurrencyBRL(totalNum)}
+            </td>
+          </tr>
         </tfoot>
       </table>
 
