@@ -103,7 +103,9 @@ export async function POST(req: NextRequest) {
 
   const itensParaCriar = itensComputados.map((item, idx) => ({
     ordem: idx,
+    tipoItem: item.tipoItem ?? "Produto",
     descricao: item.descricao,
+    fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
     descontoTipo: item.descontoTipo ?? null,

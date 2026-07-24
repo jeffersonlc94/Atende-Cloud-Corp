@@ -120,7 +120,9 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           visibilidade: initialData.visibilidade ?? "Global",
           itens: initialData.itens.map((i) => ({
             ordem: i.ordem,
+            tipoItem: i.tipoItem ?? "Produto",
             descricao: i.descricao,
+            fotoUrl: i.fotoUrl ?? undefined,
             quantidade: Number(i.quantidade),
             valorUnitario: Number(i.valorUnitario),
             descontoTipo: i.descontoTipo ?? undefined,
@@ -143,7 +145,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           prazoEntrega: "",
           observacoes: "",
           visibilidade: "Global",
-          itens: [{ ordem: 0, descricao: "", quantidade: 1, valorUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
+          itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
           descontoGeralTipo: undefined,
           descontoGeralValor: undefined,
         },
@@ -154,12 +156,13 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const descontoGeralTipo = useWatch({ control, name: "descontoGeralTipo" });
   const descontoGeralValor = useWatch({ control, name: "descontoGeralValor" });
 
-  const { subtotal, total, descontoGeral } = useMemo(() => {
+  const { total, descontoGeral, totalProdutos, totalServicos } = useMemo(() => {
     const itensNormalizados = (itens ?? []).map((item) => ({
       quantidade: Number(item?.quantidade) || 0,
       valorUnitario: Number(item?.valorUnitario) || 0,
       descontoTipo: item?.descontoTipo as "Valor" | "Percentual" | undefined,
       descontoValor: Number(item?.descontoValor) || 0,
+      tipoItem: item?.tipoItem as "Produto" | "Servico" | undefined,
     }));
     const result = computeQuoteTotals(
       itensNormalizados,
@@ -167,9 +170,10 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
       Number(descontoGeralValor) || 0
     );
     return {
-      subtotal: result.subtotal,
       total: result.total,
-      descontoGeral: Math.round((result.subtotal - result.total) * 100) / 100,
+      descontoGeral: result.desconto,
+      totalProdutos: result.totalProdutos,
+      totalServicos: result.totalServicos,
     };
   }, [itens, descontoGeralTipo, descontoGeralValor]);
 
@@ -439,8 +443,12 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
 
               <div className="w-full max-w-xs space-y-1 text-right">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span>{formatCurrencyBRL(subtotal)}</span>
+                  <span>Produtos</span>
+                  <span>{formatCurrencyBRL(totalProdutos)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Serviços</span>
+                  <span>{formatCurrencyBRL(totalServicos)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>Desconto</span>

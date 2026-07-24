@@ -3,6 +3,7 @@
 // verdade, persistido no banco).
 
 export type DescontoTipo = "Valor" | "Percentual";
+export type TipoItem = "Produto" | "Servico";
 
 export function aplicarDesconto(
   base: number,
@@ -31,6 +32,7 @@ export function computeQuoteTotals<
     valorUnitario: number;
     descontoTipo?: DescontoTipo | null;
     descontoValor?: number | null;
+    tipoItem?: TipoItem | null;
   }
 >(
   itens: T[],
@@ -51,9 +53,23 @@ export function computeQuoteTotals<
     itensComputados.reduce((acc, i) => acc + i.valorTotal, 0) * 100
   ) / 100;
 
+  const totalProdutos = Math.round(
+    itensComputados
+      .filter((i) => (i.tipoItem ?? "Produto") === "Produto")
+      .reduce((acc, i) => acc + i.valorTotal, 0) * 100
+  ) / 100;
+
+  const totalServicos = Math.round(
+    itensComputados
+      .filter((i) => i.tipoItem === "Servico")
+      .reduce((acc, i) => acc + i.valorTotal, 0) * 100
+  ) / 100;
+
   const total = Math.round(
     aplicarDesconto(subtotal, descontoGeralTipo, descontoGeralValor) * 100
   ) / 100;
 
-  return { itensComputados, subtotal, total };
+  const desconto = Math.round((subtotal - total) * 100) / 100;
+
+  return { itensComputados, subtotal, totalProdutos, totalServicos, desconto, total };
 }

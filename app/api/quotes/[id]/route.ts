@@ -86,7 +86,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const itensParaCriar = itensComputados.map((item, idx) => ({
     ordem: idx,
+    tipoItem: item.tipoItem ?? "Produto",
     descricao: item.descricao,
+    fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
     descontoTipo: item.descontoTipo ?? null,

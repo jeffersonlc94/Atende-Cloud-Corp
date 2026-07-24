@@ -8,6 +8,7 @@ import {
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
+import { FotoThumb } from "@/components/shared/foto-thumb";
 
 export function QuotePrintLayoutMinimalista({
   company,
@@ -29,7 +30,7 @@ export function QuotePrintLayoutMinimalista({
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" · ");
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, subtotalNum, totalNum, hasDescontoGeral, descontoGeralNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
@@ -122,7 +123,16 @@ export function QuotePrintLayoutMinimalista({
           )}
           {quote.itens.map((item, idx) => (
             <tr key={idx} className="border-b border-neutral-100">
-              <td className="py-2">{item.descricao}</td>
+              <td className="py-2">
+                {item.fotoUrl ? (
+                  <div className="flex items-center gap-2">
+                    <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0" />
+                    <span>{item.descricao}</span>
+                  </div>
+                ) : (
+                  item.descricao
+                )}
+              </td>
               <td className="py-2 text-center">
                 {Number(item.quantidade).toLocaleString("pt-BR")}
               </td>
@@ -139,17 +149,19 @@ export function QuotePrintLayoutMinimalista({
       {/* Totais */}
       <div className="mt-4 flex justify-end">
         <div className="w-56 space-y-1.5 text-sm">
+          <div className="flex justify-between text-neutral-500">
+            <span>Produtos</span>
+            <span>{formatCurrencyBRL(totalProdutosNum)}</span>
+          </div>
+          <div className="flex justify-between text-neutral-500">
+            <span>Serviços</span>
+            <span>{formatCurrencyBRL(totalServicosNum)}</span>
+          </div>
           {hasDescontoGeral && (
-            <>
-              <div className="flex justify-between text-neutral-500">
-                <span>Subtotal</span>
-                <span>{formatCurrencyBRL(subtotalNum ?? totalNum)}</span>
-              </div>
-              <div className="flex justify-between text-neutral-500">
-                <span>Desconto</span>
-                <span>- {formatCurrencyBRL(descontoGeralNum)}</span>
-              </div>
-            </>
+            <div className="flex justify-between text-neutral-500">
+              <span>Desconto</span>
+              <span>- {formatCurrencyBRL(descontoGeralNum)}</span>
+            </div>
           )}
           <div className="flex justify-between border-t border-neutral-800 pt-1.5 text-base font-medium">
             <span>Total</span>

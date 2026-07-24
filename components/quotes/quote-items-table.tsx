@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Controller, useFieldArray, type Control, type UseFormRegister } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,10 +21,89 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
+import { Camera, Loader2, Plus, Trash2, X } from "lucide-react";
 import { formatCurrencyBRL } from "@/lib/format";
 import { computeItemTotal } from "@/lib/quote-calc";
 import type { QuoteFormValues } from "@/lib/validations";
+import { FotoThumb } from "@/components/shared/foto-thumb";
+
+function ItemFotoCell({
+  control,
+  index,
+}: {
+  control: Control<QuoteFormValues>;
+  index: number;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <Controller
+      control={control}
+      name={`itens.${index}.fotoUrl`}
+      render={({ field }) => {
+        async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file) return;
+          setUploading(true);
+          try {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch("/api/upload", { method: "POST", body: formData });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(body?.error || "Erro ao enviar foto");
+            field.onChange(body.url);
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Erro ao enviar foto");
+          } finally {
+            setUploading(false);
+          }
+        }
+
+        return (
+          <div className="flex items-center justify-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {field.value ? (
+              <div className="relative">
+                <FotoThumb url={field.value as string} alt="Foto do item" className="h-10 w-10" />
+                <button
+                  type="button"
+                  onClick={() => field.onChange(undefined)}
+                  className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                  title="Remover foto"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                title="Adicionar foto (opcional)"
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
+        );
+      }}
+    />
+  );
+}
 
 export function QuoteItemsTable({
   control,
@@ -41,7 +122,9 @@ export function QuoteItemsTable({
   function addItem() {
     append({
       ordem: fields.length,
+      tipoItem: "Produto",
       descricao: "",
+      fotoUrl: undefined,
       quantidade: 1,
       valorUnitario: undefined,
       descontoTipo: undefined,
@@ -56,6 +139,8 @@ export function QuoteItemsTable({
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">#</TableHead>
+              <TableHead className="w-16">Foto</TableHead>
+              <TableHead className="w-32">Tipo</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead className="w-28">Qtd.</TableHead>
               <TableHead className="w-36">Valor Unit.</TableHead>
@@ -77,6 +162,29 @@ export function QuoteItemsTable({
               return (
                 <TableRow key={field.id}>
                   <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                  <TableCell>
+                    <ItemFotoCell control={control} index={index} />
+                  </TableCell>
+                  <TableCell>
+                    <Controller
+                      control={control}
+                      name={`itens.${index}.tipoItem`}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ?? "Produto"}
+                          onValueChange={(v) => field.onChange(v)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Produto">Produto</SelectItem>
+                            <SelectItem value="Servico">Serviço</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Input
                       {...register(`itens.${index}.descricao`)}
