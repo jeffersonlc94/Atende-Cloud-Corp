@@ -16,6 +16,7 @@ export const quoteItemSchema = z.object({
   ordem: z.number().int().nonnegative(),
   tipoItem: z.enum(tipoItemOptions).default("Produto"),
   descricao: z.string().min(1, "Descrição obrigatória"),
+  fotoUrl: z.string().optional(),
   quantidade: z.number().positive("Quantidade deve ser maior que zero"),
   valorUnitario: z.preprocess(
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? 0 : v),

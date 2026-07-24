@@ -9,6 +9,7 @@ import {
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
+import { FotoThumb } from "@/components/shared/foto-thumb";
 
 export function QuotePrintLayoutModerno({
   company,
@@ -143,7 +144,16 @@ export function QuotePrintLayoutModerno({
             {quote.itens.map((item, idx) => (
               <tr key={idx} className="border-b border-slate-100">
                 <td className="p-2 text-slate-400">{idx + 1}</td>
-                <td className="p-2">{item.descricao}</td>
+                <td className="p-2">
+                  {item.fotoUrl ? (
+                    <div className="flex items-center gap-2">
+                      <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0" />
+                      <span>{item.descricao}</span>
+                    </div>
+                  ) : (
+                    item.descricao
+                  )}
+                </td>
                 <td className="p-2 text-center">
                   {Number(item.quantidade).toLocaleString("pt-BR")}
                 </td>
