@@ -99,12 +99,12 @@ export function QuotePrintLayoutClassico({
       </div>
 
       {/* Dados do cliente */}
-      <div className="mt-4 grid grid-cols-2 gap-2 text-center text-[0.875em]">
-        <p>
+      <div className="mt-4 flex gap-2 text-center text-[0.875em]">
+        <p className="flex-1">
           <span className="font-semibold">CLIENTE:</span>{" "}
           {quote.clienteNome || "—"}
         </p>
-        <p>
+        <p className="flex-1">
           <span className="font-semibold">REF.:</span> {quote.referencia || "—"}
         </p>
       </div>
