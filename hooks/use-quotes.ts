@@ -38,6 +38,7 @@ export type QuoteRecord = {
   company: { id: string; razaoSocial: string; nomeFantasia: string | null } & Record<string, unknown>;
   client: { id: string; nome: string };
   createdByUser: { id: string; name: string } | null;
+  updatedByUser: { id: string; name: string } | null;
   itens: QuoteItemRecord[];
 };
 

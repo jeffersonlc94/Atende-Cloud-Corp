@@ -23,6 +23,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
       company: true,
       client: true,
       createdByUser: { select: { id: true, name: true } },
+      updatedByUser: { select: { id: true, name: true } },
       itens: { orderBy: { ordem: "asc" } },
     },
   });
@@ -124,9 +125,16 @@ export async function PUT(req: NextRequest, { params }: Params) {
         descontoGeralValor: data.descontoGeralValor ?? null,
         total,
         visibilidade: data.visibilidade,
+        updatedByUserId: session.user.id,
         itens: { createMany: { data: itensParaCriar } },
       },
-      include: { itens: true, company: true, client: true },
+      include: {
+        itens: true,
+        company: true,
+        client: true,
+        createdByUser: { select: { id: true, name: true } },
+        updatedByUser: { select: { id: true, name: true } },
+      },
     });
   });
 

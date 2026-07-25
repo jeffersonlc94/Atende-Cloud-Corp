@@ -226,7 +226,7 @@ export function QuotePrintLayoutClassico({
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
         <div className="mt-12 w-64 border-t border-black text-center pt-1">
-          <p>{company?.nomeResponsavel || "Responsável"}</p>
+          <p>{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
           <p className="text-xs text-gray-600">
             {company?.nomeFantasia || company?.razaoSocial}
           </p>

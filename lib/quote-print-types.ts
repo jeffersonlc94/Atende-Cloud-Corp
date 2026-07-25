@@ -31,6 +31,7 @@ export type QuotePrintItem = {
 export type QuotePrintData = {
   numero: string;
   clienteNome: string;
+  createdByUserName?: string | null;
   referencia?: string | null;
   dataEmissao: string | Date;
   validadeDias?: number | null;

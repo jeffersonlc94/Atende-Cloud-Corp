@@ -205,7 +205,7 @@ export function QuotePrintLayoutMinimalista({
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
         <div className="mt-12 w-64 border-t border-neutral-400 pt-1">
-          <p>{company?.nomeResponsavel || "Responsável"}</p>
+          <p>{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
           <p className="text-xs text-neutral-500">{company?.nomeFantasia || company?.razaoSocial}</p>
         </div>
       </div>

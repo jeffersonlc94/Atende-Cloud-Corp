@@ -57,6 +57,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
         total: original.total,
         visibilidade: original.visibilidade,
         createdByUserId: session.user.id,
+        updatedByUserId: session.user.id,
         itens: {
           createMany: {
             data: original.itens.map((i) => ({
@@ -73,7 +74,13 @@ export async function POST(_req: NextRequest, { params }: Params) {
           },
         },
       },
-      include: { itens: true, company: true, client: true },
+      include: {
+        itens: true,
+        company: true,
+        client: true,
+        createdByUser: { select: { id: true, name: true } },
+        updatedByUser: { select: { id: true, name: true } },
+      },
     });
   });
 

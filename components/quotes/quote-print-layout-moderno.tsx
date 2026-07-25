@@ -229,7 +229,7 @@ export function QuotePrintLayoutModerno({
             {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
           </p>
           <div className="mt-12 w-64 border-t border-slate-400 pt-1">
-            <p className="font-medium text-slate-800">{company?.nomeResponsavel || "Responsável"}</p>
+            <p className="font-medium text-slate-800">{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
             <p className="text-xs text-slate-500">{company?.nomeFantasia || company?.razaoSocial}</p>
           </div>
         </div>

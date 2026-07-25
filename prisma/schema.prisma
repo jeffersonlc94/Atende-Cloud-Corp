@@ -37,11 +37,12 @@ model User {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  quotes       Quote[]
-  mileageLogs  MileageLog[]
-  checklists   Checklist[]
-  maintenances Maintenance[]
-  auditLogs    AuditLog[]
+  quotes        Quote[]
+  updatedQuotes Quote[]       @relation("QuoteUpdatedBy")
+  mileageLogs   MileageLog[]
+  checklists    Checklist[]
+  maintenances  Maintenance[]
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
@@ -119,6 +120,8 @@ model Quote {
   visibilidade       Visibilidade  @default(Global)
   createdByUserId    String?
   createdByUser      User?         @relation(fields: [createdByUserId], references: [id])
+  updatedByUserId    String?
+  updatedByUser      User?         @relation("QuoteUpdatedBy", fields: [updatedByUserId], references: [id])
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
