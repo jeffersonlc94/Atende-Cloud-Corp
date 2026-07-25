@@ -15,10 +15,14 @@ export function QuotePrintLayoutModerno({
   company,
   quote,
   id = "quote-print-area",
+  fontFamily,
+  fontScale = 1,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
+  fontFamily?: string;
+  fontScale?: number;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -35,143 +39,142 @@ export function QuotePrintLayoutModerno({
 
   return (
     <div
-      className="mx-auto w-full max-w-[210mm] bg-white text-slate-800 print:shadow-none"
+      className="mx-auto grid w-full max-w-[210mm] grid-cols-[1fr_2.4fr] bg-white text-slate-800 print:shadow-none"
+      style={{ fontFamily: fontFamily || undefined, fontSize: `${16 * fontScale}px` }}
       id={id}
     >
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between gap-4 bg-slate-800 p-8 text-white">
-        <div className="flex items-center gap-4">
+      {/* Sidebar */}
+      <aside className="flex flex-col gap-6 bg-indigo-700 p-6 text-white">
+        <div>
           {company?.logoUrl && !logoError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={company.logoUrl}
               alt="Logo"
-              className="h-16 w-16 shrink-0 rounded-full bg-white object-contain p-1"
+              className="h-16 w-16 rounded-full bg-white object-contain p-1"
               onError={() => setLogoError(true)}
             />
           ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-white">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
               <Building2 className="h-8 w-8" />
             </div>
           )}
-          <div>
-            <h1 className="text-xl font-bold uppercase leading-tight">
-              {company?.razaoSocial || "Empresa não selecionada"}
-            </h1>
-            {company?.nomeFantasia && (
-              <p className="text-sm text-slate-300">{company.nomeFantasia}</p>
-            )}
-          </div>
+          <h1 className="mt-3 text-[1.1em] font-black uppercase leading-tight tracking-tight">
+            {company?.razaoSocial || "Empresa não selecionada"}
+          </h1>
+          {company?.nomeFantasia && (
+            <p className="text-[0.75em] text-indigo-200">{company.nomeFantasia}</p>
+          )}
         </div>
-        <div className="shrink-0 text-right">
-          <p className="text-xs uppercase tracking-widest text-slate-300">Orçamento</p>
-          <p className="text-2xl font-bold">Nº {quote.numero || "------"}</p>
-          <p className="text-xs text-slate-300">{formatDateBR(quote.dataEmissao)}</p>
-        </div>
-      </div>
 
-      <div className="px-8">
-        {/* Faixa de contato */}
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-slate-200 py-3 text-xs text-slate-500">
+        <div className="space-y-2 text-[0.7em] text-indigo-100">
           {enderecoCompleto && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" /> {enderecoCompleto}
-            </span>
+            <p className="flex items-start gap-1.5">
+              <MapPin className="mt-0.5 h-3 w-3 shrink-0" /> {enderecoCompleto}
+            </p>
           )}
           {company?.telefone1 && (
-            <span className="flex items-center gap-1">
-              <Phone className="h-3 w-3" /> {company.telefone1}
-            </span>
+            <p className="flex items-center gap-1.5">
+              <Phone className="h-3 w-3 shrink-0" /> {company.telefone1}
+            </p>
           )}
           {company?.email && (
-            <span className="flex items-center gap-1">
-              <Mail className="h-3 w-3" /> {company.email}
-            </span>
+            <p className="flex items-center gap-1.5">
+              <Mail className="h-3 w-3 shrink-0" /> {company.email}
+            </p>
           )}
           {company?.site && (
-            <span className="flex items-center gap-1">
-              <Globe className="h-3 w-3" /> {company.site}
-            </span>
+            <p className="flex items-center gap-1.5">
+              <Globe className="h-3 w-3 shrink-0" /> {company.site}
+            </p>
           )}
           {(company?.cnpj || company?.inscricaoEstadual) && (
-            <span>
-              {company?.cnpj && `CNPJ: ${company.cnpj}`}
+            <p>
+              {company?.cnpj && `CNPJ ${company.cnpj}`}
               {company?.cnpj && company?.inscricaoEstadual ? " · " : ""}
-              {company?.inscricaoEstadual && `INSC: ${company.inscricaoEstadual}`}
-            </span>
+              {company?.inscricaoEstadual && `INSC ${company.inscricaoEstadual}`}
+            </p>
           )}
+        </div>
+
+        <div className="mt-auto rounded-xl bg-white/10 p-4">
+          <p className="text-[0.65em] uppercase tracking-widest text-indigo-200">Total geral</p>
+          <p className="text-[1.6em] font-black">{formatCurrencyBRL(totalNum)}</p>
+        </div>
+      </aside>
+
+      {/* Conteúdo principal */}
+      <div className="p-8">
+        <div className="flex items-start justify-between border-b border-slate-200 pb-4">
+          <div>
+            <p className="text-[0.7em] font-semibold uppercase tracking-[0.2em] text-indigo-600">
+              Proposta comercial
+            </p>
+            <p className="text-[1.6em] font-black text-slate-900">Nº {quote.numero || "------"}</p>
+          </div>
+          <div className="text-right text-[0.8em] text-slate-500">
+            <p>{formatDateBR(quote.dataEmissao)}</p>
+          </div>
         </div>
 
         {/* Dados do cliente */}
-        <div className="mt-5 grid grid-cols-2 gap-4">
-          <div className="rounded-lg bg-slate-50 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[0.6em] font-semibold uppercase tracking-wide text-slate-400">
               Cliente
             </p>
-            <p className="text-sm font-semibold text-slate-800">{quote.clienteNome || "—"}</p>
+            <p className="text-[0.9em] font-semibold text-slate-800">{quote.clienteNome || "—"}</p>
           </div>
-          <div className="rounded-lg bg-slate-50 p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+          <div>
+            <p className="text-[0.6em] font-semibold uppercase tracking-wide text-slate-400">
               Referência
             </p>
-            <p className="text-sm font-semibold text-slate-800">{quote.referencia || "—"}</p>
+            <p className="text-[0.9em] font-semibold text-slate-800">{quote.referencia || "—"}</p>
           </div>
         </div>
 
-        {/* Tabela de itens */}
-        <table className="mt-5 w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-slate-800 text-white">
-              <th className="w-12 p-2 text-left font-medium first:rounded-l-md">Item</th>
-              <th className="p-2 text-left font-medium">Descrição</th>
-              <th className="w-16 p-2 text-center font-medium">Qtd</th>
-              <th className="w-24 p-2 text-right font-medium">Unit.</th>
-              {hasItemDesconto && <th className="w-20 p-2 text-right font-medium">Desc.</th>}
-              <th className="w-28 p-2 text-right font-medium last:rounded-r-md">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {quote.itens.length === 0 && (
-              <tr>
-                <td
-                  colSpan={hasItemDesconto ? 6 : 5}
-                  className="border-b border-slate-200 p-3 text-center text-slate-400"
-                >
-                  Nenhum item adicionado
-                </td>
-              </tr>
-            )}
-            {quote.itens.map((item, idx) => (
-              <tr key={idx} className="border-b border-slate-100">
-                <td className="p-2 text-slate-400">{idx + 1}</td>
-                <td className="p-2">
-                  {item.fotoUrl ? (
-                    <div className="flex items-center gap-2">
-                      <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0" />
-                      <span>{item.descricao}</span>
-                    </div>
-                  ) : (
-                    item.descricao
-                  )}
-                </td>
-                <td className="p-2 text-center">
-                  {Number(item.quantidade).toLocaleString("pt-BR")}
-                </td>
-                <td className="p-2 text-right">{formatCurrencyBRL(Number(item.valorUnitario))}</td>
-                {hasItemDesconto && (
-                  <td className="p-2 text-right text-slate-500">{formatDescontoItem(item)}</td>
+        {/* Lista de itens (estilo cards, sem tabela) */}
+        <div className="mt-5 space-y-2">
+          <div className="flex items-center gap-3 border-b border-slate-300 pb-1 text-[0.65em] font-semibold uppercase tracking-wide text-slate-400">
+            <span className="flex-1">Descrição</span>
+            <span className="w-14 text-center">Qtd</span>
+            <span className="w-20 text-right">Unit.</span>
+            {hasItemDesconto && <span className="w-16 text-right">Desc.</span>}
+            <span className="w-24 text-right">Total</span>
+          </div>
+          {quote.itens.length === 0 && (
+            <p className="py-4 text-center text-[0.875em] text-slate-400">Nenhum item adicionado</p>
+          )}
+          {quote.itens.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em]"
+            >
+              <span className="flex flex-1 items-center gap-2">
+                {item.fotoUrl && (
+                  <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-9 w-9 shrink-0" />
                 )}
-                <td className="p-2 text-right font-medium">
-                  {formatCurrencyBRL(Number(item.valorTotal))}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                {item.descricao}
+              </span>
+              <span className="w-14 text-center text-slate-500">
+                {Number(item.quantidade).toLocaleString("pt-BR")}
+              </span>
+              <span className="w-20 text-right text-slate-500">
+                {formatCurrencyBRL(Number(item.valorUnitario))}
+              </span>
+              {hasItemDesconto && (
+                <span className="w-16 text-right text-slate-500">{formatDescontoItem(item)}</span>
+              )}
+              <span className="w-24 text-right font-semibold text-slate-800">
+                {formatCurrencyBRL(Number(item.valorTotal))}
+              </span>
+            </div>
+          ))}
+        </div>
 
         {/* Totais */}
         <div className="mt-4 flex justify-end">
-          <div className="w-64 space-y-1 rounded-lg bg-slate-50 p-4 text-sm">
+          <div className="w-64 space-y-1 rounded-lg border border-slate-200 p-4 text-[0.875em]">
             <div className="flex justify-between text-slate-500">
               <span>Produtos</span>
               <span>{formatCurrencyBRL(totalProdutosNum)}</span>
@@ -187,7 +190,7 @@ export function QuotePrintLayoutModerno({
               </div>
             )}
             <div className="border-t border-slate-200 pt-1" />
-            <div className="flex justify-between text-base font-bold text-slate-800">
+            <div className="flex justify-between text-[1em] font-bold text-indigo-700">
               <span>Total</span>
               <span>{formatCurrencyBRL(totalNum)}</span>
             </div>
@@ -195,7 +198,7 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Condições */}
-        <div className="mt-4 space-y-1 text-sm text-slate-600">
+        <div className="mt-4 space-y-1 text-[0.875em] text-slate-600">
           {quote.condicoesPagamento && (
             <p>
               <span className="font-semibold text-slate-800">Condições de pagamento:</span>{" "}
@@ -210,27 +213,30 @@ export function QuotePrintLayoutModerno({
           )}
           {quote.observacoes && (
             <p>
-              <span className="font-semibold text-slate-800">Observações:</span>{" "}
-              {quote.observacoes}
+              <span className="font-semibold text-slate-800">Observações:</span> {quote.observacoes}
             </p>
           )}
         </div>
 
         {/* Validade */}
         {quote.validadeDias ? (
-          <p className="mt-4 rounded-md bg-amber-50 p-2 text-center text-sm font-semibold text-amber-700">
+          <p className="mt-4 rounded-md bg-amber-50 p-2 text-center text-[0.875em] font-semibold text-amber-700">
             Válido por {quote.validadeDias} dias corridos a partir da data de emissão.
           </p>
         ) : null}
 
         {/* Assinatura */}
-        <div className="mt-14 flex flex-col items-center pb-8 text-center text-sm">
+        <div className="mt-10 flex flex-col items-center pb-4 text-center text-[0.875em]">
           <p className="text-slate-500">
             {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
           </p>
-          <div className="mt-12 w-64 border-t border-slate-400 pt-1">
-            <p className="font-medium text-slate-800">{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
-            <p className="text-xs text-slate-500">{company?.nomeFantasia || company?.razaoSocial}</p>
+          <div className="mt-10 w-64 border-t border-slate-400 pt-1">
+            <p className="font-medium text-slate-800">
+              {quote.createdByUserName || company?.nomeResponsavel || "Responsável"}
+            </p>
+            <p className="text-[0.75em] text-slate-500">
+              {company?.nomeFantasia || company?.razaoSocial}
+            </p>
           </div>
         </div>
       </div>
