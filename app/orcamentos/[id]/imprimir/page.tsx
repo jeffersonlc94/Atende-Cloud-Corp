@@ -20,6 +20,20 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft, Printer, FileDown, Loader2 } from "lucide-react";
 
+const fontFamilyOptions = [
+  { value: "default", label: "Padrão do layout", css: "" },
+  { value: "sans", label: "Sans-serif", css: "Arial, Helvetica, sans-serif" },
+  { value: "serif", label: "Serifada", css: "Georgia, 'Times New Roman', serif" },
+  { value: "mono", label: "Monoespaçada", css: "'Courier New', Courier, monospace" },
+] as const;
+
+const fontSizeOptions = [
+  { value: "0.875", label: "Pequena" },
+  { value: "1", label: "Padrão" },
+  { value: "1.125", label: "Grande" },
+  { value: "1.25", label: "Extra grande" },
+] as const;
+
 export default function ImprimirOrcamentoPage({
   params,
 }: {
@@ -30,6 +44,8 @@ export default function ImprimirOrcamentoPage({
   const printRef = useRef<HTMLDivElement>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [layout, setLayout] = useState<QuotePrintLayoutId>("classico");
+  const [fontFamilyKey, setFontFamilyKey] = useState<(typeof fontFamilyOptions)[number]["value"]>("default");
+  const [fontSizeKey, setFontSizeKey] = useState<(typeof fontSizeOptions)[number]["value"]>("1");
 
   async function handleGeneratePdf() {
     if (!printRef.current || !quote) return;
@@ -106,6 +122,30 @@ export default function ImprimirOrcamentoPage({
               ))}
             </SelectContent>
           </Select>
+          <Select value={fontFamilyKey} onValueChange={(v) => setFontFamilyKey(v as typeof fontFamilyKey)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {fontFamilyOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={fontSizeKey} onValueChange={(v) => setFontSizeKey(v as typeof fontSizeKey)}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {fontSizeOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="mr-2 h-4 w-4" /> Imprimir
           </Button>
@@ -124,6 +164,8 @@ export default function ImprimirOrcamentoPage({
         <div ref={printRef}>
           <QuotePrintLayout
             layout={layout}
+            fontFamily={fontFamilyOptions.find((opt) => opt.value === fontFamilyKey)?.css || undefined}
+            fontScale={Number(fontSizeKey)}
             company={quote.company}
             quote={{
               numero: quote.numero,

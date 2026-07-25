@@ -18,17 +18,27 @@ export function QuotePrintLayout({
   quote,
   id = "quote-print-area",
   layout = "classico",
+  fontFamily,
+  fontScale,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
   layout?: QuotePrintLayoutId;
+  fontFamily?: string;
+  fontScale?: number;
 }) {
   if (layout === "moderno") {
-    return <QuotePrintLayoutModerno company={company} quote={quote} id={id} />;
+    return (
+      <QuotePrintLayoutModerno company={company} quote={quote} id={id} fontFamily={fontFamily} fontScale={fontScale} />
+    );
   }
   if (layout === "minimalista") {
-    return <QuotePrintLayoutMinimalista company={company} quote={quote} id={id} />;
+    return (
+      <QuotePrintLayoutMinimalista company={company} quote={quote} id={id} fontFamily={fontFamily} fontScale={fontScale} />
+    );
   }
-  return <QuotePrintLayoutClassico company={company} quote={quote} id={id} />;
+  return (
+    <QuotePrintLayoutClassico company={company} quote={quote} id={id} fontFamily={fontFamily} fontScale={fontScale} />
+  );
 }

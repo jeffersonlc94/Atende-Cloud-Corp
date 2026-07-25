@@ -15,10 +15,14 @@ export function QuotePrintLayoutClassico({
   company,
   quote,
   id = "quote-print-area",
+  fontFamily,
+  fontScale = 1,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
+  fontFamily?: string;
+  fontScale?: number;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -35,7 +39,11 @@ export function QuotePrintLayoutClassico({
     getQuotePrintTotals(quote);
 
   return (
-    <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none" id={id}>
+    <div
+      className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none"
+      style={{ fontFamily: fontFamily || undefined, fontSize: `${16 * fontScale}px` }}
+      id={id}
+    >
       {/* Cabeçalho */}
       <div className="border-b-2 border-black pb-4">
         <div className="flex items-center gap-4">
@@ -53,45 +61,45 @@ export function QuotePrintLayoutClassico({
             </div>
           ) : null}
           <div className="flex-1">
-            <h1 className="text-lg font-bold uppercase leading-tight">
+            <h1 className="text-[1.125em] font-bold uppercase leading-tight">
               {company?.razaoSocial || "Empresa não selecionada"}
             </h1>
             {company?.nomeFantasia && (
-              <p className="text-xs italic text-gray-700">{company.nomeFantasia}</p>
+              <p className="text-[0.75em] italic text-gray-700">{company.nomeFantasia}</p>
             )}
             {(company?.cnpj || company?.inscricaoEstadual) && (
-              <p className="text-xs italic text-gray-700">
+              <p className="text-[0.75em] italic text-gray-700">
                 {company?.cnpj && `CNPJ: ${company.cnpj}`}
                 {company?.cnpj && company?.inscricaoEstadual ? " " : ""}
                 {company?.inscricaoEstadual && `INSC: ${company.inscricaoEstadual}`}
               </p>
             )}
             {enderecoCompleto && (
-              <p className="text-xs italic text-gray-700">{enderecoCompleto}</p>
+              <p className="text-[0.75em] italic text-gray-700">{enderecoCompleto}</p>
             )}
             {(telefones || company?.email) && (
-              <p className="text-xs italic text-gray-700">
+              <p className="text-[0.75em] italic text-gray-700">
                 {telefones}
                 {telefones && company?.email ? " | " : ""}
                 {company?.email}
               </p>
             )}
-            {company?.site && <p className="text-xs italic text-gray-700">{company.site}</p>}
+            {company?.site && <p className="text-[0.75em] italic text-gray-700">{company.site}</p>}
           </div>
           <div className="shrink-0 text-right">
-            <p className="text-2xl font-bold">Nº {quote.numero || "------"}</p>
-            <p className="text-xs text-gray-700">
+            <p className="text-[1.5em] font-bold">Nº {quote.numero || "------"}</p>
+            <p className="text-[0.75em] text-gray-700">
               Data: {formatDateBR(quote.dataEmissao)}
             </p>
           </div>
         </div>
-        <p className="mt-3 text-center text-base font-bold uppercase tracking-widest">
+        <p className="mt-3 text-center text-[1em] font-bold uppercase tracking-widest">
           Orçamento
         </p>
       </div>
 
       {/* Dados do cliente */}
-      <div className="mt-4 grid grid-cols-2 gap-2 text-center text-sm">
+      <div className="mt-4 grid grid-cols-2 gap-2 text-center text-[0.875em]">
         <p>
           <span className="font-semibold">CLIENTE:</span>{" "}
           {quote.clienteNome || "—"}
@@ -102,7 +110,7 @@ export function QuotePrintLayoutClassico({
       </div>
 
       {/* Tabela de itens */}
-      <table className="mt-4 w-full border-collapse text-sm">
+      <table className="mt-4 w-full border-collapse text-[0.875em]">
         <thead>
           <tr className="border-y-2 border-black bg-sky-100">
             <th className="w-12 border border-gray-400 p-1.5 text-center">ITEM</th>
@@ -192,7 +200,7 @@ export function QuotePrintLayoutClassico({
       </table>
 
       {/* Condições */}
-      <div className="mt-4 space-y-1 text-sm">
+      <div className="mt-4 space-y-1 text-[0.875em]">
         {quote.condicoesPagamento && (
           <p>
             <span className="font-semibold">Condições de pagamento:</span>{" "}
@@ -214,20 +222,20 @@ export function QuotePrintLayoutClassico({
 
       {/* Validade */}
       {quote.validadeDias ? (
-        <p className="mt-4 text-center text-sm font-bold uppercase text-red-600">
+        <p className="mt-4 text-center text-[0.875em] font-bold uppercase text-red-600">
           Validade da proposta: este orçamento é válido por {quote.validadeDias} dias
           corridos a partir da data de emissão.
         </p>
       ) : null}
 
       {/* Assinatura */}
-      <div className="mt-16 flex flex-col items-center text-center text-sm">
+      <div className="mt-16 flex flex-col items-center text-center text-[0.875em]">
         <p>
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
         <div className="mt-12 w-64 border-t border-black text-center pt-1">
           <p>{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
-          <p className="text-xs text-gray-600">
+          <p className="text-[0.75em] text-gray-600">
             {company?.nomeFantasia || company?.razaoSocial}
           </p>
         </div>
