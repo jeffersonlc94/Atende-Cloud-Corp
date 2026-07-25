@@ -56,10 +56,18 @@ export default function ImprimirOrcamentoPage({
         import("jspdf"),
       ]);
 
+      const targetEl = printRef.current.firstElementChild as HTMLElement | null;
+      const captureWidth = targetEl?.scrollWidth || printRef.current.scrollWidth;
+      const captureHeight = targetEl?.scrollHeight || printRef.current.scrollHeight;
+
       const canvas = await html2canvas(printRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
+        width: captureWidth,
+        height: captureHeight,
+        windowWidth: captureWidth,
+        windowHeight: captureHeight,
       });
 
       const imgData = canvas.toDataURL("image/png");

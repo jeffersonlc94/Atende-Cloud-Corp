@@ -39,12 +39,12 @@ export function QuotePrintLayoutModerno({
 
   return (
     <div
-      className="mx-auto grid w-full max-w-[210mm] grid-cols-[1fr_2.4fr] bg-white text-slate-800 print:shadow-none"
+      className="mx-auto flex w-full max-w-[210mm] items-stretch bg-white text-slate-800 print:shadow-none"
       style={{ fontFamily: fontFamily || undefined, fontSize: `${16 * fontScale}px` }}
       id={id}
     >
       {/* Sidebar */}
-      <aside className="flex flex-col gap-6 bg-indigo-700 p-6 text-white">
+      <aside className="flex w-64 shrink-0 flex-col gap-6 bg-indigo-700 p-6 text-white">
         <div>
           {company?.logoUrl && !logoError ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -104,7 +104,7 @@ export function QuotePrintLayoutModerno({
       </aside>
 
       {/* Conteúdo principal */}
-      <div className="p-8">
+      <div className="min-w-0 flex-1 p-8">
         <div className="flex items-start justify-between border-b border-slate-200 pb-4">
           <div>
             <p className="text-[0.7em] font-semibold uppercase tracking-[0.2em] text-indigo-600">
@@ -118,14 +118,14 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Dados do cliente */}
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div>
+        <div className="mt-4 flex gap-4">
+          <div className="flex-1">
             <p className="text-[0.6em] font-semibold uppercase tracking-wide text-slate-400">
               Cliente
             </p>
             <p className="text-[0.9em] font-semibold text-slate-800">{quote.clienteNome || "—"}</p>
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-[0.6em] font-semibold uppercase tracking-wide text-slate-400">
               Referência
             </p>
