@@ -141,9 +141,16 @@ export async function POST(req: NextRequest) {
         total,
         visibilidade: data.visibilidade,
         createdByUserId: session.user.id,
+        updatedByUserId: session.user.id,
         itens: { createMany: { data: itensParaCriar } },
       },
-      include: { itens: true, company: true, client: true },
+      include: {
+        itens: true,
+        company: true,
+        client: true,
+        createdByUser: { select: { id: true, name: true } },
+        updatedByUser: { select: { id: true, name: true } },
+      },
     });
   });
 
