@@ -39,7 +39,7 @@ export function QuotePrintLayoutModerno({
 
   return (
     <div
-      className="mx-auto flex w-full max-w-[210mm] items-stretch bg-white text-slate-800 print:shadow-none"
+      className="mx-auto flex w-full max-w-[210mm] min-h-[297mm] items-stretch bg-white text-slate-800 print:shadow-none"
       style={{ fontFamily: fontFamily || undefined, fontSize: `${16 * fontScale}px` }}
       id={id}
     >
