@@ -169,4 +169,11 @@ html {
     margin: 0 !important;
     padding: 12mm !important;
   }
+
+  #quote-print-area,
+  #quote-print-area * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
 }
