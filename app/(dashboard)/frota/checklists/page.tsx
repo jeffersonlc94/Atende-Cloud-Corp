@@ -98,6 +98,7 @@ export default function ChecklistsPage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [viewing, setViewing] = useState<ChecklistRecord | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -575,13 +576,34 @@ export default function ChecklistsPage() {
                     <p className="mb-1 font-medium">Fotos:</p>
                     <div className="flex flex-wrap gap-2">
                       {viewing.fotos.map((url) => (
-                        <FotoThumb key={url} url={url} alt="Foto do checklist" className="h-20 w-20" />
+                        <button
+                          key={url}
+                          type="button"
+                          onClick={() => setLightboxUrl(url)}
+                          className="cursor-zoom-in transition-opacity hover:opacity-80"
+                          title="Ampliar foto"
+                        >
+                          <FotoThumb url={url} alt="Foto do checklist" className="h-20 w-20" />
+                        </button>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!lightboxUrl} onOpenChange={(o) => !o && setLightboxUrl(null)}>
+        <DialogContent className="max-w-3xl p-2">
+          {lightboxUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={lightboxUrl}
+              alt="Foto do checklist ampliada"
+              className="max-h-[80vh] w-full rounded-md object-contain"
+            />
           )}
         </DialogContent>
       </Dialog>
