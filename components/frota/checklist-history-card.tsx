@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, Printer, Trash2 } from "lucide-react";
+import { Car, Eye, Printer, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { ChecklistRecord } from "@/hooks/use-fleet";
@@ -37,6 +37,10 @@ export function ChecklistHistoryCard({
         </div>
 
         <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
+            <Car className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            {checklist.vehicle.placa} — {checklist.vehicle.marca} {checklist.vehicle.modelo}
+          </p>
           <p className="flex flex-wrap items-center gap-2 font-medium leading-tight">
             {checklist.km ? `${checklist.km.toLocaleString("pt-BR")} km` : "KM não informado"} — Checklist {checklist.tipo}
             <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
