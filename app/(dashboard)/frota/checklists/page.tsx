@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useChecklists, useCreateChecklist, useDeleteChecklist, type ChecklistRecord } from "@/hooks/use-fleet";
 import {
@@ -11,7 +12,7 @@ import {
   checklistItemTipoLabels,
 } from "@/lib/validations";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
@@ -34,7 +35,7 @@ import { VehicleSelect, formatVehicleLabel } from "@/components/frota/vehicle-se
 import { ChecklistItemStatusCard, checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels, statusBorderClasses } from "@/components/frota/checklist-item-status";
 import { ChecklistHistoryCard } from "@/components/frota/checklist-history-card";
 import { formatDateBR } from "@/lib/format";
-import { List, CalendarDays, Clock, Camera, Save, X, ImageOff, ShieldAlert, Filter } from "lucide-react";
+import { List, CalendarDays, Clock, Camera, Save, X, ImageOff, ShieldAlert, Filter, FileText } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -408,6 +409,16 @@ export default function ChecklistsPage() {
               Limpar filtros
             </Button>
           )}
+          <Link
+            href={`/frota/checklists/relatorio?${new URLSearchParams({
+              ...(filterVehicleId ? { vehicleId: filterVehicleId } : {}),
+              ...(filterStatus ? { status: filterStatus } : {}),
+            }).toString()}`}
+            className={buttonVariants({ variant: "outline", size: "sm", className: "ml-auto" })}
+          >
+            <FileText className="h-4 w-4" />
+            Gerar relatório (A4)
+          </Link>
         </div>
 
         {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
