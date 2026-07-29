@@ -1,8 +1,9 @@
 "use client";
 
-import { Eye, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Eye, Printer, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { ChecklistRecord } from "@/hooks/use-fleet";
 import { checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels, statusBorderClasses } from "@/components/frota/checklist-item-status";
 import { checklistItemTipoLabels } from "@/lib/validations";
@@ -68,6 +69,13 @@ export function ChecklistHistoryCard({
           <Button variant="ghost" size="icon" title="Visualizar" onClick={onView}>
             <Eye className="h-4 w-4" />
           </Button>
+          <Link
+            href={`/frota/checklists/${checklist.id}/imprimir`}
+            className={buttonVariants({ variant: "ghost", size: "icon" })}
+            title="Imprimir"
+          >
+            <Printer className="h-4 w-4" />
+          </Link>
           <Button variant="ghost" size="icon" title="Excluir" onClick={onDelete}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>

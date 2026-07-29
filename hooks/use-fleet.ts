@@ -197,12 +197,41 @@ export type ChecklistRecord = {
   itens: ChecklistItemRecord[];
 };
 
+export type ChecklistDetailRecord = ChecklistRecord & {
+  vehicle: ChecklistRecord["vehicle"] & {
+    cor: string | null;
+    company: {
+      razaoSocial: string;
+      nomeFantasia: string | null;
+      cnpj: string | null;
+      inscricaoEstadual: string | null;
+      endereco: string | null;
+      cidade: string | null;
+      estado: string | null;
+      cep: string | null;
+      telefone1: string | null;
+      telefone2: string | null;
+      email: string | null;
+      site: string | null;
+      logoUrl: string | null;
+    };
+  };
+};
+
 export function useChecklists(vehicleId?: string) {
   const params = new URLSearchParams();
   if (vehicleId) params.set("vehicleId", vehicleId);
   return useQuery({
     queryKey: ["checklists", vehicleId],
     queryFn: () => fetchJson<ChecklistRecord[]>(`/api/frota/checklists?${params.toString()}`),
+  });
+}
+
+export function useChecklist(id: string) {
+  return useQuery({
+    queryKey: ["checklists", "detail", id],
+    queryFn: () => fetchJson<ChecklistDetailRecord>(`/api/frota/checklists/${id}`),
+    enabled: !!id,
   });
 }
 
