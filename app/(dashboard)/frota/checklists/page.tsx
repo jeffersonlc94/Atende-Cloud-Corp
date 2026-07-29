@@ -34,7 +34,7 @@ import { VehicleSelect, formatVehicleLabel } from "@/components/frota/vehicle-se
 import { ChecklistItemStatusCard, checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels, statusBorderClasses } from "@/components/frota/checklist-item-status";
 import { ChecklistHistoryCard } from "@/components/frota/checklist-history-card";
 import { formatDateBR } from "@/lib/format";
-import { List, CalendarDays, Clock, Camera, Save, X, ImageOff, ShieldAlert } from "lucide-react";
+import { List, CalendarDays, Clock, Camera, Save, X, ImageOff, ShieldAlert, Filter } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
@@ -56,7 +56,12 @@ function FotoThumb({ url, alt, className }: { url: string; alt: string; classNam
 
 export default function ChecklistsPage() {
   const searchParams = useSearchParams();
-  const { data: checklists = [], isLoading } = useChecklists();
+  const [filterVehicleId, setFilterVehicleId] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const { data: checklistsData = [], isLoading } = useChecklists(filterVehicleId || undefined);
+  const checklists = filterStatus
+    ? checklistsData.filter((c) => c.statusGeral === filterStatus)
+    : checklistsData;
   const createChecklist = useCreateChecklist();
   const deleteChecklist = useDeleteChecklist();
 
@@ -86,6 +91,10 @@ export default function ChecklistsPage() {
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterVehicleId, filterStatus]);
 
   function resetForm() {
     setVehicleId("");
@@ -352,6 +361,54 @@ export default function ChecklistsPage() {
 
       <div ref={historyRef} className="space-y-3">
         <h2 className="text-lg font-semibold tracking-tight">Histórico de checklists</h2>
+
+        <div className="flex flex-wrap items-end gap-3 rounded-xl border bg-card p-3">
+          <div className="flex items-center gap-1.5 self-center text-sm text-muted-foreground">
+            <Filter className="h-4 w-4" /> Filtros
+          </div>
+          <div className="w-64 space-y-1">
+            <Label className="text-xs">Veículo</Label>
+            <VehicleSelect
+              value={filterVehicleId}
+              onChange={setFilterVehicleId}
+              allowEmpty
+              emptyLabel="Todos os veículos"
+              placeholder="Todos os veículos"
+            />
+          </div>
+          <div className="w-52 space-y-1">
+            <Label className="text-xs">Status geral</Label>
+            <Select
+              value={filterStatus || "__todos__"}
+              onValueChange={(v) => setFilterStatus(!v || v === "__todos__" ? "" : v)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__todos__">Todos os status</SelectItem>
+                {checklistItemStatusOptions.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {statusLabels[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(filterVehicleId || filterStatus) && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterVehicleId("");
+                setFilterStatus("");
+              }}
+            >
+              Limpar filtros
+            </Button>
+          )}
+        </div>
 
         {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
         {!isLoading && checklists.length === 0 && (

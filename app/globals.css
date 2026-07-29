@@ -163,7 +163,8 @@ html {
     display: none !important;
   }
 
-  #quote-print-area {
+  #quote-print-area,
+  #checklist-print-area {
     box-shadow: none !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -171,7 +172,9 @@ html {
   }
 
   #quote-print-area,
-  #quote-print-area * {
+  #quote-print-area *,
+  #checklist-print-area,
+  #checklist-print-area * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;

@@ -35,8 +35,12 @@ export async function computeFleetAlerts(): Promise<FleetAlert[]> {
     .map((d) => parseInt(d.trim(), 10))
     .filter((d) => !Number.isNaN(d));
   const hojeEDiaDeChecklist = checklistDays.length > 0 && checklistDays.includes(now.getDay());
-  const inicioDoDia = new Date(now);
-  inicioDoDia.setHours(0, 0, 0, 0);
+  // O campo `data` do checklist é salvo a partir de um input "YYYY-MM-DD",
+  // que o JS interpreta como meia-noite UTC. Comparar contra a meia-noite
+  // local do servidor (setHours) descasa o fuso e faz o alerta persistir
+  // mesmo após o checklist do dia ser registrado — por isso usamos o ano/
+  // mês/dia locais construídos como meia-noite UTC, igual ao checklist.
+  const inicioDoDia = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 
   const vehicles = await prisma.vehicle.findMany({
     where: { situacao: { not: "Inativo" } },
