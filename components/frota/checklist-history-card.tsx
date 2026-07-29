@@ -8,6 +8,7 @@ import type { ChecklistRecord } from "@/hooks/use-fleet";
 import { checklistItemIcons, checklistItemIconColors, statusDotClasses, statusLabels, statusBorderClasses } from "@/components/frota/checklist-item-status";
 import { checklistItemTipoLabels } from "@/lib/validations";
 import { cn } from "@/lib/utils";
+import { vehicleColorClasses } from "@/lib/vehicle-color";
 
 const mesesAbrev = [
   "JAN", "FEV", "MAR", "ABR", "MAI", "JUN",
@@ -39,10 +40,15 @@ export function ChecklistHistoryCard({
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
-            <Car className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-sm font-semibold leading-tight",
+              vehicleColorClasses(checklist.vehicleId)
+            )}
+          >
+            <Car className="h-3.5 w-3.5 shrink-0" />
             {checklist.vehicle.placa} — {checklist.vehicle.marca} {checklist.vehicle.modelo}
-          </p>
+          </span>
           <p className="flex flex-wrap items-center gap-2 font-medium leading-tight">
             {checklist.km ? `${checklist.km.toLocaleString("pt-BR")} km` : "KM não informado"} — Checklist {checklist.tipo}
             <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
