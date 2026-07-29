@@ -24,8 +24,88 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ShieldAlert } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Eye, ShieldAlert } from "lucide-react";
 import { entidadeOptions, labelForEntidade, labelForAcao } from "@/lib/audit-labels";
+import type { AuditLogRecord } from "@/hooks/use-audit-logs";
+
+function isDeParaShape(v: unknown): v is { de: unknown; para: unknown } {
+  return !!v && typeof v === "object" && "de" in v && "para" in v;
+}
+
+/** Renderiza o JSON de `detalhes` de forma legível, com destaque para diffs (de/para). */
+function AuditDetalhesView({ detalhes }: { detalhes: unknown }) {
+  if (!detalhes || typeof detalhes !== "object") {
+    return <p className="text-sm text-muted-foreground">Sem detalhes registrados.</p>;
+  }
+
+  const obj = detalhes as Record<string, unknown>;
+  const alteracoes = obj.alteracoes;
+
+  return (
+    <div className="space-y-3 text-sm">
+      {Object.entries(obj)
+        .filter(([key]) => key !== "alteracoes")
+        .map(([key, value]) => (
+          <p key={key}>
+            <span className="font-medium">{key}:</span> {String(value)}
+          </p>
+        ))}
+
+      {!!alteracoes && typeof alteracoes === "object" && (
+        <div className="space-y-2 rounded-md border p-3">
+          <p className="font-medium">Alterações</p>
+          {Object.entries(alteracoes as Record<string, unknown>).map(([campo, valor]) => {
+            if (isDeParaShape(valor)) {
+              return (
+                <p key={campo} className="text-xs">
+                  <span className="font-medium">{campo}:</span>{" "}
+                  <span className="text-muted-foreground line-through">{String(valor.de)}</span>{" "}
+                  → <span className="font-medium">{String(valor.para)}</span>
+                </p>
+              );
+            }
+            if (Array.isArray(valor)) {
+              return (
+                <div key={campo} className="text-xs">
+                  <span className="font-medium">{campo}:</span>
+                  <ul className="mt-1 list-inside list-disc space-y-0.5">
+                    {valor.map((v, idx) => (
+                      <li key={idx}>
+                        {typeof v === "object" && v && "item" in v ? (
+                          <>
+                            {String((v as { item: unknown }).item)}:{" "}
+                            <span className="text-muted-foreground line-through">
+                              {String((v as { de: unknown }).de)}
+                            </span>{" "}
+                            → {String((v as { para: unknown }).para)}
+                          </>
+                        ) : (
+                          JSON.stringify(v)
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            }
+            return (
+              <p key={campo} className="text-xs">
+                <span className="font-medium">{campo}:</span> {String(valor)}
+              </p>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AuditoriaPage() {
   const { data: session } = useSession();
@@ -33,6 +113,7 @@ export default function AuditoriaPage() {
   const [filters, setFilters] = useState<AuditLogFilters>({ page: 1 });
   const { data: users = [] } = useUsers();
   const { data, isLoading } = useAuditLogs(filters);
+  const [viewingLog, setViewingLog] = useState<AuditLogRecord | null>(null);
 
   function updateFilter(key: keyof AuditLogFilters, value: string | undefined) {
     setFilters((f) => ({ ...f, [key]: value, page: 1 }));
@@ -117,19 +198,20 @@ export default function AuditoriaPage() {
                   <TableHead>Entidade</TableHead>
                   <TableHead>ID</TableHead>
                   <TableHead>IP</TableHead>
+                  <TableHead>Detalhes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 )}
                 {!isLoading && data?.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                       Nenhum registro encontrado
                     </TableCell>
                   </TableRow>
@@ -156,6 +238,15 @@ export default function AuditoriaPage() {
                     <TableCell>{labelForEntidade(log.entidade)}</TableCell>
                     <TableCell className="font-mono text-xs">{log.entidadeId ?? "—"}</TableCell>
                     <TableCell>{log.ip ?? "—"}</TableCell>
+                    <TableCell>
+                      {log.detalhes ? (
+                        <Button variant="ghost" size="icon" title="Ver detalhes" onClick={() => setViewingLog(log)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -189,6 +280,25 @@ export default function AuditoriaPage() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!viewingLog} onOpenChange={(o) => !o && setViewingLog(null)}>
+        <DialogContent className="max-w-lg">
+          {viewingLog && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {labelForAcao(viewingLog.acao)} — {labelForEntidade(viewingLog.entidade)}
+                </DialogTitle>
+                <DialogDescription>
+                  {viewingLog.user?.name ?? "—"} em{" "}
+                  {new Date(viewingLog.createdAt).toLocaleString("pt-BR")}
+                </DialogDescription>
+              </DialogHeader>
+              <AuditDetalhesView detalhes={viewingLog.detalhes} />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

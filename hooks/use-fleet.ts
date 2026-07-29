@@ -248,6 +248,22 @@ export function useCreateChecklist() {
   });
 }
 
+export function useUpdateChecklist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ChecklistFormValues }) =>
+      fetchJson<ChecklistRecord>(`/api/frota/checklists/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["checklists"] });
+      qc.invalidateQueries({ queryKey: ["fleet-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["fleet-alerts"] });
+    },
+  });
+}
+
 export function useDeleteChecklist() {
   const qc = useQueryClient();
   return useMutation({

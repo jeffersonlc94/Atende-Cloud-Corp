@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Car, Eye, Printer, Trash2 } from "lucide-react";
+import { Car, Eye, Pencil, Printer, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { ChecklistRecord } from "@/hooks/use-fleet";
@@ -18,10 +18,12 @@ const mesesAbrev = [
 export function ChecklistHistoryCard({
   checklist,
   onView,
+  onEdit,
   onDelete,
 }: {
   checklist: ChecklistRecord;
   onView: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const date = new Date(checklist.data);
@@ -72,6 +74,9 @@ export function ChecklistHistoryCard({
         <div className="flex shrink-0 items-center gap-1">
           <Button variant="ghost" size="icon" title="Visualizar" onClick={onView}>
             <Eye className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" title="Editar" onClick={onEdit}>
+            <Pencil className="h-4 w-4" />
           </Button>
           <Link
             href={`/frota/checklists/${checklist.id}/imprimir`}
