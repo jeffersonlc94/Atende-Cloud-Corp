@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useChecklists, useCreateChecklist, useDeleteChecklist, type ChecklistRecord } from "@/hooks/use-fleet";
+import {
+  useChecklists,
+  useCreateChecklist,
+  useUpdateChecklist,
+  useDeleteChecklist,
+  type ChecklistRecord,
+} from "@/hooks/use-fleet";
 import {
   tipoChecklistOptions,
   checklistItemTipoOptions,
@@ -64,8 +70,11 @@ export default function ChecklistsPage() {
     ? checklistsData.filter((c) => c.statusGeral === filterStatus)
     : checklistsData;
   const createChecklist = useCreateChecklist();
+  const updateChecklist = useUpdateChecklist();
   const deleteChecklist = useDeleteChecklist();
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const [vehicleId, setVehicleId] = useState("");
 
   useEffect(() => {
@@ -98,6 +107,7 @@ export default function ChecklistsPage() {
   }, [filterVehicleId, filterStatus]);
 
   function resetForm() {
+    setEditingId(null);
     setVehicleId("");
     setKm("");
     setTipo("Diario");
@@ -107,6 +117,23 @@ export default function ChecklistsPage() {
     setObservacoes("");
     setFotos([]);
     setItemStatus(Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"])));
+  }
+
+  function handleEdit(checklist: ChecklistRecord) {
+    setEditingId(checklist.id);
+    setVehicleId(checklist.vehicleId);
+    setKm(checklist.km ? String(checklist.km) : "");
+    setTipo(checklist.tipo as (typeof tipoChecklistOptions)[number]);
+    setData(checklist.data.slice(0, 10));
+    setHora(checklist.hora ?? "");
+    setStatusGeral(checklist.statusGeral as (typeof checklistItemStatusOptions)[number]);
+    setObservacoes(checklist.observacoes ?? "");
+    setFotos(checklist.fotos ?? []);
+    setItemStatus({
+      ...Object.fromEntries(checklistItemTipoOptions.map((i) => [i, "OK"])),
+      ...Object.fromEntries(checklist.itens.map((i) => [i.item, i.status])),
+    });
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   function validate() {
@@ -124,25 +151,31 @@ export default function ChecklistsPage() {
 
   async function handleSubmit() {
     const kmNumber = parseInt(km, 10);
+    const payload = {
+      vehicleId,
+      km: kmNumber,
+      tipo,
+      data,
+      hora,
+      statusGeral,
+      observacoes,
+      fotos,
+      itens: checklistItemTipoOptions.map((item) => ({
+        item,
+        status: itemStatus[item] as (typeof checklistItemStatusOptions)[number],
+      })),
+    };
     try {
-      await createChecklist.mutateAsync({
-        vehicleId,
-        km: kmNumber,
-        tipo,
-        data,
-        hora,
-        statusGeral,
-        observacoes,
-        fotos,
-        itens: checklistItemTipoOptions.map((item) => ({
-          item,
-          status: itemStatus[item] as (typeof checklistItemStatusOptions)[number],
-        })),
-      });
-      toast.success("Checklist registrado");
+      if (editingId) {
+        await updateChecklist.mutateAsync({ id: editingId, data: payload });
+        toast.success("Checklist atualizado");
+      } else {
+        await createChecklist.mutateAsync(payload);
+        toast.success("Checklist registrado");
+      }
       resetForm();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao registrar checklist");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar checklist");
     }
   }
 
@@ -188,10 +221,14 @@ export default function ChecklistsPage() {
         </Button>
       </div>
 
-      <Card>
+      <Card ref={formRef}>
         <CardHeader>
-          <CardTitle>Novo checklist</CardTitle>
-          <CardDescription>Informe os dados abaixo e avalie os itens de inspeção.</CardDescription>
+          <CardTitle>{editingId ? "Editar checklist" : "Novo checklist"}</CardTitle>
+          <CardDescription>
+            {editingId
+              ? "Altere os dados abaixo. As alterações ficam registradas no log de auditoria."
+              : "Informe os dados abaixo e avalie os itens de inspeção."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -346,15 +383,15 @@ export default function ChecklistsPage() {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={resetForm}>
-              Limpar
+              {editingId ? "Cancelar edição" : "Limpar"}
             </Button>
             <Button
               className="bg-emerald-600 text-white hover:bg-emerald-700"
               onClick={() => validate() && setConfirmOpen(true)}
-              disabled={createChecklist.isPending}
+              disabled={createChecklist.isPending || updateChecklist.isPending}
             >
               <Save className="h-4 w-4" />
-              Salvar checklist
+              {editingId ? "Salvar alterações" : "Salvar checklist"}
             </Button>
           </div>
         </CardContent>
@@ -384,7 +421,9 @@ export default function ChecklistsPage() {
               onValueChange={(v) => setFilterStatus(!v || v === "__todos__" ? "" : v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue>
+                  {(value: string) => (value === "__todos__" ? "Todos os status" : statusLabels[value] ?? value)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__todos__">Todos os status</SelectItem>
@@ -432,6 +471,7 @@ export default function ChecklistsPage() {
               key={c.id}
               checklist={c}
               onView={() => setViewing(c)}
+              onEdit={() => handleEdit(c)}
               onDelete={() => setPendingDelete(c.id)}
             />
           ))}
@@ -558,7 +598,8 @@ export default function ChecklistsPage() {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Confirma o registro deste checklist?"
+        title={editingId ? "Confirma as alterações deste checklist?" : "Confirma o registro deste checklist?"}
+        description={editingId ? "As alterações ficam registradas no log de auditoria." : undefined}
         confirmLabel="Salvar"
         onConfirm={handleSubmit}
       />
