@@ -358,7 +358,12 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             </div>
             <div className="space-y-2">
               <FieldLabel icon={CalendarDays}>Data de Emissão *</FieldLabel>
-              <Input type="date" {...register("dataEmissao")} />
+              <Input type="date" disabled={isEditing} {...register("dataEmissao")} />
+              {isEditing && (
+                <p className="text-xs text-muted-foreground">
+                  Atualizada automaticamente para a data em que o orçamento for salvo.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <FieldLabel icon={Clock}>Validade da Proposta (dias)</FieldLabel>

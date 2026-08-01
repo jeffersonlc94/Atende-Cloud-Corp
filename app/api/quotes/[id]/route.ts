@@ -97,7 +97,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     valorTotal: item.valorTotal,
   }));
 
-  const dataEmissao = new Date(data.dataEmissao);
+  // Ao editar, a data de emissão é sempre atualizada para o dia da edição.
+  const dataEmissao = new Date();
   let dataValidade: Date | null = null;
   if (data.validadeDias) {
     dataValidade = new Date(dataEmissao);
