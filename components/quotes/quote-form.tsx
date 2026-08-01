@@ -50,6 +50,7 @@ import {
   Truck,
   Globe2,
   Lock,
+  StickyNote,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -117,6 +118,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           condicoesPagamento: initialData.condicoesPagamento ?? "",
           prazoEntrega: initialData.prazoEntrega ?? "",
           observacoes: initialData.observacoes ?? "",
+          observacoesInternas: initialData.observacoesInternas ?? "",
           visibilidade: initialData.visibilidade ?? "Global",
           itens: initialData.itens.map((i) => ({
             ordem: i.ordem,
@@ -144,6 +146,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           condicoesPagamento: "",
           prazoEntrega: "",
           observacoes: "",
+          observacoesInternas: "",
           visibilidade: "Global",
           itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
           descontoGeralTipo: undefined,
@@ -470,6 +473,21 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               rows={4}
               placeholder="Observações gerais sobre o orçamento..."
               {...register("observacoes")}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="py-0 gap-0 rounded-2xl">
+          <SectionHeader
+            icon={StickyNote}
+            title="Observações Internas"
+            description="Uso interno da equipe — não aparece no orçamento impresso/PDF nem é visível ao cliente"
+          />
+          <CardContent className="pt-4 pb-5">
+            <Textarea
+              rows={4}
+              placeholder="Anotações internas sobre este orçamento..."
+              {...register("observacoesInternas")}
             />
           </CardContent>
         </Card>

@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Printer, FileDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Printer, FileDown, Loader2, Pencil } from "lucide-react";
 
 const fontFamilyOptions = [
   { value: "default", label: "Padrão do layout", css: "" },
@@ -118,6 +118,9 @@ export default function ImprimirOrcamentoPage({
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Link>
         <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/orcamentos/${id}`} className={buttonVariants({ variant: "outline" })}>
+            <Pencil className="mr-2 h-4 w-4" /> Editar
+          </Link>
           <Select value={layout} onValueChange={(v) => setLayout(v as QuotePrintLayoutId)}>
             <SelectTrigger className="w-40">
               <SelectValue />

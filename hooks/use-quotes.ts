@@ -28,6 +28,7 @@ export type QuoteRecord = {
   condicoesPagamento: string | null;
   prazoEntrega: string | null;
   observacoes: string | null;
+  observacoesInternas: string | null;
   subtotal: string | null;
   descontoGeralTipo: "Valor" | "Percentual" | null;
   descontoGeralValor: string | null;

@@ -41,6 +41,7 @@ export const quoteSchema = z.object({
   condicoesPagamento: z.string().optional().default(""),
   prazoEntrega: z.string().optional().default(""),
   observacoes: z.string().optional().default(""),
+  observacoesInternas: z.string().optional().default(""),
   visibilidade: z.enum(visibilidadeOptions).default("Global"),
   itens: z.array(quoteItemSchema).min(1, "Adicione ao menos um item"),
   descontoGeralTipo: optionalDescontoTipo,
