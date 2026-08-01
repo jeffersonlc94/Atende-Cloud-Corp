@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { quoteSchema, type QuoteFormValues } from "@/lib/validations";
 import { useCompanies } from "@/hooks/use-companies";
+import { useUpdateClient } from "@/hooks/use-clients";
 import { useCreateQuote, useUpdateQuote, type QuoteRecord } from "@/hooks/use-quotes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { ClientCombobox } from "@/components/clients/client-combobox";
+import { EditClientDialog } from "@/components/clients/edit-client-dialog";
 import { QuoteItemsTable } from "./quote-items-table";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { formatCurrencyBRL } from "@/lib/format";
@@ -51,6 +53,7 @@ import {
   Globe2,
   Lock,
   StickyNote,
+  Pencil,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -97,6 +100,10 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const [previewing, setPreviewing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingData, setPendingData] = useState<QuoteFormValues | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(
+    initialData?.client.id ?? null
+  );
+  const [editClientOpen, setEditClientOpen] = useState(false);
 
   const {
     register,
@@ -319,10 +326,28 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             </div>
             <div className="space-y-2">
               <FieldLabel icon={User}>Cliente *</FieldLabel>
-              <ClientCombobox
-                value={values.clientNome}
-                onChange={(nome) => setValue("clientNome", nome, { shouldValidate: true })}
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <ClientCombobox
+                    value={values.clientNome}
+                    onChange={(nome, clientId) => {
+                      setValue("clientNome", nome, { shouldValidate: true });
+                      setSelectedClientId(clientId ?? null);
+                    }}
+                  />
+                </div>
+                {selectedClientId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    title="Corrigir nome do cliente"
+                    onClick={() => setEditClientOpen(true)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
               {errors.clientNome && (
                 <p className="text-sm text-destructive">{errors.clientNome.message}</p>
               )}
@@ -510,6 +535,16 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         description={isEditing ? "O orçamento será atualizado com os dados informados." : "Um novo orçamento será criado com os dados informados."}
         onConfirm={() => pendingData && confirmAndPersist(pendingData)}
       />
+
+      {selectedClientId && (
+        <EditClientDialog
+          open={editClientOpen}
+          onOpenChange={setEditClientOpen}
+          clientId={selectedClientId}
+          clientNome={values.clientNome}
+          onSaved={(nome) => setValue("clientNome", nome, { shouldValidate: true })}
+        />
+      )}
     </form>
   );
 }

@@ -20,7 +20,7 @@ export function ClientCombobox({
   onChange,
 }: {
   value: string;
-  onChange: (nome: string) => void;
+  onChange: (nome: string, clientId?: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -55,7 +55,7 @@ export function ClientCombobox({
                   type="button"
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
                   onClick={() => {
-                    onChange(search.trim());
+                    onChange(search.trim(), undefined);
                     setOpen(false);
                   }}
                 >
@@ -71,7 +71,7 @@ export function ClientCombobox({
                   key={c.id}
                   value={c.nome}
                   onSelect={() => {
-                    onChange(c.nome);
+                    onChange(c.nome, c.id);
                     setOpen(false);
                   }}
                 >
