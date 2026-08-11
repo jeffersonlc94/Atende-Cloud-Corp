@@ -31,6 +31,11 @@ export const quoteItemSchema = z.object({
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
     z.number().nonnegative("Margem não pode ser negativa").optional()
   ),
+  freteHabilitado: z.boolean().optional().default(false),
+  freteUnitario: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().nonnegative("Frete não pode ser negativo").optional()
+  ),
   descontoTipo: optionalDescontoTipo,
   descontoValor: optionalDescontoValor,
 }).superRefine((item, ctx) => {
@@ -39,6 +44,9 @@ export const quoteItemSchema = z.object({
   }
   if (item.calcularPorMargem && item.margemLucro === undefined) {
     ctx.addIssue({ code: "custom", path: ["margemLucro"], message: "Informe a margem" });
+  }
+  if (item.freteHabilitado && item.freteUnitario === undefined) {
+    ctx.addIssue({ code: "custom", path: ["freteUnitario"], message: "Informe o valor do frete" });
   }
 });
 

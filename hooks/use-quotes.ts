@@ -14,6 +14,8 @@ export type QuoteItemRecord = {
   calcularPorMargem: boolean;
   custoUnitario: string | null;
   margemLucro: string | null;
+  freteHabilitado: boolean;
+  freteUnitario: string | null;
   descontoTipo: "Valor" | "Percentual" | null;
   descontoValor: string | null;
   valorTotal: string;

@@ -5,8 +5,12 @@
 export type DescontoTipo = "Valor" | "Percentual";
 export type TipoItem = "Produto" | "Servico";
 
-export function computeUnitPriceFromMargin(custoUnitario: number, margemPercentual: number): number {
-  return Math.round(custoUnitario * (1 + margemPercentual / 100) * 100) / 100;
+export function computeUnitPriceFromMargin(
+  custoUnitario: number,
+  margemPercentual: number,
+  freteUnitario = 0
+): number {
+  return Math.round((custoUnitario * (1 + margemPercentual / 100) + freteUnitario) * 100) / 100;
 }
 
 export function aplicarDesconto(

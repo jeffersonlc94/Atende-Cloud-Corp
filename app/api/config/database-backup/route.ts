@@ -29,11 +29,16 @@ export async function POST(req: NextRequest) {
   const outputPath = join(tmpdir(), `${crypto.randomUUID()}-${filename}`);
   const pgDump = process.env.PG_DUMP_PATH || "pg_dump";
 
+  // A URL usada pelo Prisma pode conter parâmetros próprios, como
+  // `schema=public`, que não são reconhecidos pelo libpq/pg_dump.
+  const dumpUrl = new URL(databaseUrl);
+  dumpUrl.searchParams.delete("schema");
+
   try {
     await execFileAsync(
       pgDump,
       [
-        `--dbname=${databaseUrl}`,
+        `--dbname=${dumpUrl.toString()}`,
         "--format=plain",
         "--clean",
         "--if-exists",

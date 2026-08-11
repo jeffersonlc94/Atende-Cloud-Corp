@@ -70,6 +70,8 @@ export async function POST(_req: NextRequest, { params }: Params) {
               calcularPorMargem: i.calcularPorMargem,
               custoUnitario: i.custoUnitario,
               margemLucro: i.margemLucro,
+              freteHabilitado: i.freteHabilitado,
+              freteUnitario: i.freteUnitario,
               descontoTipo: i.descontoTipo,
               descontoValor: i.descontoValor,
               valorTotal: i.valorTotal,

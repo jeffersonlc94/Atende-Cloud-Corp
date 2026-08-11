@@ -82,7 +82,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const itensNormalizados = data.itens.map((item) => ({
     ...item,
     valorUnitario: item.calcularPorMargem
-      ? computeUnitPriceFromMargin(item.custoUnitario ?? 0, item.margemLucro ?? 0)
+      ? computeUnitPriceFromMargin(item.custoUnitario ?? 0, item.margemLucro ?? 0, item.freteHabilitado ? item.freteUnitario ?? 0 : 0)
       : item.valorUnitario,
   }));
   const { itensComputados, subtotal, total } = computeQuoteTotals(
@@ -101,6 +101,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
     calcularPorMargem: item.calcularPorMargem,
     custoUnitario: item.calcularPorMargem ? item.custoUnitario ?? null : null,
     margemLucro: item.calcularPorMargem ? item.margemLucro ?? null : null,
+    freteHabilitado: item.calcularPorMargem && item.freteHabilitado,
+    freteUnitario: item.calcularPorMargem && item.freteHabilitado ? item.freteUnitario ?? null : null,
     descontoTipo: item.descontoTipo ?? null,
     descontoValor: item.descontoValor ?? null,
     valorTotal: item.valorTotal,

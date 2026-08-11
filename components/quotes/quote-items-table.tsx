@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Calculator, Camera, Loader2, Plus, Trash2, X } from "lucide-react";
 import { formatCurrencyBRL } from "@/lib/format";
-import { computeItemTotal } from "@/lib/quote-calc";
+import { computeItemTotal, computeUnitPriceFromMargin } from "@/lib/quote-calc";
 import type { QuoteFormValues } from "@/lib/validations";
 import { FotoThumb } from "@/components/shared/foto-thumb";
 
@@ -107,13 +107,15 @@ function ItemFotoCell({
 }
 
 function MarginEditorCell({
-  control, index, enabled, custoUnitario, margemLucro, valorCalculado, setValue,
+  control, index, enabled, custoUnitario, margemLucro, freteHabilitado, freteUnitario, valorCalculado, setValue,
 }: {
   control: Control<QuoteFormValues>;
   index: number;
   enabled: boolean;
   custoUnitario: number;
   margemLucro: number;
+  freteHabilitado: boolean;
+  freteUnitario: number;
   valorCalculado: number;
   setValue: UseFormSetValue<QuoteFormValues>;
 }) {
@@ -176,7 +178,7 @@ function MarginEditorCell({
                     onValueChange={(value) => {
                       field.onChange(value);
                       const custo = Number(value) || 0;
-                      setValue(`itens.${index}.valorUnitario`, Math.round(custo * (1 + margemLucro / 100) * 100) / 100, { shouldDirty: true });
+                      setValue(`itens.${index}.valorUnitario`, computeUnitPriceFromMargin(custo, margemLucro, freteHabilitado ? freteUnitario : 0), { shouldDirty: true });
                     }}
                     onBlur={field.onBlur}
                   />
@@ -199,7 +201,7 @@ function MarginEditorCell({
                       onChange={(e) => {
                         const value = e.target.value === "" ? undefined : Number(e.target.value);
                         field.onChange(value);
-                        setValue(`itens.${index}.valorUnitario`, Math.round(custoUnitario * (1 + (Number(value) || 0) / 100) * 100) / 100, { shouldDirty: true });
+                        setValue(`itens.${index}.valorUnitario`, computeUnitPriceFromMargin(custoUnitario, Number(value) || 0, freteHabilitado ? freteUnitario : 0), { shouldDirty: true });
                       }}
                     />
                     <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
@@ -207,6 +209,27 @@ function MarginEditorCell({
                 )}
               />
             </div>
+            <label className="flex cursor-pointer items-center gap-2 rounded-md border p-2 text-xs font-medium">
+              <Controller
+                control={control}
+                name={`itens.${index}.freteHabilitado`}
+                render={({ field }) => (
+                  <input
+                    type="checkbox"
+                    checked={field.value ?? false}
+                    onChange={(e) => {
+                      field.onChange(e.target.checked);
+                      setValue(
+                        `itens.${index}.valorUnitario`,
+                        computeUnitPriceFromMargin(custoUnitario, margemLucro, e.target.checked ? freteUnitario : 0),
+                        { shouldDirty: true }
+                      );
+                    }}
+                  />
+                )}
+              />
+              Somar frete ao preço
+            </label>
             <p className="text-xs font-semibold text-primary">Valor de venda: {formatCurrencyBRL(valorCalculado)}</p>
           </PopoverContent>
         </Popover>
@@ -232,6 +255,7 @@ export function QuoteItemsTable({
     control,
     name: "itens",
   });
+  const showFreteColumn = (watchItems ?? []).some((item) => item?.freteHabilitado);
 
   function addItem() {
     append({
@@ -244,6 +268,8 @@ export function QuoteItemsTable({
       calcularPorMargem: false,
       custoUnitario: undefined,
       margemLucro: undefined,
+      freteHabilitado: false,
+      freteUnitario: undefined,
       descontoTipo: undefined,
       descontoValor: undefined,
     });
@@ -261,6 +287,7 @@ export function QuoteItemsTable({
               <TableHead>Descrição</TableHead>
               <TableHead className="w-28">Qtd.</TableHead>
               <TableHead className="w-40">Custo / Margem</TableHead>
+              {showFreteColumn && <TableHead className="w-36">Frete</TableHead>}
               <TableHead className="w-36">Valor Unit.</TableHead>
               <TableHead className="w-44">Desconto</TableHead>
               <TableHead className="w-36">Total</TableHead>
@@ -280,7 +307,9 @@ export function QuoteItemsTable({
               const calcularPorMargem = item?.calcularPorMargem ?? false;
               const custoUnitario = Number(item?.custoUnitario) || 0;
               const margemLucro = Number(item?.margemLucro) || 0;
-              const valorCalculado = Math.round(custoUnitario * (1 + margemLucro / 100) * 100) / 100;
+              const freteHabilitado = item?.freteHabilitado ?? false;
+              const freteUnitario = Number(item?.freteUnitario) || 0;
+              const valorCalculado = computeUnitPriceFromMargin(custoUnitario, margemLucro, freteHabilitado ? freteUnitario : 0);
               return (
                 <TableRow key={field.id}>
                   <TableCell className="text-muted-foreground">{index + 1}</TableCell>
@@ -328,10 +357,38 @@ export function QuoteItemsTable({
                       enabled={calcularPorMargem}
                       custoUnitario={custoUnitario}
                       margemLucro={margemLucro}
+                      freteHabilitado={freteHabilitado}
+                      freteUnitario={freteUnitario}
                       valorCalculado={valorCalculado}
                       setValue={setValue}
                     />
                   </TableCell>
+                  {showFreteColumn && (
+                    <TableCell>
+                      {freteHabilitado ? (
+                        <Controller
+                          control={control}
+                          name={`itens.${index}.freteUnitario`}
+                          render={({ field }) => (
+                            <CurrencyInput
+                              value={field.value as number | undefined}
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                setValue(
+                                  `itens.${index}.valorUnitario`,
+                                  computeUnitPriceFromMargin(custoUnitario, margemLucro, Number(value) || 0),
+                                  { shouldDirty: true }
+                                );
+                              }}
+                              onBlur={field.onBlur}
+                            />
+                          )}
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Não utilizado</span>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Controller
                       control={control}

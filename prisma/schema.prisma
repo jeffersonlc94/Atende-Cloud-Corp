@@ -144,6 +144,8 @@ model QuoteItem {
   calcularPorMargem Boolean   @default(false)
   custoUnitario  Decimal?      @db.Decimal(14, 2)
   margemLucro    Decimal?      @db.Decimal(8, 2)
+  freteHabilitado Boolean      @default(false)
+  freteUnitario   Decimal?     @db.Decimal(14, 2)
   descontoTipo  DescontoTipo?
   descontoValor Decimal?      @db.Decimal(14, 2)
   valorTotal    Decimal       @db.Decimal(14, 2)
