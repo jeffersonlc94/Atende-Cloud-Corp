@@ -6,6 +6,7 @@ import { Controller, useFieldArray, type Control, type UseFormRegister, type Use
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -105,6 +106,117 @@ function ItemFotoCell({
   );
 }
 
+function MarginEditorCell({
+  control, index, enabled, custoUnitario, margemLucro, valorCalculado, setValue,
+}: {
+  control: Control<QuoteFormValues>;
+  index: number;
+  enabled: boolean;
+  custoUnitario: number;
+  margemLucro: number;
+  valorCalculado: number;
+  setValue: UseFormSetValue<QuoteFormValues>;
+}) {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const keepOpen = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpen(true);
+  };
+  const scheduleClose = () => {
+    closeTimer.current = setTimeout(() => setOpen(false), 180);
+  };
+
+  return (
+    <div className="min-w-36 space-y-1.5">
+      <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+        <Controller
+          control={control}
+          name={`itens.${index}.calcularPorMargem`}
+          render={({ field }) => (
+            <input
+              type="checkbox"
+              checked={field.value ?? false}
+              onChange={(e) => {
+                field.onChange(e.target.checked);
+                setOpen(e.target.checked);
+                if (e.target.checked) setValue(`itens.${index}.valorUnitario`, valorCalculado, { shouldDirty: true });
+              }}
+            />
+          )}
+        />
+        <Calculator className="h-3 w-3" /> Por margem
+      </label>
+      {enabled ? (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger
+            className="w-full rounded-md border bg-muted/40 px-2 py-1.5 text-left text-xs hover:border-primary hover:bg-muted"
+            onMouseEnter={keepOpen}
+            onMouseLeave={scheduleClose}
+            onFocus={keepOpen}
+          >
+            <span className="block font-medium">Custo: {formatCurrencyBRL(custoUnitario)}</span>
+            <span className="text-muted-foreground">Margem: {margemLucro.toLocaleString("pt-BR")}%</span>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side="bottom"
+            className="w-64 space-y-3 p-3"
+            onMouseEnter={keepOpen}
+            onMouseLeave={scheduleClose}
+          >
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Custo unitário</span>
+              <Controller
+                control={control}
+                name={`itens.${index}.custoUnitario`}
+                render={({ field }) => (
+                  <CurrencyInput
+                    value={field.value as number | undefined}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      const custo = Number(value) || 0;
+                      setValue(`itens.${index}.valorUnitario`, Math.round(custo * (1 + margemLucro / 100) * 100) / 100, { shouldDirty: true });
+                    }}
+                    onBlur={field.onBlur}
+                  />
+                )}
+              />
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Margem de lucro</span>
+              <Controller
+                control={control}
+                name={`itens.${index}.margemLucro`}
+                render={({ field }) => (
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="pr-7"
+                      value={(field.value as number | undefined) ?? ""}
+                      onChange={(e) => {
+                        const value = e.target.value === "" ? undefined : Number(e.target.value);
+                        field.onChange(value);
+                        setValue(`itens.${index}.valorUnitario`, Math.round(custoUnitario * (1 + (Number(value) || 0) / 100) * 100) / 100, { shouldDirty: true });
+                      }}
+                    />
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                  </div>
+                )}
+              />
+            </div>
+            <p className="text-xs font-semibold text-primary">Valor de venda: {formatCurrencyBRL(valorCalculado)}</p>
+          </PopoverContent>
+        </Popover>
+      ) : (
+        <span className="text-xs text-muted-foreground">Valor manual</span>
+      )}
+    </div>
+  );
+}
+
 export function QuoteItemsTable({
   control,
   register,
@@ -148,6 +260,7 @@ export function QuoteItemsTable({
               <TableHead className="w-32">Tipo</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead className="w-28">Qtd.</TableHead>
+              <TableHead className="w-40">Custo / Margem</TableHead>
               <TableHead className="w-36">Valor Unit.</TableHead>
               <TableHead className="w-44">Desconto</TableHead>
               <TableHead className="w-36">Total</TableHead>
@@ -209,82 +322,30 @@ export function QuoteItemsTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="min-w-36 space-y-2">
-                      <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
-                        <Controller
-                          control={control}
-                          name={`itens.${index}.calcularPorMargem`}
-                          render={({ field }) => (
-                            <input
-                              type="checkbox"
-                              checked={field.value ?? false}
-                              onChange={(e) => {
-                                field.onChange(e.target.checked);
-                                if (e.target.checked) {
-                                  setValue(`itens.${index}.valorUnitario`, valorCalculado, { shouldDirty: true });
-                                }
-                              }}
-                            />
-                          )}
-                        />
-                        <Calculator className="h-3 w-3" /> Por margem
-                      </label>
-                      {calcularPorMargem ? (
-                        <div className="space-y-1.5">
-                          <div className="space-y-1">
-                            <span className="text-xs font-medium text-muted-foreground">
-                              Custo unitário
-                            </span>
-                            <Controller
-                              control={control}
-                              name={`itens.${index}.custoUnitario`}
-                              render={({ field }) => (
-                                <CurrencyInput
-                                  value={field.value as number | undefined}
-                                  onValueChange={(value) => {
-                                    field.onChange(value);
-                                    const custo = Number(value) || 0;
-                                    setValue(`itens.${index}.valorUnitario`, Math.round(custo * (1 + margemLucro / 100) * 100) / 100, { shouldDirty: true });
-                                  }}
-                                  onBlur={field.onBlur}
-                                />
-                              )}
-                            />
-                          </div>
-                          <Controller
-                            control={control}
-                            name={`itens.${index}.margemLucro`}
-                            render={({ field }) => (
-                              <div className="relative">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  className="pr-7"
-                                  placeholder="Margem"
-                                  value={(field.value as number | undefined) ?? ""}
-                                  onChange={(e) => {
-                                    const value = e.target.value === "" ? undefined : Number(e.target.value);
-                                    field.onChange(value);
-                                    setValue(`itens.${index}.valorUnitario`, Math.round(custoUnitario * (1 + (Number(value) || 0) / 100) * 100) / 100, { shouldDirty: true });
-                                  }}
-                                />
-                                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-                              </div>
-                            )}
-                          />
-                          <p className="text-xs font-medium">Venda: {formatCurrencyBRL(valorCalculado)}</p>
-                        </div>
-                      ) : (
-                        <Controller
-                          control={control}
-                          name={`itens.${index}.valorUnitario`}
-                          render={({ field }) => (
-                            <CurrencyInput value={field.value as number | undefined} onValueChange={field.onChange} onBlur={field.onBlur} />
-                          )}
+                    <MarginEditorCell
+                      control={control}
+                      index={index}
+                      enabled={calcularPorMargem}
+                      custoUnitario={custoUnitario}
+                      margemLucro={margemLucro}
+                      valorCalculado={valorCalculado}
+                      setValue={setValue}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Controller
+                      control={control}
+                      name={`itens.${index}.valorUnitario`}
+                      render={({ field }) => (
+                        <CurrencyInput
+                          value={field.value as number | undefined}
+                          onValueChange={field.onChange}
+                          onBlur={field.onBlur}
+                          disabled={calcularPorMargem}
+                          className={calcularPorMargem ? "bg-muted font-medium" : undefined}
                         />
                       )}
-                    </div>
+                    />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5">
