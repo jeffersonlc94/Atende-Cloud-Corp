@@ -22,8 +22,24 @@ export const quoteItemSchema = z.object({
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? 0 : v),
     z.number().nonnegative("Valor unitário não pode ser negativo")
   ),
+  calcularPorMargem: z.boolean().optional().default(false),
+  custoUnitario: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().nonnegative("Custo unitário não pode ser negativo").optional()
+  ),
+  margemLucro: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().nonnegative("Margem não pode ser negativa").optional()
+  ),
   descontoTipo: optionalDescontoTipo,
   descontoValor: optionalDescontoValor,
+}).superRefine((item, ctx) => {
+  if (item.calcularPorMargem && item.custoUnitario === undefined) {
+    ctx.addIssue({ code: "custom", path: ["custoUnitario"], message: "Informe o custo unitário" });
+  }
+  if (item.calcularPorMargem && item.margemLucro === undefined) {
+    ctx.addIssue({ code: "custom", path: ["margemLucro"], message: "Informe a margem" });
+  }
 });
 
 export const visibilidadeOptions = ["Global", "Privado"] as const;

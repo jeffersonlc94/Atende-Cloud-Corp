@@ -11,6 +11,9 @@ export type QuoteItemRecord = {
   fotoUrl: string | null;
   quantidade: string;
   valorUnitario: string;
+  calcularPorMargem: boolean;
+  custoUnitario: string | null;
+  margemLucro: string | null;
   descontoTipo: "Valor" | "Percentual" | null;
   descontoValor: string | null;
   valorTotal: string;

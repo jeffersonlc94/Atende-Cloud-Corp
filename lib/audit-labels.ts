@@ -10,9 +10,11 @@ export const entidadeOptions = [
   "Checklist",
   "User",
   "SystemSettings",
+  "Database",
 ] as const;
 
 export const entidadeLabels: Record<string, string> = {
+  Database: "Banco de dados",
   Company: "Empresa",
   Quote: "Orçamento",
   Vehicle: "Veículo",
@@ -24,6 +26,7 @@ export const entidadeLabels: Record<string, string> = {
 };
 
 export const acaoLabels: Record<string, string> = {
+  backup: "Backup",
   create: "Criação",
   update: "Atualização",
   delete: "Exclusão",

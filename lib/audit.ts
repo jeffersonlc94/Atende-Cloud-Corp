@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-export type AuditAction = "create" | "update" | "delete";
+export type AuditAction = "create" | "update" | "delete" | "backup";
 
 export type AuditEntity =
   | "Company"
@@ -12,6 +12,7 @@ export type AuditEntity =
   | "Checklist"
   | "User"
   | "SystemSettings"
+  | "Database"
   | "StockMovement";
 
 export type RegisterAuditParams = {

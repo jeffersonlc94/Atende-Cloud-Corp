@@ -25,6 +25,8 @@ import {
   BellRing,
   ShieldCheck,
   Save,
+  Database,
+  Download,
 } from "lucide-react";
 import { PersonalizacaoTab } from "@/components/settings/personalizacao-tab";
 import { CompaniesManager } from "@/components/companies/companies-manager";
@@ -1179,6 +1181,56 @@ function SegurancaTab() {
   );
 }
 
+function BackupTab() {
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleBackup() {
+    setDownloading(true);
+    try {
+      const res = await fetch("/api/config/database-backup", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Erro ao gerar backup");
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const filename = disposition.match(/filename="([^"]+)"/)?.[1] || "backup-postgresql.sql";
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Backup do PostgreSQL gerado com sucesso");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao gerar backup");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Database className="h-4 w-4" /> Backup do PostgreSQL
+        </CardTitle>
+        <CardDescription>
+          Gera e baixa uma cópia completa do banco em formato SQL. Guarde o arquivo em local seguro.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-4 pb-5">
+        <Button onClick={handleBackup} disabled={downloading}>
+          {downloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          {downloading ? "Gerando backup..." : "Gerar e baixar backup"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ConfiguracoesContent() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "personalizacao";
@@ -1221,6 +1273,11 @@ function ConfiguracoesContent() {
               <ShieldCheck className="h-4 w-4" /> Segurança
             </TabsTrigger>
           )}
+          {isAdmin && (
+            <TabsTrigger value="backup" className="gap-1.5">
+              <Database className="h-4 w-4" /> Backup
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="personalizacao" className="pt-4">
@@ -1235,6 +1292,11 @@ function ConfiguracoesContent() {
         {isAdmin && (
           <TabsContent value="seguranca" className="pt-4">
             <SegurancaTab />
+          </TabsContent>
+        )}
+        {isAdmin && (
+          <TabsContent value="backup" className="pt-4">
+            <BackupTab />
           </TabsContent>
         )}
       </Tabs>

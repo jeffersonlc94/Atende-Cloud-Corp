@@ -134,6 +134,9 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             fotoUrl: i.fotoUrl ?? undefined,
             quantidade: Number(i.quantidade),
             valorUnitario: Number(i.valorUnitario),
+            calcularPorMargem: i.calcularPorMargem ?? false,
+            custoUnitario: i.custoUnitario !== null ? Number(i.custoUnitario) : undefined,
+            margemLucro: i.margemLucro !== null ? Number(i.margemLucro) : undefined,
             descontoTipo: i.descontoTipo ?? undefined,
             descontoValor: i.descontoValor !== null && i.descontoValor !== undefined ? Number(i.descontoValor) : undefined,
           })),
@@ -155,7 +158,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           observacoes: "",
           observacoesInternas: "",
           visibilidade: "Global",
-          itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
+          itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, calcularPorMargem: false, custoUnitario: undefined, margemLucro: undefined, descontoTipo: undefined, descontoValor: undefined }],
           descontoGeralTipo: undefined,
           descontoGeralValor: undefined,
         },
@@ -415,7 +418,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ListOrdered} title="Itens do Orçamento" description="Lista de produtos ou serviços" />
           <CardContent className="space-y-4 pt-4 pb-5">
-            <QuoteItemsTable control={control} register={register} watchItems={itens} />
+          <QuoteItemsTable control={control} register={register} watchItems={itens} setValue={setValue} />
             {errors.itens && !Array.isArray(errors.itens) && (
               <p className="text-sm text-destructive">{errors.itens.message}</p>
             )}

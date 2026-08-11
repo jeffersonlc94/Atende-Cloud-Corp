@@ -141,6 +141,9 @@ model QuoteItem {
   fotoUrl       String?
   quantidade    Decimal       @db.Decimal(14, 3)
   valorUnitario Decimal       @db.Decimal(14, 2)
+  calcularPorMargem Boolean   @default(false)
+  custoUnitario  Decimal?      @db.Decimal(14, 2)
+  margemLucro    Decimal?      @db.Decimal(8, 2)
   descontoTipo  DescontoTipo?
   descontoValor Decimal?      @db.Decimal(14, 2)
   valorTotal    Decimal       @db.Decimal(14, 2)

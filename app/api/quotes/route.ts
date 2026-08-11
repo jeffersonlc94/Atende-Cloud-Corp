@@ -6,7 +6,7 @@ import { quoteSchema } from "@/lib/validations";
 import { generateNextQuoteNumber } from "@/lib/quote-number";
 import { Prisma } from "@prisma/client";
 import { registerAudit, getRequestIp } from "@/lib/audit";
-import { computeQuoteTotals } from "@/lib/quote-calc";
+import { computeQuoteTotals, computeUnitPriceFromMargin } from "@/lib/quote-calc";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -95,8 +95,14 @@ export async function POST(req: NextRequest) {
       where: { nome: { equals: clientNome, mode: "insensitive" } },
     })) ?? (await prisma.client.create({ data: { nome: clientNome } }));
 
+  const itensNormalizados = data.itens.map((item) => ({
+    ...item,
+    valorUnitario: item.calcularPorMargem
+      ? computeUnitPriceFromMargin(item.custoUnitario ?? 0, item.margemLucro ?? 0)
+      : item.valorUnitario,
+  }));
   const { itensComputados, subtotal, total } = computeQuoteTotals(
-    data.itens,
+    itensNormalizados,
     data.descontoGeralTipo,
     data.descontoGeralValor
   );
@@ -108,6 +114,9 @@ export async function POST(req: NextRequest) {
     fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
+    calcularPorMargem: item.calcularPorMargem,
+    custoUnitario: item.calcularPorMargem ? item.custoUnitario ?? null : null,
+    margemLucro: item.calcularPorMargem ? item.margemLucro ?? null : null,
     descontoTipo: item.descontoTipo ?? null,
     descontoValor: item.descontoValor ?? null,
     valorTotal: item.valorTotal,
