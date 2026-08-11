@@ -159,6 +159,9 @@ function MarginEditorCell({
           >
             <span className="block font-medium">Custo: {formatCurrencyBRL(custoUnitario)}</span>
             <span className="text-muted-foreground">Margem: {margemLucro.toLocaleString("pt-BR")}%</span>
+            {freteHabilitado && (
+              <span className="block text-muted-foreground">Frete: {formatCurrencyBRL(freteUnitario)}</span>
+            )}
           </PopoverTrigger>
           <PopoverContent
             align="start"
@@ -230,6 +233,29 @@ function MarginEditorCell({
               />
               Somar frete ao preço
             </label>
+            {freteHabilitado && (
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">Frete unitário</span>
+                <Controller
+                  control={control}
+                  name={`itens.${index}.freteUnitario`}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      value={field.value as number | undefined}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setValue(
+                          `itens.${index}.valorUnitario`,
+                          computeUnitPriceFromMargin(custoUnitario, margemLucro, Number(value) || 0),
+                          { shouldDirty: true }
+                        );
+                      }}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </div>
+            )}
             <p className="text-xs font-semibold text-primary">Valor de venda: {formatCurrencyBRL(valorCalculado)}</p>
           </PopoverContent>
         </Popover>
@@ -255,7 +281,6 @@ export function QuoteItemsTable({
     control,
     name: "itens",
   });
-  const showFreteColumn = (watchItems ?? []).some((item) => item?.freteHabilitado);
 
   function addItem() {
     append({
@@ -287,7 +312,6 @@ export function QuoteItemsTable({
               <TableHead>Descrição</TableHead>
               <TableHead className="w-28">Qtd.</TableHead>
               <TableHead className="w-40">Custo / Margem</TableHead>
-              {showFreteColumn && <TableHead className="w-36">Frete</TableHead>}
               <TableHead className="w-36">Valor Unit.</TableHead>
               <TableHead className="w-44">Desconto</TableHead>
               <TableHead className="w-36">Total</TableHead>
@@ -363,32 +387,6 @@ export function QuoteItemsTable({
                       setValue={setValue}
                     />
                   </TableCell>
-                  {showFreteColumn && (
-                    <TableCell>
-                      {freteHabilitado ? (
-                        <Controller
-                          control={control}
-                          name={`itens.${index}.freteUnitario`}
-                          render={({ field }) => (
-                            <CurrencyInput
-                              value={field.value as number | undefined}
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                setValue(
-                                  `itens.${index}.valorUnitario`,
-                                  computeUnitPriceFromMargin(custoUnitario, margemLucro, Number(value) || 0),
-                                  { shouldDirty: true }
-                                );
-                              }}
-                              onBlur={field.onBlur}
-                            />
-                          )}
-                        />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Não utilizado</span>
-                      )}
-                    </TableCell>
-                  )}
                   <TableCell>
                     <Controller
                       control={control}
