@@ -99,6 +99,13 @@ enum TipoItem {
   Servico
 }
 
+enum QuoteStatus {
+  Negociacao
+  Enviado
+  NaoAprovado
+  Aprovado
+}
+
 model Quote {
   id                 String        @id @default(cuid())
   numero             String        @unique
@@ -122,6 +129,7 @@ model Quote {
   descontoServicosTipo  DescontoTipo?
   descontoServicosValor Decimal?   @db.Decimal(14, 2)
   total              Decimal       @default(0) @db.Decimal(14, 2)
+  status             QuoteStatus   @default(Negociacao)
   visibilidade       Visibilidade  @default(Global)
   createdByUserId    String?
   createdByUser      User?         @relation(fields: [createdByUserId], references: [id])

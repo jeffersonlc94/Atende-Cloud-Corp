@@ -54,6 +54,7 @@ import {
   Lock,
   StickyNote,
   Pencil,
+  Unlock,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -127,6 +128,9 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const updateQuote = useUpdateQuote();
   const [previewing, setPreviewing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [reopenConfirmOpen, setReopenConfirmOpen] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [approvedLocked, setApprovedLocked] = useState(initialData?.status === "Aprovado");
   const [pendingData, setPendingData] = useState<QuoteFormValues | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(
     initialData?.client.id ?? null
@@ -155,6 +159,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           observacoes: initialData.observacoes ?? "",
           observacoesInternas: initialData.observacoesInternas ?? "",
           visibilidade: initialData.visibilidade ?? "Global",
+          status: initialData.status ?? "Negociacao",
           itens: initialData.itens.map((i) => ({
             ordem: i.ordem,
             tipoItem: i.tipoItem ?? "Produto",
@@ -192,6 +197,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           observacoes: "",
           observacoesInternas: "",
           visibilidade: "Global",
+          status: "Negociacao",
           itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, calcularPorMargem: false, custoUnitario: undefined, margemLucro: undefined, freteHabilitado: false, freteUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
           descontoGeralTipo: undefined,
           descontoGeralValor: undefined,
@@ -300,6 +306,24 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const isSaving = createQuote.isPending || updateQuote.isPending;
   const isEditing = !!initialData;
 
+  async function handleReopen() {
+    if (!initialData) return;
+    setReopening(true);
+    try {
+      const res = await fetch(`/api/quotes/${initialData.id}/reopen`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Erro ao reabrir orçamento");
+      setValue("status", "Negociacao", { shouldDirty: false });
+      setApprovedLocked(false);
+      toast.success("Orçamento reaberto para edição");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao reabrir orçamento");
+    } finally {
+      setReopening(false);
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -313,14 +337,20 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={isSaving}>
+          {!approvedLocked && <Button type="submit" disabled={isSaving}>
             {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
             Salvar
-          </Button>
+          </Button>}
+          {approvedLocked && (
+            <Button type="button" onClick={() => setReopenConfirmOpen(true)} disabled={reopening}>
+              {reopening ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlock className="mr-2 h-4 w-4" />}
+              Reabrir orçamento
+            </Button>
+          )}
           <Button type="button" variant="outline" onClick={handlePreview} disabled={previewing}>
             {previewing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -335,7 +365,13 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         </div>
       </div>
 
-      <div className="space-y-6">
+      {approvedLocked && (
+        <Card className="border-emerald-300 bg-emerald-50 text-emerald-900">
+          <CardContent className="py-3 text-sm font-medium">Orçamento aprovado e bloqueado para edição.</CardContent>
+        </Card>
+      )}
+
+      <fieldset disabled={approvedLocked} className="space-y-6 disabled:opacity-75">
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ClipboardList} title="Dados do Orçamento" description="Informações gerais do orçamento" />
           <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
@@ -459,6 +495,20 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
                   <SelectItem value="Privado">Privado (visível só para mim)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <FieldLabel icon={FileText}>Status</FieldLabel>
+              <Controller control={control} name="status" render={({ field }) => (
+                <Select value={field.value ?? "Negociacao"} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Negociacao">Em negociação</SelectItem>
+                    <SelectItem value="Enviado">Enviado</SelectItem>
+                    <SelectItem value="NaoAprovado">Não aprovado</SelectItem>
+                    <SelectItem value="Aprovado">Aprovado</SelectItem>
+                  </SelectContent>
+                </Select>
+              )} />
             </div>
           </CardContent>
         </Card>
@@ -586,7 +636,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               : new Date().toLocaleString("pt-BR")}
           </span>
         </div>
-      </div>
+      </fieldset>
 
       <ConfirmDialog
         open={confirmOpen}
@@ -594,6 +644,15 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         title={isEditing ? "Deseja salvar as alterações?" : "Confirma a criação deste orçamento?"}
         description={isEditing ? "O orçamento será atualizado com os dados informados." : "Um novo orçamento será criado com os dados informados."}
         onConfirm={() => pendingData && confirmAndPersist(pendingData)}
+      />
+
+      <ConfirmDialog
+        open={reopenConfirmOpen}
+        onOpenChange={setReopenConfirmOpen}
+        title="Orçamento faturado. Deseja reabrir?"
+        description="O status voltará para Em negociação e todos os campos serão liberados para edição."
+        confirmLabel="Reabrir"
+        onConfirm={handleReopen}
       />
 
       {selectedClientId && (

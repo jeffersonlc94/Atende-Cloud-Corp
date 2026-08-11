@@ -160,6 +160,7 @@ export async function POST(req: NextRequest) {
         descontoServicosValor: data.descontoServicosValor ?? null,
         total,
         visibilidade: data.visibilidade,
+        status: data.status,
         createdByUserId: session.user.id,
         updatedByUserId: session.user.id,
         itens: { createMany: { data: itensParaCriar } },

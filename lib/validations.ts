@@ -51,6 +51,7 @@ export const quoteItemSchema = z.object({
 });
 
 export const visibilidadeOptions = ["Global", "Privado"] as const;
+export const quoteStatusOptions = ["Negociacao", "Enviado", "NaoAprovado", "Aprovado"] as const;
 
 export const quoteSchema = z.object({
   numero: z.string().trim().optional().default(""),
@@ -67,6 +68,7 @@ export const quoteSchema = z.object({
   observacoes: z.string().optional().default(""),
   observacoesInternas: z.string().optional().default(""),
   visibilidade: z.enum(visibilidadeOptions).default("Global"),
+  status: z.enum(quoteStatusOptions).default("Negociacao"),
   itens: z.array(quoteItemSchema).min(1, "Adicione ao menos um item"),
   descontoGeralTipo: optionalDescontoTipo,
   descontoGeralValor: optionalDescontoValor,

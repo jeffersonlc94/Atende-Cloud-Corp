@@ -43,6 +43,7 @@ export type QuoteRecord = {
   descontoServicosValor: string | null;
   total: string;
   visibilidade: "Global" | "Privado";
+  status: "Negociacao" | "Enviado" | "NaoAprovado" | "Aprovado";
   createdByUserId: string | null;
   createdAt: string;
   company: { id: string; razaoSocial: string; nomeFantasia: string | null } & Record<string, unknown>;

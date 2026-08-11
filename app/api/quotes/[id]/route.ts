@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const existingQuote = await prisma.quote.findUnique({
     where: { id },
-    select: { visibilidade: true, createdByUserId: true },
+    select: { visibilidade: true, createdByUserId: true, status: true },
   });
   if (!existingQuote) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -62,6 +62,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
       { error: "Este orçamento é privado e só pode ser editado por quem o criou." },
       { status: 403 }
     );
+  }
+  if (existingQuote.status === "Aprovado") {
+    return NextResponse.json({ error: "Orçamento aprovado está bloqueado. Reabra-o antes de editar." }, { status: 409 });
   }
 
   const body = await req.json();
@@ -146,6 +149,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         descontoServicosValor: data.descontoServicosValor ?? null,
         total,
         visibilidade: data.visibilidade,
+        status: data.status,
         updatedByUserId: session.user.id,
         itens: { createMany: { data: itensParaCriar } },
       },

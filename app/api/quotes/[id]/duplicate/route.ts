@@ -60,6 +60,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
         descontoServicosValor: original.descontoServicosValor,
         total: original.total,
         visibilidade: original.visibilidade,
+        status: "Negociacao",
         createdByUserId: session.user.id,
         updatedByUserId: session.user.id,
         itens: {
