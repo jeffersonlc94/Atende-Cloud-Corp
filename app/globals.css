@@ -148,6 +148,20 @@ html {
   }
 }
 
+.quote-print-page {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  margin-inline: auto;
+  padding: 12mm;
+  background: white;
+}
+
+.quote-print-page > div {
+  max-width: none !important;
+  padding: 0 !important;
+}
+
 @media print {
   .print-break-after-page {
     break-after: page !important;
@@ -186,7 +200,23 @@ html {
     box-shadow: none !important;
     max-width: 100% !important;
     margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .quote-print-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
     padding: 12mm !important;
+    overflow: hidden !important;
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  .quote-print-page:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
 
   #quote-print-area,

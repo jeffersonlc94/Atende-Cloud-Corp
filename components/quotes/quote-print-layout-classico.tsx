@@ -18,12 +18,16 @@ export function QuotePrintLayoutClassico({
   id = "quote-print-area",
   fontFamily,
   fontScale = 1,
+  showFooter = true,
+  itemOffset = 0,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
   fontFamily?: string;
   fontScale?: number;
+  showFooter?: boolean;
+  itemOffset?: number;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -134,7 +138,7 @@ export function QuotePrintLayoutClassico({
           )}
           {quote.itens.map((item, idx) => (
             <tr key={idx} className={`${idx % 2 === 1 ? "bg-gray-50" : ""} ${shouldBreakAfterQuoteItem(idx, quote.itens.length) ? "print-break-after-page" : ""}`}>
-              <td className="border border-gray-400 p-1.5 text-center">{idx + 1}</td>
+              <td className="border border-gray-400 p-1.5 text-center">{itemOffset + idx + 1}</td>
               <td className="border border-gray-400 p-1.5 text-left">
                 {item.fotoUrl ? (
                   <div className="flex items-center gap-2">
@@ -162,7 +166,7 @@ export function QuotePrintLayoutClassico({
             </tr>
           ))}
         </tbody>
-        <tfoot>
+        {showFooter && <tfoot>
           <tr className="bg-gray-100">
             <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
               Produtos
@@ -199,11 +203,11 @@ export function QuotePrintLayoutClassico({
               {formatCurrencyBRL(totalNum)}
             </td>
           </tr>
-        </tfoot>
+        </tfoot>}
       </table>
 
       {/* Condições */}
-      <div className="print-avoid-break mt-4 space-y-1 text-[0.875em]">
+      <div className={showFooter ? "print-avoid-break mt-4 space-y-1 text-[0.875em]" : "hidden"}>
         {quote.condicoesPagamento && (
           <p>
             <span className="font-semibold">Condições de pagamento:</span>{" "}
@@ -224,7 +228,7 @@ export function QuotePrintLayoutClassico({
       </div>
 
       {/* Validade */}
-      {quote.validadeDias ? (
+      {showFooter && quote.validadeDias ? (
         <p className="mt-4 text-center text-[0.875em] font-bold uppercase text-red-600">
           Validade da proposta: este orçamento é válido por {quote.validadeDias} dias
           corridos a partir da data de emissão.
@@ -232,7 +236,7 @@ export function QuotePrintLayoutClassico({
       ) : null}
 
       {/* Assinatura */}
-      <div className="print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]">
+      <div className={showFooter ? "print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]" : "hidden"}>
         <p>
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>

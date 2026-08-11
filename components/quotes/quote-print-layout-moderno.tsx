@@ -18,12 +18,16 @@ export function QuotePrintLayoutModerno({
   id = "quote-print-area",
   fontFamily,
   fontScale = 1,
+  showFooter = true,
+  itemOffset = 0,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
   fontFamily?: string;
   fontScale?: number;
+  showFooter?: boolean;
+  itemOffset?: number;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -155,7 +159,7 @@ export function QuotePrintLayoutModerno({
                 {item.fotoUrl && (
                   <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-9 w-9 shrink-0" />
                 )}
-                {item.descricao}
+                <span><span className="mr-1 text-slate-400">{itemOffset + idx + 1}.</span>{item.descricao}</span>
               </span>
               <span className="w-14 text-center text-slate-500">
                 {Number(item.quantidade).toLocaleString("pt-BR")}
@@ -174,7 +178,7 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Totais */}
-        <div className="mt-4 flex justify-end">
+        <div className={showFooter ? "mt-4 flex justify-end" : "hidden"}>
           <div className="w-64 space-y-1 rounded-lg border border-slate-200 p-4 text-[0.875em]">
             <div className="flex justify-between text-slate-500">
               <span>Produtos</span>
@@ -201,7 +205,7 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Condições */}
-        <div className="print-avoid-break mt-4 space-y-1 text-[0.875em] text-slate-600">
+        <div className={showFooter ? "print-avoid-break mt-4 space-y-1 text-[0.875em] text-slate-600" : "hidden"}>
           {quote.condicoesPagamento && (
             <p>
               <span className="font-semibold text-slate-800">Condições de pagamento:</span>{" "}
@@ -222,14 +226,14 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Validade */}
-        {quote.validadeDias ? (
+        {showFooter && quote.validadeDias ? (
           <p className="mt-4 rounded-md bg-amber-50 p-2 text-center text-[0.875em] font-semibold text-amber-700">
             Válido por {quote.validadeDias} dias corridos a partir da data de emissão.
           </p>
         ) : null}
 
         {/* Assinatura */}
-        <div className="print-avoid-break mt-10 flex flex-col items-center pb-4 text-center text-[0.875em]">
+        <div className={showFooter ? "print-avoid-break mt-10 flex flex-col items-center pb-4 text-center text-[0.875em]" : "hidden"}>
           <p className="text-slate-500">
             {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
           </p>

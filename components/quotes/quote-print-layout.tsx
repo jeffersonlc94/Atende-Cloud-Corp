@@ -28,17 +28,32 @@ export function QuotePrintLayout({
   fontFamily?: string;
   fontScale?: number;
 }) {
-  if (layout === "moderno") {
-    return (
-      <QuotePrintLayoutModerno company={company} quote={quote} id={id} fontFamily={fontFamily} fontScale={fontScale} />
-    );
-  }
-  if (layout === "minimalista") {
-    return (
-      <QuotePrintLayoutMinimalista company={company} quote={quote} id={id} fontFamily={fontFamily} fontScale={fontScale} />
-    );
-  }
+  const itemsPerPage = (fontScale ?? 1) >= 1.2 ? 5 : (fontScale ?? 1) >= 1.1 ? 6 : 7;
+  const pages = quote.itens.length
+    ? Array.from({ length: Math.ceil(quote.itens.length / itemsPerPage) }, (_, index) =>
+        quote.itens.slice(index * itemsPerPage, (index + 1) * itemsPerPage)
+      )
+    : [[]];
+
   return (
-    <QuotePrintLayoutClassico company={company} quote={quote} id={id} fontFamily={fontFamily} fontScale={fontScale} />
+    <div id={id} className="space-y-8 print:space-y-0">
+      {pages.map((itens, pageIndex) => {
+        const props = {
+          company,
+          quote: { ...quote, itens },
+          fontFamily,
+          fontScale,
+          showFooter: pageIndex === pages.length - 1,
+          itemOffset: pageIndex * itemsPerPage,
+        };
+        return (
+          <div className="quote-print-page" key={pageIndex}>
+            {layout === "moderno" ? <QuotePrintLayoutModerno {...props} /> :
+             layout === "minimalista" ? <QuotePrintLayoutMinimalista {...props} /> :
+             <QuotePrintLayoutClassico {...props} />}
+          </div>
+        );
+      })}
+    </div>
   );
 }

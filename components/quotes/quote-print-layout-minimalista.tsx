@@ -17,12 +17,16 @@ export function QuotePrintLayoutMinimalista({
   id = "quote-print-area",
   fontFamily,
   fontScale = 1,
+  showFooter = true,
+  itemOffset = 0,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
   fontFamily?: string;
   fontScale?: number;
+  showFooter?: boolean;
+  itemOffset?: number;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -102,7 +106,7 @@ export function QuotePrintLayoutMinimalista({
             {item.fotoUrl && (
               <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0 self-center" />
             )}
-            <span className="shrink-0 text-neutral-400">{idx + 1}.</span>
+            <span className="shrink-0 text-neutral-400">{itemOffset + idx + 1}.</span>
             <span className="flex-1">{item.descricao}</span>
             <span className="shrink-0 text-neutral-500">
               {Number(item.quantidade).toLocaleString("pt-BR")} ×{" "}
@@ -117,7 +121,7 @@ export function QuotePrintLayoutMinimalista({
       </div>
 
       {/* Totais */}
-      <div className="mt-6 flex justify-end">
+      <div className={showFooter ? "mt-6 flex justify-end" : "hidden"}>
         <div className="w-56 space-y-1 text-[0.875em]">
           <div className="flex justify-between text-neutral-500">
             <span>Produtos</span>
@@ -143,21 +147,21 @@ export function QuotePrintLayoutMinimalista({
       </div>
 
       {/* Condições */}
-      <div className="print-avoid-break mt-8 space-y-1 text-center text-[0.85em] text-neutral-600">
+      <div className={showFooter ? "print-avoid-break mt-8 space-y-1 text-center text-[0.85em] text-neutral-600" : "hidden"}>
         {quote.condicoesPagamento && <p>Condições de pagamento — {quote.condicoesPagamento}</p>}
         {quote.prazoEntrega && <p>Prazo de entrega — {quote.prazoEntrega}</p>}
         {quote.observacoes && <p>Observações — {quote.observacoes}</p>}
       </div>
 
       {/* Validade */}
-      {quote.validadeDias ? (
+      {showFooter && quote.validadeDias ? (
         <p className="mt-6 text-center text-[0.75em] italic text-neutral-400">
           Proposta válida por {quote.validadeDias} dias corridos a partir da data de emissão.
         </p>
       ) : null}
 
       {/* Assinatura */}
-      <div className="print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]">
+      <div className={showFooter ? "print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]" : "hidden"}>
         <p className="text-neutral-500">
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
