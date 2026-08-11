@@ -62,6 +62,7 @@ export type QuoteFilters = {
   dataFinal?: string;
   page?: number;
   scope?: "mine" | "global";
+  status?: "Negociacao" | "Enviado" | "NaoAprovado" | "Aprovado";
 };
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {

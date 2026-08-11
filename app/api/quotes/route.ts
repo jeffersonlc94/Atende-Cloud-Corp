@@ -7,6 +7,7 @@ import { generateNextQuoteNumber } from "@/lib/quote-number";
 import { Prisma } from "@prisma/client";
 import { registerAudit, getRequestIp } from "@/lib/audit";
 import { computeQuoteTotals, computeUnitPriceFromMargin } from "@/lib/quote-calc";
+import { quoteStatusOptions } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
   const createdByUserId = sp.get("userId")?.trim();
   const dataInicial = sp.get("dataInicial")?.trim();
   const dataFinal = sp.get("dataFinal")?.trim();
+  const status = sp.get("status")?.trim();
   const scope = sp.get("scope") === "global" ? "global" : "mine";
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
   const pageSize = Math.min(100, parseInt(sp.get("pageSize") ?? "20", 10) || 20);
@@ -32,6 +34,9 @@ export async function GET(req: NextRequest) {
   if (companyId) where.companyId = companyId;
   if (createdByUserId) where.createdByUserId = createdByUserId;
   if (cliente) where.client = { nome: { contains: cliente, mode: "insensitive" } };
+  if (status && quoteStatusOptions.includes(status as (typeof quoteStatusOptions)[number])) {
+    where.status = status as (typeof quoteStatusOptions)[number];
+  }
 
   if (dataInicial || dataFinal) {
     where.dataEmissao = {};

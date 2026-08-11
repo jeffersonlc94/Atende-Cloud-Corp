@@ -54,6 +54,24 @@ import {
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
+const statusLabels = {
+  Negociacao: "Em negociação",
+  Enviado: "Enviado",
+  NaoAprovado: "Não aprovado",
+  Aprovado: "Aprovado",
+} as const;
+
+const statusClasses = {
+  Negociacao: "border-amber-300 bg-amber-50 text-amber-800",
+  Enviado: "border-blue-300 bg-blue-50 text-blue-800",
+  NaoAprovado: "border-red-300 bg-red-50 text-red-800",
+  Aprovado: "border-emerald-300 bg-emerald-50 text-emerald-800",
+} as const;
+
+function QuoteStatusBadge({ status }: { status: keyof typeof statusLabels }) {
+  return <Badge variant="outline" className={statusClasses[status]}>{statusLabels[status]}</Badge>;
+}
+
 export default function OrcamentosPage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -140,7 +158,7 @@ export default function OrcamentosPage() {
       </div>
 
       <Card>
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
           <Input
             placeholder="Número"
             onChange={(e) => updateFilter("numero", e.target.value)}
@@ -173,6 +191,19 @@ export default function OrcamentosPage() {
                   {c.nomeFantasia || c.razaoSocial}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={filters.status ?? "all"}
+            onValueChange={(v) => updateFilter("status", v === "all" ? undefined : v as QuoteFilters["status"])}
+          >
+            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="Negociacao">Em negociação</SelectItem>
+              <SelectItem value="Enviado">Enviado</SelectItem>
+              <SelectItem value="NaoAprovado">Não aprovado</SelectItem>
+              <SelectItem value="Aprovado">Aprovado</SelectItem>
             </SelectContent>
           </Select>
           <Input
@@ -209,9 +240,12 @@ export default function OrcamentosPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <Badge variant={quote.visibilidade === "Privado" ? "secondary" : "outline"}>
-                  {quote.visibilidade === "Privado" ? "Privado" : "Global"}
-                </Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={quote.visibilidade === "Privado" ? "secondary" : "outline"}>
+                    {quote.visibilidade === "Privado" ? "Privado" : "Global"}
+                  </Badge>
+                  <QuoteStatusBadge status={quote.status} />
+                </div>
                 <p>
                   <span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
                 </p>
@@ -274,6 +308,7 @@ export default function OrcamentosPage() {
                   <TableHead>Data</TableHead>
                   <TableHead>Criado por</TableHead>
                   <TableHead>Visibilidade</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
@@ -281,7 +316,7 @@ export default function OrcamentosPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                       <Search className="mx-auto mb-2 h-5 w-5" />
                       Carregando...
                     </TableCell>
@@ -289,7 +324,7 @@ export default function OrcamentosPage() {
                 )}
                 {!isLoading && data?.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
                       Nenhum orçamento encontrado
                     </TableCell>
                   </TableRow>
@@ -308,6 +343,7 @@ export default function OrcamentosPage() {
                         {quote.visibilidade === "Privado" ? "Privado" : "Global"}
                       </Badge>
                     </TableCell>
+                    <TableCell><QuoteStatusBadge status={quote.status} /></TableCell>
                     <TableCell className="text-right">
                       {formatCurrencyBRL(Number(quote.total))}
                     </TableCell>
