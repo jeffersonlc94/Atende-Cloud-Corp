@@ -231,21 +231,26 @@ export function QuoteItemsTable({
                       </label>
                       {calcularPorMargem ? (
                         <div className="space-y-1.5">
-                          <Controller
-                            control={control}
-                            name={`itens.${index}.custoUnitario`}
-                            render={({ field }) => (
-                              <CurrencyInput
-                                value={field.value as number | undefined}
-                                onValueChange={(value) => {
-                                  field.onChange(value);
-                                  const custo = Number(value) || 0;
-                                  setValue(`itens.${index}.valorUnitario`, Math.round(custo * (1 + margemLucro / 100) * 100) / 100, { shouldDirty: true });
-                                }}
-                                onBlur={field.onBlur}
-                              />
-                            )}
-                          />
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium text-muted-foreground">
+                              Custo unitário
+                            </span>
+                            <Controller
+                              control={control}
+                              name={`itens.${index}.custoUnitario`}
+                              render={({ field }) => (
+                                <CurrencyInput
+                                  value={field.value as number | undefined}
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    const custo = Number(value) || 0;
+                                    setValue(`itens.${index}.valorUnitario`, Math.round(custo * (1 + margemLucro / 100) * 100) / 100, { shouldDirty: true });
+                                  }}
+                                  onBlur={field.onBlur}
+                                />
+                              )}
+                            />
+                          </div>
                           <Controller
                             control={control}
                             name={`itens.${index}.margemLucro`}
