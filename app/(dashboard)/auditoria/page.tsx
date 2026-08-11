@@ -32,11 +32,20 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Eye, ShieldAlert } from "lucide-react";
-import { entidadeOptions, labelForEntidade, labelForAcao } from "@/lib/audit-labels";
+import { entidadeOptions, labelForEntidade, labelForAcao, labelForAuditField } from "@/lib/audit-labels";
 import type { AuditLogRecord } from "@/hooks/use-audit-logs";
 
 function isDeParaShape(v: unknown): v is { de: unknown; para: unknown } {
   return !!v && typeof v === "object" && "de" in v && "para" in v;
+}
+
+function AuditValue({ value }: { value: unknown }) {
+  if (value === null || value === undefined || value === "") return <span className="text-muted-foreground">—</span>;
+  if (typeof value === "boolean") return <span>{value ? "Sim" : "Não"}</span>;
+  if (typeof value === "object") {
+    return <pre className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-[11px]">{JSON.stringify(value, null, 2)}</pre>;
+  }
+  return <span>{String(value)}</span>;
 }
 
 /** Renderiza o JSON de `detalhes` de forma legível, com destaque para diffs (de/para). */
@@ -54,7 +63,7 @@ function AuditDetalhesView({ detalhes }: { detalhes: unknown }) {
         .filter(([key]) => key !== "alteracoes")
         .map(([key, value]) => (
           <p key={key}>
-            <span className="font-medium">{key}:</span> {String(value)}
+            <span className="font-medium">{labelForAuditField(key)}:</span> <AuditValue value={value} />
           </p>
         ))}
 
@@ -65,16 +74,18 @@ function AuditDetalhesView({ detalhes }: { detalhes: unknown }) {
             if (isDeParaShape(valor)) {
               return (
                 <p key={campo} className="text-xs">
-                  <span className="font-medium">{campo}:</span>{" "}
-                  <span className="text-muted-foreground line-through">{String(valor.de)}</span>{" "}
-                  → <span className="font-medium">{String(valor.para)}</span>
+                  <span className="font-medium">{labelForAuditField(campo)}:</span>
+                  <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                    <div className="rounded border border-red-200 bg-red-50 p-2"><span className="font-medium text-red-700">Antes</span><AuditValue value={valor.de} /></div>
+                    <div className="rounded border border-emerald-200 bg-emerald-50 p-2"><span className="font-medium text-emerald-700">Depois</span><AuditValue value={valor.para} /></div>
+                  </div>
                 </p>
               );
             }
             if (Array.isArray(valor)) {
               return (
                 <div key={campo} className="text-xs">
-                  <span className="font-medium">{campo}:</span>
+                  <span className="font-medium">{labelForAuditField(campo)}:</span>
                   <ul className="mt-1 list-inside list-disc space-y-0.5">
                     {valor.map((v, idx) => (
                       <li key={idx}>
@@ -97,7 +108,7 @@ function AuditDetalhesView({ detalhes }: { detalhes: unknown }) {
             }
             return (
               <p key={campo} className="text-xs">
-                <span className="font-medium">{campo}:</span> {String(valor)}
+                <span className="font-medium">{labelForAuditField(campo)}:</span> <AuditValue value={valor} />
               </p>
             );
           })}
@@ -282,7 +293,7 @@ export default function AuditoriaPage() {
       )}
 
       <Dialog open={!!viewingLog} onOpenChange={(o) => !o && setViewingLog(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
           {viewingLog && (
             <>
               <DialogHeader>

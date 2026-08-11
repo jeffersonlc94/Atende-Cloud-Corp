@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { userSchema } from "@/lib/validations";
 import { canManageUsers } from "@/lib/permissions";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -23,6 +23,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
   }
 
   const data = parsed.data;
+  const before = await prisma.user.findUnique({ where: { id } });
+  if (!before) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
   const email = data.email.toLowerCase();
 
   const existing = await prisma.user.findFirst({ where: { email, NOT: { id } } });
@@ -70,7 +72,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "User",
     entidadeId: user.id,
-    detalhes: { email: user.email, role: user.role },
+    detalhes: buildAuditChanges(before as unknown as Record<string, unknown>, user as unknown as Record<string, unknown>, { resumo: { email: user.email } }),
     ip: getRequestIp(req),
   });
 
@@ -90,6 +92,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Você não pode excluir seu próprio usuário." }, { status: 400 });
   }
 
+  const before = await prisma.user.findUnique({ where: { id } });
+  if (!before) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+
   try {
     await prisma.user.delete({ where: { id } });
   } catch {
@@ -104,6 +109,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     acao: "delete",
     entidade: "User",
     entidadeId: id,
+    detalhes: buildAuditDeleteDetails(before as unknown as Record<string, unknown>, { resumo: { email: before.email, nome: before.name } }),
     ip: getRequestIp(req),
   });
 

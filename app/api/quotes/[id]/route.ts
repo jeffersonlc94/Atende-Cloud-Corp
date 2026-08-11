@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { quoteSchema } from "@/lib/validations";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 import {canDeleteRecords, canAccessModule} from "@/lib/permissions";
 import { computeQuoteTotals, computeUnitPriceFromMargin } from "@/lib/quote-calc";
 
@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const existingQuote = await prisma.quote.findUnique({
     where: { id },
-    select: { visibilidade: true, createdByUserId: true, status: true },
+    include: { itens: true },
   });
   if (!existingQuote) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -168,7 +168,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "Quote",
     entidadeId: quote.id,
-    detalhes: { numero: quote.numero, total: quote.total.toString() },
+    detalhes: buildAuditChanges(existingQuote as unknown as Record<string, unknown>, quote as unknown as Record<string, unknown>, {
+      ignore: ["company", "client", "createdByUser", "updatedByUser"],
+      resumo: { numero: quote.numero },
+    }),
     ip: getRequestIp(req),
   });
 
@@ -186,6 +189,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
+  const quote = await prisma.quote.findUnique({ where: { id }, include: { itens: true } });
+  if (!quote) return NextResponse.json({ error: "Orçamento não encontrado" }, { status: 404 });
   await prisma.quote.delete({ where: { id } });
 
   await registerAudit({
@@ -193,6 +198,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     acao: "delete",
     entidade: "Quote",
     entidadeId: id,
+    detalhes: buildAuditDeleteDetails(quote as unknown as Record<string, unknown>, {
+      ignore: ["createdByUserId", "updatedByUserId"], resumo: { numero: quote.numero },
+    }),
     ip: getRequestIp(req),
   });
 

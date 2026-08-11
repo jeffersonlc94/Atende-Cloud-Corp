@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { vehicleSchema } from "@/lib/validations";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 import {canDeleteRecords, canAccessModule} from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
@@ -41,6 +41,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
+  const before = await prisma.vehicle.findUnique({ where: { id } });
+  if (!before) return NextResponse.json({ error: "Veículo não encontrado" }, { status: 404 });
   const parsed = vehicleSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -83,7 +85,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "Vehicle",
     entidadeId: vehicle.id,
-    detalhes: { placa: vehicle.placa },
+    detalhes: buildAuditChanges(before as unknown as Record<string, unknown>, vehicle as unknown as Record<string, unknown>, { ignore: ["company"], resumo: { placa: vehicle.placa } }),
     ip: getRequestIp(req),
   });
 
@@ -101,13 +103,14 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
-  await prisma.vehicle.delete({ where: { id } });
+  const vehicle = await prisma.vehicle.delete({ where: { id } });
 
   await registerAudit({
     userId: session.user.id,
     acao: "delete",
     entidade: "Vehicle",
     entidadeId: id,
+    detalhes: buildAuditDeleteDetails(vehicle as unknown as Record<string, unknown>, { resumo: { placa: vehicle.placa, veiculo: `${vehicle.marca} ${vehicle.modelo}` } }),
     ip: getRequestIp(req),
   });
 
