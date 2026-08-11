@@ -6,6 +6,7 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import {
   formatDescontoItem,
   getQuotePrintTotals,
+  shouldBreakAfterQuoteItem,
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
@@ -35,7 +36,7 @@ export function QuotePrintLayoutClassico({
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" | ");
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum, descontoProdutosNum, descontoServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
@@ -132,7 +133,7 @@ export function QuotePrintLayoutClassico({
             </tr>
           )}
           {quote.itens.map((item, idx) => (
-            <tr key={idx} className={idx % 2 === 1 ? "bg-gray-50" : undefined}>
+            <tr key={idx} className={`${idx % 2 === 1 ? "bg-gray-50" : ""} ${shouldBreakAfterQuoteItem(idx, quote.itens.length) ? "print-break-after-page" : ""}`}>
               <td className="border border-gray-400 p-1.5 text-center">{idx + 1}</td>
               <td className="border border-gray-400 p-1.5 text-left">
                 {item.fotoUrl ? (
@@ -170,6 +171,7 @@ export function QuotePrintLayoutClassico({
               {formatCurrencyBRL(totalProdutosNum)}
             </td>
           </tr>
+          {descontoProdutosNum > 0 && <tr className="bg-gray-100"><td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">Desconto produtos</td><td className="border border-gray-400 p-1.5 text-center">- {formatCurrencyBRL(descontoProdutosNum)}</td></tr>}
           <tr className="bg-gray-100">
             <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
               Serviços
@@ -178,10 +180,11 @@ export function QuotePrintLayoutClassico({
               {formatCurrencyBRL(totalServicosNum)}
             </td>
           </tr>
+          {descontoServicosNum > 0 && <tr className="bg-gray-100"><td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">Desconto serviços</td><td className="border border-gray-400 p-1.5 text-center">- {formatCurrencyBRL(descontoServicosNum)}</td></tr>}
           {hasDescontoGeral && (
             <tr className="bg-gray-100">
               <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
-                Desconto
+                Desconto geral
               </td>
               <td className="border border-gray-400 p-1.5 text-center">
                 {formatCurrencyBRL(descontoGeralNum)}
@@ -200,7 +203,7 @@ export function QuotePrintLayoutClassico({
       </table>
 
       {/* Condições */}
-      <div className="mt-4 space-y-1 text-[0.875em]">
+      <div className="print-avoid-break mt-4 space-y-1 text-[0.875em]">
         {quote.condicoesPagamento && (
           <p>
             <span className="font-semibold">Condições de pagamento:</span>{" "}
@@ -229,7 +232,7 @@ export function QuotePrintLayoutClassico({
       ) : null}
 
       {/* Assinatura */}
-      <div className="mt-16 flex flex-col items-center text-center text-[0.875em]">
+      <div className="print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]">
         <p>
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>

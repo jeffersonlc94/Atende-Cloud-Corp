@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -91,6 +91,34 @@ function FieldLabel({ icon: Icon, children }: { icon: LucideIcon; children: Reac
   );
 }
 
+function ClosingDiscountField({
+  label, typeName, valueName, control, currentType,
+}: {
+  label: string;
+  typeName: "descontoProdutosTipo" | "descontoServicosTipo" | "descontoGeralTipo";
+  valueName: "descontoProdutosValor" | "descontoServicosValor" | "descontoGeralValor";
+  control: Control<QuoteFormValues>;
+  currentType?: "Valor" | "Percentual";
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <Controller control={control} name={typeName} render={({ field }) => (
+        <Select value={field.value ?? "Valor"} onValueChange={field.onChange}>
+          <SelectTrigger className="w-24"><SelectValue>{(value: string) => value === "Percentual" ? "%" : "R$"}</SelectValue></SelectTrigger>
+          <SelectContent><SelectItem value="Valor">R$</SelectItem><SelectItem value="Percentual">%</SelectItem></SelectContent>
+        </Select>
+      )} />
+      <Controller control={control} name={valueName} render={({ field }) => currentType === "Percentual" ? (
+        <div className="relative w-32">
+          <Input type="number" step="0.01" min="0" max="100" className="pr-6" value={(field.value as number | undefined) ?? ""} onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))} onBlur={field.onBlur} />
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+        </div>
+      ) : <CurrencyInput className="w-32" value={field.value as number | undefined} onValueChange={field.onChange} onBlur={field.onBlur} />} />
+    </div>
+  );
+}
+
 export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -147,6 +175,10 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             initialData.descontoGeralValor !== null && initialData.descontoGeralValor !== undefined
               ? Number(initialData.descontoGeralValor)
               : undefined,
+          descontoProdutosTipo: initialData.descontoProdutosTipo ?? undefined,
+          descontoProdutosValor: initialData.descontoProdutosValor !== null ? Number(initialData.descontoProdutosValor) : undefined,
+          descontoServicosTipo: initialData.descontoServicosTipo ?? undefined,
+          descontoServicosValor: initialData.descontoServicosValor !== null ? Number(initialData.descontoServicosValor) : undefined,
         }
       : {
           numero: "",
@@ -163,6 +195,10 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, calcularPorMargem: false, custoUnitario: undefined, margemLucro: undefined, freteHabilitado: false, freteUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
           descontoGeralTipo: undefined,
           descontoGeralValor: undefined,
+          descontoProdutosTipo: undefined,
+          descontoProdutosValor: undefined,
+          descontoServicosTipo: undefined,
+          descontoServicosValor: undefined,
         },
   });
 
@@ -170,8 +206,12 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const itens = useWatch({ control, name: "itens" });
   const descontoGeralTipo = useWatch({ control, name: "descontoGeralTipo" });
   const descontoGeralValor = useWatch({ control, name: "descontoGeralValor" });
+  const descontoProdutosTipo = useWatch({ control, name: "descontoProdutosTipo" });
+  const descontoProdutosValor = useWatch({ control, name: "descontoProdutosValor" });
+  const descontoServicosTipo = useWatch({ control, name: "descontoServicosTipo" });
+  const descontoServicosValor = useWatch({ control, name: "descontoServicosValor" });
 
-  const { total, descontoGeral, totalProdutos, totalServicos } = useMemo(() => {
+  const { total, descontoGeral, descontoProdutos, descontoServicos, totalProdutos, totalServicos } = useMemo(() => {
     const itensNormalizados = (itens ?? []).map((item) => ({
       quantidade: Number(item?.quantidade) || 0,
       valorUnitario: Number(item?.valorUnitario) || 0,
@@ -182,15 +222,21 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
     const result = computeQuoteTotals(
       itensNormalizados,
       descontoGeralTipo as "Valor" | "Percentual" | undefined,
-      Number(descontoGeralValor) || 0
+      Number(descontoGeralValor) || 0,
+      descontoProdutosTipo as "Valor" | "Percentual" | undefined,
+      Number(descontoProdutosValor) || 0,
+      descontoServicosTipo as "Valor" | "Percentual" | undefined,
+      Number(descontoServicosValor) || 0
     );
     return {
       total: result.total,
-      descontoGeral: result.desconto,
+      descontoGeral: result.descontoGeral,
+      descontoProdutos: result.descontoProdutos,
+      descontoServicos: result.descontoServicos,
       totalProdutos: result.totalProdutos,
       totalServicos: result.totalServicos,
     };
-  }, [itens, descontoGeralTipo, descontoGeralValor]);
+  }, [itens, descontoGeralTipo, descontoGeralValor, descontoProdutosTipo, descontoProdutosValor, descontoServicosTipo, descontoServicosValor]);
 
   const dataValidade = useMemo(() => {
     if (!values.dataEmissao || !values.validadeDias) return "";
@@ -426,6 +472,8 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             )}
 
             <div className="flex flex-col items-end gap-3 border-t pt-4">
+              <ClosingDiscountField label="Desconto em produtos" typeName="descontoProdutosTipo" valueName="descontoProdutosValor" control={control} currentType={descontoProdutosTipo} />
+              <ClosingDiscountField label="Desconto em serviços" typeName="descontoServicosTipo" valueName="descontoServicosValor" control={control} currentType={descontoServicosTipo} />
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-muted-foreground">Desconto geral</span>
                 <Controller
@@ -484,12 +532,14 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
                   <span>Produtos</span>
                   <span>{formatCurrencyBRL(totalProdutos)}</span>
                 </div>
+                {descontoProdutos > 0 && <div className="flex items-center justify-between text-sm text-muted-foreground"><span>Desconto produtos</span><span>- {formatCurrencyBRL(descontoProdutos)}</span></div>}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>Serviços</span>
                   <span>{formatCurrencyBRL(totalServicos)}</span>
                 </div>
+                {descontoServicos > 0 && <div className="flex items-center justify-between text-sm text-muted-foreground"><span>Desconto serviços</span><span>- {formatCurrencyBRL(descontoServicos)}</span></div>}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Desconto</span>
+                  <span>Desconto geral</span>
                   <span>{formatCurrencyBRL(descontoGeral)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-1">

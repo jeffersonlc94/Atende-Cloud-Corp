@@ -88,7 +88,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const { itensComputados, subtotal, total } = computeQuoteTotals(
     itensNormalizados,
     data.descontoGeralTipo,
-    data.descontoGeralValor
+    data.descontoGeralValor,
+    data.descontoProdutosTipo,
+    data.descontoProdutosValor,
+    data.descontoServicosTipo,
+    data.descontoServicosValor
   );
 
   const itensParaCriar = itensComputados.map((item, idx) => ({
@@ -136,6 +140,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
         subtotal,
         descontoGeralTipo: data.descontoGeralTipo ?? null,
         descontoGeralValor: data.descontoGeralValor ?? null,
+        descontoProdutosTipo: data.descontoProdutosTipo ?? null,
+        descontoProdutosValor: data.descontoProdutosValor ?? null,
+        descontoServicosTipo: data.descontoServicosTipo ?? null,
+        descontoServicosValor: data.descontoServicosValor ?? null,
         total,
         visibilidade: data.visibilidade,
         updatedByUserId: session.user.id,

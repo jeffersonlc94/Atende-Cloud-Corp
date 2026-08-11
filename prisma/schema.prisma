@@ -117,6 +117,10 @@ model Quote {
   subtotal           Decimal?      @db.Decimal(14, 2)
   descontoGeralTipo  DescontoTipo?
   descontoGeralValor Decimal?      @db.Decimal(14, 2)
+  descontoProdutosTipo  DescontoTipo?
+  descontoProdutosValor Decimal?   @db.Decimal(14, 2)
+  descontoServicosTipo  DescontoTipo?
+  descontoServicosValor Decimal?   @db.Decimal(14, 2)
   total              Decimal       @default(0) @db.Decimal(14, 2)
   visibilidade       Visibilidade  @default(Global)
   createdByUserId    String?

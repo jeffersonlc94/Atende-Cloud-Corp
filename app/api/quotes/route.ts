@@ -104,7 +104,11 @@ export async function POST(req: NextRequest) {
   const { itensComputados, subtotal, total } = computeQuoteTotals(
     itensNormalizados,
     data.descontoGeralTipo,
-    data.descontoGeralValor
+    data.descontoGeralValor,
+    data.descontoProdutosTipo,
+    data.descontoProdutosValor,
+    data.descontoServicosTipo,
+    data.descontoServicosValor
   );
 
   const itensParaCriar = itensComputados.map((item, idx) => ({
@@ -150,6 +154,10 @@ export async function POST(req: NextRequest) {
         subtotal,
         descontoGeralTipo: data.descontoGeralTipo ?? null,
         descontoGeralValor: data.descontoGeralValor ?? null,
+        descontoProdutosTipo: data.descontoProdutosTipo ?? null,
+        descontoProdutosValor: data.descontoProdutosValor ?? null,
+        descontoServicosTipo: data.descontoServicosTipo ?? null,
+        descontoServicosValor: data.descontoServicosValor ?? null,
         total,
         visibilidade: data.visibilidade,
         createdByUserId: session.user.id,

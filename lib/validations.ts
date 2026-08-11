@@ -19,13 +19,13 @@ export const quoteItemSchema = z.object({
   fotoUrl: z.string().optional(),
   quantidade: z.number().positive("Quantidade deve ser maior que zero"),
   valorUnitario: z.preprocess(
-    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? 0 : v),
-    z.number().nonnegative("Valor unitário não pode ser negativo")
+    (v) => (v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number({ error: "Informe o valor unitário" }).positive("Valor unitário deve ser maior que zero")
   ),
   calcularPorMargem: z.boolean().optional().default(false),
   custoUnitario: z.preprocess(
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
-    z.number().nonnegative("Custo unitário não pode ser negativo").optional()
+    z.number().positive("Custo unitário deve ser maior que zero").optional()
   ),
   margemLucro: z.preprocess(
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
@@ -34,7 +34,7 @@ export const quoteItemSchema = z.object({
   freteHabilitado: z.boolean().optional().default(false),
   freteUnitario: z.preprocess(
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
-    z.number().nonnegative("Frete não pode ser negativo").optional()
+    z.number().positive("Frete deve ser maior que zero").optional()
   ),
   descontoTipo: optionalDescontoTipo,
   descontoValor: optionalDescontoValor,
@@ -70,6 +70,10 @@ export const quoteSchema = z.object({
   itens: z.array(quoteItemSchema).min(1, "Adicione ao menos um item"),
   descontoGeralTipo: optionalDescontoTipo,
   descontoGeralValor: optionalDescontoValor,
+  descontoProdutosTipo: optionalDescontoTipo,
+  descontoProdutosValor: optionalDescontoValor,
+  descontoServicosTipo: optionalDescontoTipo,
+  descontoServicosValor: optionalDescontoValor,
 });
 
 export type QuoteFormValues = z.input<typeof quoteSchema>;

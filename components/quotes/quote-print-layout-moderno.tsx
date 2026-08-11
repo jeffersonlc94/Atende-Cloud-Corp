@@ -6,6 +6,7 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import {
   formatDescontoItem,
   getQuotePrintTotals,
+  shouldBreakAfterQuoteItem,
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
@@ -34,7 +35,7 @@ export function QuotePrintLayoutModerno({
 
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum, descontoProdutosNum, descontoServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
@@ -148,7 +149,7 @@ export function QuotePrintLayoutModerno({
           {quote.itens.map((item, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em]"
+              className={`flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em] print:break-inside-avoid ${shouldBreakAfterQuoteItem(idx, quote.itens.length) ? "print-break-after-page" : ""}`}
             >
               <span className="flex flex-1 items-center gap-2">
                 {item.fotoUrl && (
@@ -179,13 +180,15 @@ export function QuotePrintLayoutModerno({
               <span>Produtos</span>
               <span>{formatCurrencyBRL(totalProdutosNum)}</span>
             </div>
+            {descontoProdutosNum > 0 && <div className="flex justify-between text-slate-500"><span>Desconto produtos</span><span>- {formatCurrencyBRL(descontoProdutosNum)}</span></div>}
             <div className="flex justify-between text-slate-500">
               <span>Serviços</span>
               <span>{formatCurrencyBRL(totalServicosNum)}</span>
             </div>
+            {descontoServicosNum > 0 && <div className="flex justify-between text-slate-500"><span>Desconto serviços</span><span>- {formatCurrencyBRL(descontoServicosNum)}</span></div>}
             {hasDescontoGeral && (
               <div className="flex justify-between text-slate-500">
-                <span>Desconto</span>
+                <span>Desconto geral</span>
                 <span>- {formatCurrencyBRL(descontoGeralNum)}</span>
               </div>
             )}
@@ -198,7 +201,7 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Condições */}
-        <div className="mt-4 space-y-1 text-[0.875em] text-slate-600">
+        <div className="print-avoid-break mt-4 space-y-1 text-[0.875em] text-slate-600">
           {quote.condicoesPagamento && (
             <p>
               <span className="font-semibold text-slate-800">Condições de pagamento:</span>{" "}
@@ -226,7 +229,7 @@ export function QuotePrintLayoutModerno({
         ) : null}
 
         {/* Assinatura */}
-        <div className="mt-10 flex flex-col items-center pb-4 text-center text-[0.875em]">
+        <div className="print-avoid-break mt-10 flex flex-col items-center pb-4 text-center text-[0.875em]">
           <p className="text-slate-500">
             {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
           </p>

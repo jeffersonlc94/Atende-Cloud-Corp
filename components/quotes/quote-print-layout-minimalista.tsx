@@ -5,6 +5,7 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import {
   formatDescontoItem,
   getQuotePrintTotals,
+  shouldBreakAfterQuoteItem,
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
@@ -34,7 +35,7 @@ export function QuotePrintLayoutMinimalista({
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" · ");
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum, descontoProdutosNum, descontoServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
@@ -97,7 +98,7 @@ export function QuotePrintLayoutMinimalista({
           <p className="py-4 text-center text-[0.875em] text-neutral-400">Nenhum item adicionado</p>
         )}
         {quote.itens.map((item, idx) => (
-          <div key={idx} className="flex items-baseline gap-2 border-b border-dotted border-neutral-300 py-2 text-[0.875em]">
+          <div key={idx} className={`flex items-baseline gap-2 border-b border-dotted border-neutral-300 py-2 text-[0.875em] print:break-inside-avoid ${shouldBreakAfterQuoteItem(idx, quote.itens.length) ? "print-break-after-page" : ""}`}>
             {item.fotoUrl && (
               <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0 self-center" />
             )}
@@ -122,13 +123,15 @@ export function QuotePrintLayoutMinimalista({
             <span>Produtos</span>
             <span>{formatCurrencyBRL(totalProdutosNum)}</span>
           </div>
+          {descontoProdutosNum > 0 && <div className="flex justify-between text-neutral-500"><span>Desconto produtos</span><span>- {formatCurrencyBRL(descontoProdutosNum)}</span></div>}
           <div className="flex justify-between text-neutral-500">
             <span>Serviços</span>
             <span>{formatCurrencyBRL(totalServicosNum)}</span>
           </div>
+          {descontoServicosNum > 0 && <div className="flex justify-between text-neutral-500"><span>Desconto serviços</span><span>- {formatCurrencyBRL(descontoServicosNum)}</span></div>}
           {hasDescontoGeral && (
             <div className="flex justify-between text-neutral-500">
-              <span>Desconto</span>
+              <span>Desconto geral</span>
               <span>- {formatCurrencyBRL(descontoGeralNum)}</span>
             </div>
           )}
@@ -140,7 +143,7 @@ export function QuotePrintLayoutMinimalista({
       </div>
 
       {/* Condições */}
-      <div className="mt-8 space-y-1 text-center text-[0.85em] text-neutral-600">
+      <div className="print-avoid-break mt-8 space-y-1 text-center text-[0.85em] text-neutral-600">
         {quote.condicoesPagamento && <p>Condições de pagamento — {quote.condicoesPagamento}</p>}
         {quote.prazoEntrega && <p>Prazo de entrega — {quote.prazoEntrega}</p>}
         {quote.observacoes && <p>Observações — {quote.observacoes}</p>}
@@ -154,7 +157,7 @@ export function QuotePrintLayoutMinimalista({
       ) : null}
 
       {/* Assinatura */}
-      <div className="mt-16 flex flex-col items-center text-center text-[0.875em]">
+      <div className="print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]">
         <p className="text-neutral-500">
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>

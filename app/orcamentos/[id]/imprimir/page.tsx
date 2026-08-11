@@ -192,6 +192,10 @@ export default function ImprimirOrcamentoPage({
               subtotal: quote.subtotal,
               descontoGeralTipo: quote.descontoGeralTipo,
               descontoGeralValor: quote.descontoGeralValor,
+              descontoProdutosTipo: quote.descontoProdutosTipo,
+              descontoProdutosValor: quote.descontoProdutosValor,
+              descontoServicosTipo: quote.descontoServicosTipo,
+              descontoServicosValor: quote.descontoServicosValor,
               total: quote.total,
             }}
           />

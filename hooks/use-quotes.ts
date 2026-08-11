@@ -37,6 +37,10 @@ export type QuoteRecord = {
   subtotal: string | null;
   descontoGeralTipo: "Valor" | "Percentual" | null;
   descontoGeralValor: string | null;
+  descontoProdutosTipo: "Valor" | "Percentual" | null;
+  descontoProdutosValor: string | null;
+  descontoServicosTipo: "Valor" | "Percentual" | null;
+  descontoServicosValor: string | null;
   total: string;
   visibilidade: "Global" | "Privado";
   createdByUserId: string | null;
