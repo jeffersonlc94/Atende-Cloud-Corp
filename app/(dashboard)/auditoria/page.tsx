@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { useAuditLogs, type AuditLogFilters } from "@/hooks/use-audit-logs";
 import { useUsers } from "@/hooks/use-users";
 import { canViewAuditLog } from "@/lib/permissions";
@@ -31,7 +32,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Code2, Eye, ShieldAlert } from "lucide-react";
+import { Code2, Copy, Eye, Maximize2, ShieldAlert } from "lucide-react";
 import { entidadeOptions, labelForEntidade, labelForAcao, labelForAuditField } from "@/lib/audit-labels";
 import type { AuditLogRecord } from "@/hooks/use-audit-logs";
 import { formatCurrencyBRL } from "@/lib/format";
@@ -44,9 +45,51 @@ function AuditValue({ value }: { value: unknown }) {
   if (value === null || value === undefined || value === "") return <span className="text-muted-foreground">—</span>;
   if (typeof value === "boolean") return <span>{value ? "Sim" : "Não"}</span>;
   if (typeof value === "object") {
-    return <pre className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-[11px]">{JSON.stringify(value, null, 2)}</pre>;
+    return <JsonAuditValue value={value} />;
   }
   return <span>{String(value)}</span>;
+}
+
+function JsonAuditValue({ value }: { value: object }) {
+  const [expanded, setExpanded] = useState(false);
+  const json = JSON.stringify(value, null, 2);
+
+  async function copyJson() {
+    try {
+      await navigator.clipboard.writeText(json);
+      toast.success("JSON copiado");
+    } catch {
+      toast.error("Não foi possível copiar o JSON");
+    }
+  }
+
+  return (
+    <div className="mt-1 space-y-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={() => setExpanded(true)}>
+          <Maximize2 className="mr-1 h-3.5 w-3.5" /> Ampliar
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={copyJson}>
+          <Copy className="mr-1 h-3.5 w-3.5" /> Copiar JSON
+        </Button>
+      </div>
+      <pre className="max-h-56 overflow-auto whitespace-pre rounded bg-muted p-2 text-[11px]">{json}</pre>
+      <Dialog open={expanded} onOpenChange={setExpanded}>
+        <DialogContent className="max-h-[90vh] max-w-5xl overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Visualização ampliada do JSON</DialogTitle>
+            <DialogDescription>Conteúdo técnico completo do registro de auditoria.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" size="sm" onClick={copyJson}>
+              <Copy className="mr-2 h-4 w-4" /> Copiar JSON
+            </Button>
+          </div>
+          <pre className="max-h-[65vh] overflow-auto whitespace-pre rounded-md border bg-muted p-4 text-xs">{json}</pre>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
 
 function simpleAuditValue(field: string, value: unknown): string {
