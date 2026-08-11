@@ -97,7 +97,3 @@ export function getQuotePrintTotals(quote: QuotePrintData) {
     descontoServicosNum,
   };
 }
-
-export function shouldBreakAfterQuoteItem(index: number, totalItems: number, itemsPerPage = 8) {
-  return (index + 1) % itemsPerPage === 0 && index + 1 < totalItems;
-}

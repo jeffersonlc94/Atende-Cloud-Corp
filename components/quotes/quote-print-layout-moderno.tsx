@@ -6,7 +6,6 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import {
   formatDescontoItem,
   getQuotePrintTotals,
-  shouldBreakAfterQuoteItem,
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
@@ -153,7 +152,7 @@ export function QuotePrintLayoutModerno({
           {quote.itens.map((item, idx) => (
             <div
               key={idx}
-              className={`flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em] print:break-inside-avoid ${shouldBreakAfterQuoteItem(idx, quote.itens.length) ? "print-break-after-page" : ""}`}
+              className="flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em] print:break-inside-avoid"
             >
               <span className="flex flex-1 items-center gap-2">
                 {item.fotoUrl && (
@@ -233,11 +232,11 @@ export function QuotePrintLayoutModerno({
         ) : null}
 
         {/* Assinatura */}
-        <div className={showFooter ? "print-avoid-break mt-10 flex flex-col items-center pb-4 text-center text-[0.875em]" : "hidden"}>
+        <div className={showFooter ? "print-avoid-break mt-6 flex flex-col items-center pb-2 text-center text-[0.875em]" : "hidden"}>
           <p className="text-slate-500">
             {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
           </p>
-          <div className="mt-10 w-64 border-t border-slate-400 pt-1">
+          <div className="mt-7 w-64 border-t border-slate-400 pt-1">
             <p className="font-medium text-slate-800">
               {quote.createdByUserName || company?.nomeResponsavel || "Responsável"}
             </p>

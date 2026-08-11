@@ -6,7 +6,6 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import {
   formatDescontoItem,
   getQuotePrintTotals,
-  shouldBreakAfterQuoteItem,
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
@@ -137,7 +136,7 @@ export function QuotePrintLayoutClassico({
             </tr>
           )}
           {quote.itens.map((item, idx) => (
-            <tr key={idx} className={`${idx % 2 === 1 ? "bg-gray-50" : ""} ${shouldBreakAfterQuoteItem(idx, quote.itens.length) ? "print-break-after-page" : ""}`}>
+            <tr key={idx} className={idx % 2 === 1 ? "bg-gray-50" : undefined}>
               <td className="border border-gray-400 p-1.5 text-center">{itemOffset + idx + 1}</td>
               <td className="border border-gray-400 p-1.5 text-left">
                 {item.fotoUrl ? (
@@ -236,11 +235,11 @@ export function QuotePrintLayoutClassico({
       ) : null}
 
       {/* Assinatura */}
-      <div className={showFooter ? "print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]" : "hidden"}>
+      <div className={showFooter ? "print-avoid-break mt-8 flex flex-col items-center text-center text-[0.875em]" : "hidden"}>
         <p>
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
-        <div className="mt-12 w-64 border-t border-black text-center pt-1">
+        <div className="mt-8 w-64 border-t border-black text-center pt-1">
           <p>{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
           <p className="text-[0.75em] text-gray-600">
             {company?.nomeFantasia || company?.razaoSocial}

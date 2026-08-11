@@ -5,7 +5,6 @@ import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import {
   formatDescontoItem,
   getQuotePrintTotals,
-  shouldBreakAfterQuoteItem,
   type QuotePrintCompany,
   type QuotePrintData,
 } from "@/lib/quote-print-types";
@@ -102,7 +101,7 @@ export function QuotePrintLayoutMinimalista({
           <p className="py-4 text-center text-[0.875em] text-neutral-400">Nenhum item adicionado</p>
         )}
         {quote.itens.map((item, idx) => (
-          <div key={idx} className={`flex items-baseline gap-2 border-b border-dotted border-neutral-300 py-2 text-[0.875em] print:break-inside-avoid ${shouldBreakAfterQuoteItem(idx, quote.itens.length) ? "print-break-after-page" : ""}`}>
+          <div key={idx} className="flex items-baseline gap-2 border-b border-dotted border-neutral-300 py-2 text-[0.875em] print:break-inside-avoid">
             {item.fotoUrl && (
               <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0 self-center" />
             )}
@@ -161,11 +160,11 @@ export function QuotePrintLayoutMinimalista({
       ) : null}
 
       {/* Assinatura */}
-      <div className={showFooter ? "print-avoid-break mt-16 flex flex-col items-center text-center text-[0.875em]" : "hidden"}>
+      <div className={showFooter ? "print-avoid-break mt-8 flex flex-col items-center text-center text-[0.875em]" : "hidden"}>
         <p className="text-neutral-500">
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
-        <div className="mt-12 w-64 border-t border-neutral-400 pt-1">
+        <div className="mt-8 w-64 border-t border-neutral-400 pt-1">
           <p>{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
           <p className="text-[0.75em] text-neutral-500">{company?.nomeFantasia || company?.razaoSocial}</p>
         </div>

@@ -153,7 +153,7 @@ html {
   width: 210mm;
   min-height: 297mm;
   margin-inline: auto;
-  padding: 12mm;
+  padding: 10mm;
   background: white;
 }
 
@@ -163,11 +163,6 @@ html {
 }
 
 @media print {
-  .print-break-after-page {
-    break-after: page !important;
-    page-break-after: always !important;
-  }
-
   .print-avoid-break {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
@@ -208,7 +203,7 @@ html {
     height: 297mm !important;
     min-height: 297mm !important;
     margin: 0 !important;
-    padding: 12mm !important;
+    padding: 10mm !important;
     overflow: hidden !important;
     break-after: page !important;
     page-break-after: always !important;

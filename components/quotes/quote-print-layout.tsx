@@ -28,7 +28,7 @@ export function QuotePrintLayout({
   fontFamily?: string;
   fontScale?: number;
 }) {
-  const itemsPerPage = (fontScale ?? 1) >= 1.2 ? 5 : (fontScale ?? 1) >= 1.1 ? 6 : 7;
+  const itemsPerPage = (fontScale ?? 1) >= 1.2 ? 10 : (fontScale ?? 1) >= 1.1 ? 12 : 14;
   const pages = quote.itens.length
     ? Array.from({ length: Math.ceil(quote.itens.length / itemsPerPage) }, (_, index) =>
         quote.itens.slice(index * itemsPerPage, (index + 1) * itemsPerPage)
