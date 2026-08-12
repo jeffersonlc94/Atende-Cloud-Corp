@@ -13,6 +13,37 @@ import type {
 export type { QuotePrintCompany, QuotePrintData, QuotePrintItem, QuotePrintLayoutId };
 export { quotePrintLayoutOptions } from "@/lib/quote-print-types";
 
+function paginateItems(items: QuotePrintItem[], pageCapacity: number) {
+  if (items.length === 0) return [[]];
+
+  const pages: QuotePrintItem[][] = [];
+  let page: QuotePrintItem[] = [];
+  let usedCapacity = 0;
+
+  for (const item of items) {
+    const descriptionLength = item.descricao.trim().length;
+    const itemSize = item.fotoUrl
+      ? 2
+      : descriptionLength > 110
+        ? 1.75
+        : descriptionLength > 65
+          ? 1.35
+          : 1;
+
+    if (page.length > 0 && usedCapacity + itemSize > pageCapacity) {
+      pages.push(page);
+      page = [];
+      usedCapacity = 0;
+    }
+
+    page.push(item);
+    usedCapacity += itemSize;
+  }
+
+  if (page.length > 0) pages.push(page);
+  return pages;
+}
+
 export function QuotePrintLayout({
   company,
   quote,
@@ -28,12 +59,14 @@ export function QuotePrintLayout({
   fontFamily?: string;
   fontScale?: number;
 }) {
-  const itemsPerPage = (fontScale ?? 1) >= 1.2 ? 10 : (fontScale ?? 1) >= 1.1 ? 12 : 14;
-  const pages = quote.itens.length
-    ? Array.from({ length: Math.ceil(quote.itens.length / itemsPerPage) }, (_, index) =>
-        quote.itens.slice(index * itemsPerPage, (index + 1) * itemsPerPage)
-      )
-    : [[]];
+  const baseCapacity = layout === "classico" ? 24 : layout === "minimalista" ? 20 : 14;
+  const pageCapacity = (fontScale ?? 1) >= 1.2
+    ? Math.floor(baseCapacity * 0.68)
+    : (fontScale ?? 1) >= 1.1
+      ? Math.floor(baseCapacity * 0.84)
+      : baseCapacity;
+  const pages = paginateItems(quote.itens, pageCapacity);
+  let itemOffset = 0;
 
   return (
     <div id={id} className="space-y-8 print:space-y-0">
@@ -44,8 +77,9 @@ export function QuotePrintLayout({
           fontFamily,
           fontScale,
           showFooter: pageIndex === pages.length - 1,
-          itemOffset: pageIndex * itemsPerPage,
+          itemOffset,
         };
+        itemOffset += itens.length;
         return (
           <div className="quote-print-page" key={pageIndex}>
             {layout === "moderno" ? <QuotePrintLayoutModerno {...props} /> :
