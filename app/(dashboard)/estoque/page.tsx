@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/hooks/use-estoque";
 import { canDeleteRecords } from "@/lib/permissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NumberInput } from "@/components/ui/number-input";
@@ -38,6 +39,8 @@ import {
   CheckCircle2,
   Undo2,
   BadgeDollarSign,
+  Printer,
+  FileBarChart,
 } from "lucide-react";
 
 function PersonChip({ nome }: { nome: string }) {
@@ -211,11 +214,14 @@ export default function EstoquePage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Controle de Estoque</h1>
-        <p className="text-sm text-muted-foreground">
-          Saídas de produtos com número de série, responsáveis e destino
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Controle de Estoque</h1>
+          <p className="text-sm text-muted-foreground">
+            Saídas de produtos com número de série, responsáveis e destino
+          </p>
+        </div>
+        <Link href="/estoque/relatorios" className={buttonVariants({ variant: "outline" })}><FileBarChart className="mr-2 h-4 w-4" /> Relatórios</Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -498,6 +504,7 @@ export default function EstoquePage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Link href={`/estoque/${m.id}/imprimir`} className={buttonVariants({ variant: "ghost", size: "icon" })} title="Imprimir ficha individual"><Printer className="h-4 w-4" /></Link>
                           {m.status === "Pendente" ? (
                             <>
                               <Button

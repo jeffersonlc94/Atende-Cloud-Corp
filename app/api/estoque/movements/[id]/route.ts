@@ -7,6 +7,18 @@ import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails
 
 type Params = { params: Promise<{ id: string }> };
 
+export async function GET(_: NextRequest, { params }: Params) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "estoque")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
+  const { id } = await params;
+  const movement = await prisma.stockMovement.findUnique({ where: { id } });
+  if (!movement) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
+  return NextResponse.json(movement);
+}
+
 export async function PUT(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

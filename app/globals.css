@@ -171,6 +171,26 @@ html {
 }
 
 @media print {
+  body:has(.stock-print-document) aside,
+  body:has(.stock-print-document) > div > div > header {
+    display: none !important;
+  }
+
+  body:has(.stock-print-document) main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .stock-print-document {
+    width: 100% !important;
+    margin: 0 !important;
+    break-inside: auto !important;
+  }
+
+  .stock-print-document tr {
+    break-inside: avoid !important;
+  }
+
   .print-avoid-break {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
