@@ -439,7 +439,9 @@ export function QuoteItemsTable({
                                 value={(field.value as number | undefined) ?? ""}
                                 onChange={(e) =>
                                   field.onChange(
-                                    e.target.value === "" ? undefined : Number(e.target.value)
+                                    e.target.value === "" || Number(e.target.value) === 0
+                                      ? null
+                                      : Number(e.target.value)
                                   )
                                 }
                                 onBlur={field.onBlur}
@@ -451,7 +453,7 @@ export function QuoteItemsTable({
                           ) : (
                             <CurrencyInput
                               value={field.value as number | undefined}
-                              onValueChange={field.onChange}
+                              onValueChange={(value) => field.onChange(value && value > 0 ? value : null)}
                               onBlur={field.onBlur}
                             />
                           )

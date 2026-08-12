@@ -7,7 +7,7 @@ export const tipoItemOptions = ["Produto", "Servico"] as const;
 const optionalDescontoTipo = z.enum(descontoTipoOptions).optional();
 
 const optionalDescontoValor = z.preprocess(
-  (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+  (v) => (v === "" || v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
   z.number().nonnegative("Desconto não pode ser negativo").optional()
 );
 

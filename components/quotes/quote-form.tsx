@@ -112,10 +112,10 @@ function ClosingDiscountField({
       )} />
       <Controller control={control} name={valueName} render={({ field }) => currentType === "Percentual" ? (
         <div className="relative w-32">
-          <Input type="number" step="0.01" min="0" max="100" className="pr-6" value={Number(field.value) > 0 ? Number(field.value) : ""} onChange={(e) => field.onChange(e.target.value === "" || Number(e.target.value) === 0 ? undefined : Number(e.target.value))} onBlur={field.onBlur} />
+          <Input type="number" step="0.01" min="0" max="100" className="pr-6" value={Number(field.value) > 0 ? Number(field.value) : ""} onChange={(e) => field.onChange(e.target.value === "" || Number(e.target.value) === 0 ? null : Number(e.target.value))} onBlur={field.onBlur} />
           <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
         </div>
-      ) : <CurrencyInput className="w-32" value={Number(field.value) > 0 ? Number(field.value) : undefined} onValueChange={(value) => field.onChange(value && value > 0 ? value : undefined)} onBlur={field.onBlur} />} />
+      ) : <CurrencyInput className="w-32" value={Number(field.value) > 0 ? Number(field.value) : undefined} onValueChange={(value) => field.onChange(value && value > 0 ? value : null)} onBlur={field.onBlur} />} />
     </div>
   );
 }
