@@ -121,14 +121,6 @@ function MarginEditorCell({
   setValue: UseFormSetValue<QuoteFormValues>;
 }) {
   const [open, setOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const keepOpen = () => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    setOpen(true);
-  };
-  const scheduleClose = () => {
-    closeTimer.current = setTimeout(() => setOpen(false), 180);
-  };
 
   return (
     <div className="min-w-36 space-y-1.5">
@@ -154,9 +146,6 @@ function MarginEditorCell({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             className="w-full rounded-md border bg-muted/40 px-2 py-1.5 text-left text-xs hover:border-primary hover:bg-muted"
-            onMouseEnter={keepOpen}
-            onMouseLeave={scheduleClose}
-            onFocus={keepOpen}
           >
             <span className="block font-medium">Custo: {formatCurrencyBRL(custoUnitario)}</span>
             <span className="text-muted-foreground">Margem: {margemLucro.toLocaleString("pt-BR")}%</span>
@@ -168,9 +157,19 @@ function MarginEditorCell({
             align="start"
             side="bottom"
             className="w-64 space-y-3 p-3"
-            onMouseEnter={keepOpen}
-            onMouseLeave={scheduleClose}
           >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold">Cálculo por margem</span>
+              <button
+                type="button"
+                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                onClick={() => setOpen(false)}
+                aria-label="Fechar cálculo por margem"
+                title="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
             <div className="space-y-1">
               <span className="text-xs font-medium text-muted-foreground">Custo unitário *</span>
               <Controller
