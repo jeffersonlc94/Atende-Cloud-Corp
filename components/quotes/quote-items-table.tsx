@@ -171,7 +171,7 @@ function MarginEditorCell({
             onMouseLeave={scheduleClose}
           >
             <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">Custo unitário</span>
+              <span className="text-xs font-medium text-muted-foreground">Custo unitário *</span>
               <Controller
                 control={control}
                 name={`itens.${index}.custoUnitario`}
@@ -189,7 +189,7 @@ function MarginEditorCell({
               />
             </div>
             <div className="space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">Margem de lucro</span>
+              <span className="text-xs font-medium text-muted-foreground">Margem de lucro *</span>
               <Controller
                 control={control}
                 name={`itens.${index}.margemLucro`}
@@ -235,7 +235,7 @@ function MarginEditorCell({
             </label>
             {freteHabilitado && (
               <div className="space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">Frete unitário</span>
+                <span className="text-xs font-medium text-muted-foreground">Frete unitário *</span>
                 <Controller
                   control={control}
                   name={`itens.${index}.freteUnitario`}
@@ -260,7 +260,21 @@ function MarginEditorCell({
           </PopoverContent>
         </Popover>
       ) : (
-        <span className="text-xs text-muted-foreground">Valor manual</span>
+        <div className="space-y-1">
+          <Controller
+            control={control}
+            name={`itens.${index}.custoUnitario`}
+            render={({ field }) => (
+              <CurrencyInput
+                value={field.value as number | undefined}
+                onValueChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder="Custo unitário"
+              />
+            )}
+          />
+          <span className="block text-xs text-muted-foreground">Preço de venda manual</span>
+        </div>
       )}
     </div>
   );
@@ -310,10 +324,10 @@ export function QuoteItemsTable({
               <TableHead className="w-16">Foto</TableHead>
               <TableHead className="w-32">Tipo</TableHead>
               <TableHead>Descrição</TableHead>
-              <TableHead className="w-28">Qtd.</TableHead>
-              <TableHead className="w-40">Custo / Margem</TableHead>
-              <TableHead className="w-36">Valor Unit.</TableHead>
-              <TableHead className="w-44">Desconto</TableHead>
+              <TableHead className="w-28">Qtd. *</TableHead>
+              <TableHead className="w-40">Custo / Margem *</TableHead>
+              <TableHead className="w-36">Valor Unit. *</TableHead>
+              <TableHead className="w-44">Desconto (opcional)</TableHead>
               <TableHead className="w-36">Total</TableHead>
               <TableHead className="w-10" />
             </TableRow>

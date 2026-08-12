@@ -325,7 +325,12 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form
+      onSubmit={handleSubmit(onSubmit, () =>
+        toast.error("Preencha a descrição, a quantidade e o valor obrigatório de todos os itens")
+      )}
+      className="space-y-4"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
