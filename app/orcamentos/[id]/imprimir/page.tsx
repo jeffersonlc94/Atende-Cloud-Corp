@@ -158,7 +158,7 @@ export default function ImprimirOrcamentoPage({
         </div>
       </div>
 
-      <div className="py-8">
+      <div className="py-8 print:py-0">
         <div ref={printRef}>
           <QuotePrintLayout
             layout={layout}

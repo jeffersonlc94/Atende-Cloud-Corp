@@ -192,6 +192,8 @@ html {
   html,
   body {
     background: #fff !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .print\:hidden {
@@ -208,8 +210,8 @@ html {
 
   .quote-print-page {
     width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
+    height: 296.5mm !important;
+    min-height: 296.5mm !important;
     margin: 0 !important;
     padding: 10mm !important;
     overflow: hidden !important;
@@ -220,6 +222,11 @@ html {
   .quote-print-page:last-child {
     break-after: auto !important;
     page-break-after: auto !important;
+  }
+
+  #quote-print-area {
+    gap: 0 !important;
+    overflow: visible !important;
   }
 
   #quote-print-area,
