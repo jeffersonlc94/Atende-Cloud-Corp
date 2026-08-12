@@ -28,7 +28,7 @@ export const quoteItemSchema = z.object({
   calcularPorMargem: z.boolean().optional().default(false),
   custoUnitario: z.preprocess(
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
-    z.number({ error: "Informe o custo unitário" }).positive("Custo unitário deve ser maior que zero")
+    z.number().positive("Custo unitário deve ser maior que zero").optional()
   ),
   margemLucro: z.preprocess(
     (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
@@ -42,6 +42,9 @@ export const quoteItemSchema = z.object({
   descontoTipo: optionalDescontoTipo,
   descontoValor: optionalDescontoValor,
 }).superRefine((item, ctx) => {
+  if (item.calcularPorMargem && item.custoUnitario === undefined) {
+    ctx.addIssue({ code: "custom", path: ["custoUnitario"], message: "Informe o custo unitário" });
+  }
   if (item.calcularPorMargem && item.margemLucro === undefined) {
     ctx.addIssue({ code: "custom", path: ["margemLucro"], message: "Informe a margem" });
   }

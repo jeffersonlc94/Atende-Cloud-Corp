@@ -6,6 +6,7 @@ import { Controller, useFieldArray, type Control, type UseFormRegister, type Use
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
@@ -260,21 +261,7 @@ function MarginEditorCell({
           </PopoverContent>
         </Popover>
       ) : (
-        <div className="space-y-1">
-          <Controller
-            control={control}
-            name={`itens.${index}.custoUnitario`}
-            render={({ field }) => (
-              <CurrencyInput
-                value={field.value as number | undefined}
-                onValueChange={field.onChange}
-                onBlur={field.onBlur}
-                placeholder="Custo unitário"
-              />
-            )}
-          />
-          <span className="block text-xs text-muted-foreground">Preço de venda manual</span>
-        </div>
+        <span className="text-xs text-muted-foreground">Preço de venda manual</span>
       )}
     </div>
   );
@@ -325,7 +312,7 @@ export function QuoteItemsTable({
               <TableHead className="w-32">Tipo</TableHead>
               <TableHead>Descrição</TableHead>
               <TableHead className="w-28">Qtd. *</TableHead>
-              <TableHead className="w-40">Custo / Margem *</TableHead>
+              <TableHead className="w-40">Custo / Margem</TableHead>
               <TableHead className="w-36">Valor Unit. *</TableHead>
               <TableHead className="w-44">Desconto (opcional)</TableHead>
               <TableHead className="w-36">Total</TableHead>
@@ -444,20 +431,11 @@ export function QuoteItemsTable({
                         render={({ field }) =>
                           descontoTipoAtual === "Percentual" ? (
                             <div className="relative">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                max="100"
+                              <DecimalInput
                                 className="pr-6"
-                                value={(field.value as number | undefined) ?? ""}
-                                onChange={(e) =>
-                                  field.onChange(
-                                    e.target.value === "" || Number(e.target.value) === 0
-                                      ? null
-                                      : Number(e.target.value)
-                                  )
-                                }
+                                maximum={100}
+                                value={field.value as number | undefined}
+                                onValueChange={(value) => field.onChange(value ?? null)}
                                 onBlur={field.onBlur}
                               />
                               <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">

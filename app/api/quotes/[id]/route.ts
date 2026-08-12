@@ -106,7 +106,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
     calcularPorMargem: item.calcularPorMargem,
-    custoUnitario: item.custoUnitario,
+    custoUnitario: item.calcularPorMargem ? item.custoUnitario ?? null : null,
     margemLucro: item.calcularPorMargem ? item.margemLucro ?? null : null,
     freteHabilitado: item.calcularPorMargem && item.freteHabilitado,
     freteUnitario: item.calcularPorMargem && item.freteHabilitado ? item.freteUnitario ?? null : null,
