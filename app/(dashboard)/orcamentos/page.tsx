@@ -128,7 +128,9 @@ export default function OrcamentosPage() {
           >
             <TabsList>
               <TabsTrigger value="mine">Meus Orçamentos</TabsTrigger>
-              <TabsTrigger value="global">Orçamentos Globais</TabsTrigger>
+              <TabsTrigger value="global">
+                {session?.user?.role === "ADMIN" ? "Todos os Orçamentos" : "Orçamentos Globais"}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="flex items-center rounded-md border p-0.5">

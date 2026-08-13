@@ -56,7 +56,9 @@ export async function GET(req: NextRequest) {
     // O filtro por usuário explícito (admin filtrando por criador) tem prioridade.
     if (!createdByUserId) where.createdByUserId = session.user.id;
   } else {
-    where.visibilidade = "Global";
+    // Administradores precisam enxergar o mesmo conjunto completo apresentado
+    // no dashboard. Usuários comuns continuam limitados aos registros globais.
+    if (session.user.role !== "ADMIN") where.visibilidade = "Global";
   }
 
   const [items, total] = await Promise.all([
