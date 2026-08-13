@@ -75,7 +75,7 @@ function JsonAuditValue({ value }: { value: object }) {
       </div>
       <pre className="max-h-56 overflow-auto whitespace-pre rounded bg-muted p-2 text-[11px]">{json}</pre>
       <Dialog open={expanded} onOpenChange={setExpanded}>
-        <DialogContent className="max-h-[90vh] max-w-5xl overflow-hidden">
+        <DialogContent className="h-[88vh] w-[96vw] max-w-none overflow-hidden sm:max-w-[96vw] xl:max-w-[1400px]">
           <DialogHeader>
             <DialogTitle>Visualização ampliada do JSON</DialogTitle>
             <DialogDescription>Conteúdo técnico completo do registro de auditoria.</DialogDescription>
@@ -85,7 +85,7 @@ function JsonAuditValue({ value }: { value: object }) {
               <Copy className="mr-2 h-4 w-4" /> Copiar JSON
             </Button>
           </div>
-          <pre className="max-h-[65vh] overflow-auto whitespace-pre rounded-md border bg-muted p-4 text-xs">{json}</pre>
+          <pre className="min-h-0 flex-1 overflow-auto whitespace-pre rounded-md border bg-muted p-4 text-xs">{json}</pre>
         </DialogContent>
       </Dialog>
     </div>
@@ -190,13 +190,13 @@ function AuditDetalhesView({ detalhes }: { detalhes: unknown }) {
           {Object.entries(alteracoes as Record<string, unknown>).map(([campo, valor]) => {
             if (isDeParaShape(valor)) {
               return (
-                <p key={campo} className="text-xs">
+                <div key={campo} className="min-w-0 text-xs">
                   <span className="font-medium">{labelForAuditField(campo)}:</span>
-                  <div className="mt-1 grid gap-2 sm:grid-cols-2">
-                    <div className="rounded border border-red-200 bg-red-50 p-2"><span className="font-medium text-red-700">Antes</span><AuditValue value={valor.de} /></div>
-                    <div className="rounded border border-emerald-200 bg-emerald-50 p-2"><span className="font-medium text-emerald-700">Depois</span><AuditValue value={valor.para} /></div>
+                  <div className="mt-1 grid min-w-0 gap-3 lg:grid-cols-2">
+                    <div className="min-w-0 rounded border border-red-200 bg-red-50 p-3"><span className="font-medium text-red-700">Antes</span><AuditValue value={valor.de} /></div>
+                    <div className="min-w-0 rounded border border-emerald-200 bg-emerald-50 p-3"><span className="font-medium text-emerald-700">Depois</span><AuditValue value={valor.para} /></div>
                   </div>
-                </p>
+                </div>
               );
             }
             if (Array.isArray(valor)) {
@@ -411,7 +411,7 @@ export default function AuditoriaPage() {
       )}
 
       <Dialog open={!!viewingLog} onOpenChange={(o) => !o && setViewingLog(null)}>
-        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="h-[88vh] w-[94vw] max-w-none overflow-y-auto p-5 sm:max-w-[94vw] xl:max-w-[1200px] xl:p-6">
           {viewingLog && (
             <>
               <DialogHeader>
