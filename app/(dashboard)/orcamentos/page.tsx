@@ -232,8 +232,8 @@ export default function OrcamentosPage() {
             </p>
           )}
           {data?.items.map((quote) => (
-            <Card key={quote.id}>
-              <CardHeader>
+            <Card key={quote.id} className="flex h-full flex-col">
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>Nº {quote.numero}</span>
                   <span className="text-sm font-normal text-muted-foreground">
@@ -241,22 +241,42 @@ export default function OrcamentosPage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
+              <CardContent className="flex flex-1 flex-col space-y-3 text-sm">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant={quote.visibilidade === "Privado" ? "secondary" : "outline"}>
                     {quote.visibilidade === "Privado" ? "Privado" : "Global"}
                   </Badge>
                   <QuoteStatusBadge status={quote.status} />
                 </div>
-                <p>
-                  <span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Empresa:</span>{" "}
-                  {quote.company.nomeFantasia || quote.company.razaoSocial}
-                </p>
+                <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+                  <p className="sm:col-span-2">
+                    <span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
+                  </p>
+                  <p className="sm:col-span-2">
+                    <span className="text-muted-foreground">Empresa:</span>{" "}
+                    {quote.company.nomeFantasia || quote.company.razaoSocial}
+                  </p>
+                  {quote.referencia && (
+                    <p><span className="text-muted-foreground">Referência:</span> {quote.referencia}</p>
+                  )}
+                  {quote.dataValidade && (
+                    <p><span className="text-muted-foreground">Validade:</span> {formatDateBR(quote.dataValidade)}</p>
+                  )}
+                  {!quote.dataValidade && quote.validadeDias && (
+                    <p><span className="text-muted-foreground">Validade:</span> {quote.validadeDias} dias</p>
+                  )}
+                  {quote.prazoEntrega && (
+                    <p><span className="text-muted-foreground">Prazo:</span> {quote.prazoEntrega}</p>
+                  )}
+                  {quote.condicoesPagamento && (
+                    <p><span className="text-muted-foreground">Pagamento:</span> {quote.condicoesPagamento}</p>
+                  )}
+                  {quote.createdByUser?.name && (
+                    <p><span className="text-muted-foreground">Criado por:</span> {quote.createdByUser.name}</p>
+                  )}
+                </div>
                 <p className="text-lg font-bold">{formatCurrencyBRL(Number(quote.total))}</p>
-                <div className="flex flex-wrap items-center gap-1 pt-2">
+                <div className="mt-auto flex flex-wrap items-center gap-1 border-t pt-2">
                   <Button
                     variant="ghost"
                     size="icon"
