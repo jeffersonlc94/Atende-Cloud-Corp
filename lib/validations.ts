@@ -70,6 +70,7 @@ export const quoteSchema = z.object({
   prazoEntrega: z.string().optional().default(""),
   observacoes: z.string().optional().default(""),
   observacoesInternas: z.string().optional().default(""),
+  fotosInternas: z.array(z.string()).optional().default([]),
   visibilidade: z.enum(visibilidadeOptions).default("Global"),
   status: z.enum(quoteStatusOptions).default("Negociacao"),
   itens: z.array(quoteItemSchema).min(1, "Adicione ao menos um item"),

@@ -140,6 +140,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
         prazoEntrega: data.prazoEntrega,
         observacoes: data.observacoes,
         observacoesInternas: data.observacoesInternas,
+        fotosInternas: data.fotosInternas,
         subtotal,
         descontoGeralTipo: data.descontoGeralTipo ?? null,
         descontoGeralValor: data.descontoGeralValor ?? null,

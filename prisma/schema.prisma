@@ -121,6 +121,7 @@ model Quote {
   prazoEntrega       String?
   observacoes        String?
   observacoesInternas String?
+  fotosInternas      Json          @default("[]")
   subtotal           Decimal?      @db.Decimal(14, 2)
   descontoGeralTipo  DescontoTipo?
   descontoGeralValor Decimal?      @db.Decimal(14, 2)

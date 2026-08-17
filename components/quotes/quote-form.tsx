@@ -31,6 +31,7 @@ import {
 import { ClientCombobox } from "@/components/clients/client-combobox";
 import { EditClientDialog } from "@/components/clients/edit-client-dialog";
 import { QuoteItemsTable } from "./quote-items-table";
+import { QuoteInternalPhotos } from "./quote-internal-photos";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import { formatCurrencyBRL } from "@/lib/format";
@@ -159,6 +160,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           prazoEntrega: initialData.prazoEntrega ?? "",
           observacoes: initialData.observacoes ?? "",
           observacoesInternas: initialData.observacoesInternas ?? "",
+          fotosInternas: initialData.fotosInternas ?? [],
           visibilidade: initialData.visibilidade ?? "Global",
           status: initialData.status ?? "Negociacao",
           itens: initialData.itens.map((i) => ({
@@ -197,6 +199,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           prazoEntrega: "",
           observacoes: "",
           observacoesInternas: "",
+          fotosInternas: [],
           visibilidade: "Global",
           status: "Negociacao",
           itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, calcularPorMargem: false, custoUnitario: undefined, margemLucro: undefined, freteHabilitado: false, freteUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
@@ -579,6 +582,13 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               placeholder="Anotações internas sobre este orçamento..."
               {...register("observacoesInternas")}
             />
+            <div className="mt-5 border-t pt-5">
+              <QuoteInternalPhotos
+                photos={values.fotosInternas ?? []}
+                disabled={approvedLocked}
+                onChange={(photos) => setValue("fotosInternas", photos, { shouldDirty: true })}
+              />
+            </div>
           </CardContent>
         </Card>
 

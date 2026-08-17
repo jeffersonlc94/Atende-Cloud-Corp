@@ -158,6 +158,7 @@ export async function POST(req: NextRequest) {
         prazoEntrega: data.prazoEntrega,
         observacoes: data.observacoes,
         observacoesInternas: data.observacoesInternas,
+        fotosInternas: data.fotosInternas,
         subtotal,
         descontoGeralTipo: data.descontoGeralTipo ?? null,
         descontoGeralValor: data.descontoGeralValor ?? null,

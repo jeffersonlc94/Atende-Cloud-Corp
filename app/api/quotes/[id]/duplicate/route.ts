@@ -51,6 +51,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
         condicoesPagamento: original.condicoesPagamento,
         prazoEntrega: original.prazoEntrega,
         observacoes: original.observacoes,
+        observacoesInternas: original.observacoesInternas,
+        fotosInternas: Array.isArray(original.fotosInternas)
+          ? original.fotosInternas.filter((foto): foto is string => typeof foto === "string")
+          : [],
         subtotal: original.subtotal,
         descontoGeralTipo: original.descontoGeralTipo,
         descontoGeralValor: original.descontoGeralValor,

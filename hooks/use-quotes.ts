@@ -34,6 +34,7 @@ export type QuoteRecord = {
   prazoEntrega: string | null;
   observacoes: string | null;
   observacoesInternas: string | null;
+  fotosInternas: string[];
   subtotal: string | null;
   descontoGeralTipo: "Valor" | "Percentual" | null;
   descontoGeralValor: string | null;
