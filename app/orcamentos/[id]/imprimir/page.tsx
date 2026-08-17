@@ -168,7 +168,7 @@ export default function ImprimirOrcamentoPage({
             quote={{
               numero: quote.numero,
               clienteNome: quote.client.nome,
-              createdByUserName: quote.updatedByUser?.name ?? quote.createdByUser?.name,
+              createdByUserName: quote.createdByUser?.name,
               referencia: quote.referencia,
               dataEmissao: quote.dataEmissao,
               validadeDias: quote.validadeDias,
