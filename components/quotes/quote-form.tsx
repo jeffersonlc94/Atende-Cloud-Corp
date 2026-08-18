@@ -290,6 +290,12 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
     };
   }, [autoSave, draftId, initialData, watch]);
 
+  useEffect(() => {
+    if (autoSaveState !== "saved") return;
+    const timer = setTimeout(() => setAutoSaveState("idle"), 3500);
+    return () => clearTimeout(timer);
+  }, [autoSaveState]);
+
   async function enableAutoSave() {
     try {
       const created = await createDraft.mutateAsync({ data: getValues(), autoSave: true });
@@ -417,6 +423,19 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {!initialData && autoSaveState !== "idle" && (
+            <div
+              className={autoSaveState === "error"
+                ? "flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 shadow-sm"
+                : autoSaveState === "saving"
+                  ? "flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-800 shadow-sm"
+                  : "flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 shadow-sm"}
+              role="status"
+            >
+              {autoSaveState === "error" ? <CloudOff className="h-4 w-4" /> : autoSaveState === "saving" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+              {autoSaveState === "saving" ? "Salvando rascunho..." : autoSaveState === "error" ? "Erro ao salvar rascunho" : autoSave ? "Rascunho salvo automaticamente" : "Rascunho salvo"}
+            </div>
+          )}
           {!initialData && !approvedLocked && <Button type="button" variant="outline" disabled={createDraft.isPending || updateDraft.isPending} onClick={saveAsDraft}>
             <Cloud className="mr-2 h-4 w-4" /> Salvar rascunho
           </Button>}
@@ -676,13 +695,6 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
           </span>
         </div>
       </fieldset>
-
-      {!initialData && (draftId || autoSave) && (
-        <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-xs shadow-lg">
-          {autoSaveState === "error" ? <CloudOff className="h-4 w-4 text-destructive" /> : autoSaveState === "saving" ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Cloud className="h-4 w-4 text-emerald-600" />}
-          {autoSaveState === "saving" ? "Salvando rascunho..." : autoSaveState === "error" ? "Erro ao salvar rascunho" : autoSave ? "Rascunho salvo automaticamente" : "Rascunho salvo"}
-        </div>
-      )}
 
       <ConfirmDialog
         open={confirmOpen}

@@ -59,7 +59,10 @@ export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: st
       await upload(images);
       setMenuOpen(false);
     } catch {
-      toast.info("Clique na área de fotos e pressione Ctrl+V para colar");
+      toast.warning("Ação necessária", {
+        description: "O navegador bloqueou a colagem automática. Clique na área de fotos e pressione Ctrl+V.",
+        duration: 6000,
+      });
     }
   }
 

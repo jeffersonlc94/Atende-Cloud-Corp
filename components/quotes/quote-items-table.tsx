@@ -88,7 +88,10 @@ function ItemFotoCell({
             }
             toast.error("Nenhuma imagem encontrada para colar");
           } catch {
-            toast.info("Clique nesta área e pressione Ctrl+V para colar a imagem");
+            toast.warning("Ação necessária", {
+              description: "O navegador bloqueou a colagem automática. Clique na área da foto e pressione Ctrl+V.",
+              duration: 6000,
+            });
           }
         }
 
