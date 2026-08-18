@@ -13,6 +13,8 @@ export type SystemSettings = {
   buttonColor: string | null;
   accentColor: string | null;
   autoLogoutMinutes: number | null;
+  maintenanceMode: boolean;
+  maintenanceMessage: string | null;
   notificationCargoPrefs: Record<string, Record<string, boolean>> | null;
   createdAt: string;
   updatedAt: string;
@@ -35,6 +37,7 @@ export function useSystemSettings() {
     queryKey: ["system-settings"],
     queryFn: () => fetchJson<SystemSettings>("/api/settings"),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 30 * 1000,
   });
 }
 

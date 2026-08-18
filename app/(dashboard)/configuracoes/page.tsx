@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +28,7 @@ import {
   Save,
   Database,
   Download,
+  Construction,
 } from "lucide-react";
 import { PersonalizacaoTab } from "@/components/settings/personalizacao-tab";
 import { CompaniesManager } from "@/components/companies/companies-manager";
@@ -1181,6 +1183,58 @@ function SegurancaTab() {
   );
 }
 
+function ManutencaoTab() {
+  const { data: settings, isLoading } = useSystemSettings();
+  const updateSettings = useUpdateSystemSettings();
+  const [enabled, setEnabled] = useState(false);
+  const [message, setMessage] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    if (!settings) return;
+    setEnabled(settings.maintenanceMode ?? false);
+    setMessage(settings.maintenanceMessage ?? "");
+  }, [settings]);
+
+  async function handleSave() {
+    try {
+      await updateSettings.mutateAsync({ maintenanceMode: enabled, maintenanceMessage: message });
+      toast.success(enabled ? "Modo manutenção ativado" : "Modo manutenção desativado");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao alterar modo manutenção");
+    }
+  }
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader className="border-b">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold"><Construction className="h-4 w-4" /> Modo manutenção</CardTitle>
+        <CardDescription>Bloqueia temporariamente o uso do sistema para usuários comuns. Administradores continuam com acesso.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5 pt-4 pb-5">
+        {isLoading ? <p className="text-sm text-muted-foreground">Carregando...</p> : <>
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border p-4">
+            <div><p className="font-medium">Sistema em manutenção</p><p className="text-sm text-muted-foreground">Ative antes de iniciar atualizações ou intervenções.</p></div>
+            <Checkbox checked={enabled} onCheckedChange={(value) => setEnabled(value === true)} />
+          </label>
+          <div className="space-y-2">
+            <Label>Mensagem exibida aos usuários</Label>
+            <Textarea rows={5} maxLength={500} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Ex: Sistema em atualização. Retornaremos às 18h." />
+            <p className="text-right text-xs text-muted-foreground">{message.length}/500</p>
+          </div>
+          <div className={enabled ? "rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" : "rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground"}>
+            Status: <strong>{enabled ? "manutenção será ativada" : "sistema disponível"}</strong>
+          </div>
+          <Button onClick={() => setConfirmOpen(true)} disabled={updateSettings.isPending}>
+            {updateSettings.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar configuração
+          </Button>
+        </>}
+      </CardContent>
+      <ConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} title={enabled ? "Ativar o modo manutenção?" : "Desativar o modo manutenção?"} description={enabled ? "Usuários comuns serão impedidos de utilizar o sistema até que um administrador desative esta opção." : "O acesso normal dos usuários será liberado."} confirmLabel={enabled ? "Ativar manutenção" : "Liberar sistema"} onConfirm={handleSave} />
+    </Card>
+  );
+}
+
 function BackupTab() {
   const [downloading, setDownloading] = useState(false);
 
@@ -1278,6 +1332,11 @@ function ConfiguracoesContent() {
               <Database className="h-4 w-4" /> Backup
             </TabsTrigger>
           )}
+          {isAdmin && (
+            <TabsTrigger value="manutencao" className="gap-1.5">
+              <Construction className="h-4 w-4" /> Manutenção
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="personalizacao" className="pt-4">
@@ -1297,6 +1356,11 @@ function ConfiguracoesContent() {
         {isAdmin && (
           <TabsContent value="backup" className="pt-4">
             <BackupTab />
+          </TabsContent>
+        )}
+        {isAdmin && (
+          <TabsContent value="manutencao" className="pt-4">
+            <ManutencaoTab />
           </TabsContent>
         )}
       </Tabs>

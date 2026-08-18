@@ -127,6 +127,8 @@ export const systemSettingsSchema = z.object({
   buttonColor: z.string().optional().default(""),
   accentColor: z.string().optional().default(""),
   autoLogoutMinutes: z.number().int().nonnegative().optional(),
+  maintenanceMode: z.boolean().optional(),
+  maintenanceMessage: z.string().max(500, "Mensagem deve ter no máximo 500 caracteres").optional().default(""),
   notificationCargoPrefs: notificationCargoPrefsSchema.optional(),
 });
 

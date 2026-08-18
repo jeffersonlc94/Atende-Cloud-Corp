@@ -74,6 +74,8 @@ export async function PUT(req: NextRequest) {
   if (hasKey("autoLogoutMinutes")) {
     updateData.autoLogoutMinutes = data.autoLogoutMinutes || null;
   }
+  if (hasKey("maintenanceMode")) updateData.maintenanceMode = data.maintenanceMode ?? false;
+  if (hasKey("maintenanceMessage")) updateData.maintenanceMessage = data.maintenanceMessage || null;
   if (hasKey("notificationCargoPrefs")) {
     updateData.notificationCargoPrefs = data.notificationCargoPrefs ?? {};
   }

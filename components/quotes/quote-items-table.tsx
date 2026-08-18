@@ -44,9 +44,7 @@ function ItemFotoCell({
       control={control}
       name={`itens.${index}.fotoUrl`}
       render={({ field }) => {
-        async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-          const file = e.target.files?.[0];
-          e.target.value = "";
+        async function uploadFile(file: File | undefined) {
           if (!file) return;
           setUploading(true);
           try {
@@ -63,8 +61,21 @@ function ItemFotoCell({
           }
         }
 
+        async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          await uploadFile(file);
+        }
+
+        async function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+          const file = Array.from(e.clipboardData.files).find((item) => item.type.startsWith("image/"));
+          if (!file) return;
+          e.preventDefault();
+          await uploadFile(file);
+        }
+
         return (
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center rounded outline-none focus-visible:ring-2 focus-visible:ring-primary" tabIndex={0} onPaste={handlePaste} title="Clique e use Ctrl+V para colar uma imagem">
             <input
               ref={fileInputRef}
               type="file"

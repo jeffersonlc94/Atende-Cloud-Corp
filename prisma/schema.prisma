@@ -446,6 +446,8 @@ model SystemSettings {
   buttonColor            String?
   accentColor            String?
   autoLogoutMinutes      Int?
+  maintenanceMode        Boolean  @default(false)
+  maintenanceMessage     String?
   notificationCargoPrefs Json?
   smtpHost               String?
   smtpPort               Int?

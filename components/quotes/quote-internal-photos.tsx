@@ -12,12 +12,12 @@ export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: st
   const [uploading, setUploading] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
 
-  async function upload(files: FileList | null) {
-    if (!files?.length) return;
+  async function upload(files: File[]) {
+    if (!files.length) return;
     setUploading(true);
     try {
       const uploaded: string[] = [];
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
         const response = await fetch("/api/upload", { method: "POST", body: formData });
@@ -35,13 +35,21 @@ export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: st
     }
   }
 
+  async function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
+    if (disabled) return;
+    const images = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith("image/"));
+    if (!images.length) return;
+    event.preventDefault();
+    await upload(images);
+  }
+
   return (
-    <div className="space-y-3">
-      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(event) => upload(event.target.files)} />
+    <div className="space-y-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary" tabIndex={disabled ? -1 : 0} onPaste={handlePaste}>
+      <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(event) => upload(Array.from(event.target.files ?? []))} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-sm font-medium">Fotos anexadas</p>
-          <p className="text-xs text-muted-foreground">Controle interno — não aparecem no orçamento impresso ou PDF.</p>
+          <p className="text-xs text-muted-foreground">Controle interno — anexe arquivos ou clique nesta área e use Ctrl+V para colar imagens.</p>
         </div>
         {!disabled && <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => inputRef.current?.click()}>
           {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
@@ -50,7 +58,7 @@ export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: st
       </div>
       {photos.length === 0 ? (
         <button type="button" disabled={disabled || uploading} onClick={() => inputRef.current?.click()} className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-muted/40 disabled:pointer-events-none">
-          <Camera className="h-7 w-7" /><span>Nenhuma foto anexada</span>
+          <Camera className="h-7 w-7" /><span>Nenhuma foto anexada — clique para anexar ou use Ctrl+V</span>
         </button>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
