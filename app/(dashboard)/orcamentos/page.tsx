@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -50,6 +50,9 @@ import {
   Eye,
   LayoutGrid,
   List,
+  RotateCcw,
+  Building2,
+  UserRound,
 } from "lucide-react";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -68,6 +71,23 @@ const statusClasses = {
   Aprovado: "border-emerald-300 bg-emerald-50 text-emerald-800",
 } as const;
 
+const FILTERS_STORAGE_KEY = "orcamentos:filtros";
+const VIEW_STORAGE_KEY = "orcamentos:visualizacao";
+
+function loadSavedFilters(): QuoteFilters {
+  if (typeof window === "undefined") return { scope: "mine" };
+  try {
+    return { scope: "mine", ...JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) || "{}") };
+  } catch {
+    return { scope: "mine" };
+  }
+}
+
+function loadSavedView(): "table" | "grid" {
+  if (typeof window === "undefined") return "table";
+  return localStorage.getItem(VIEW_STORAGE_KEY) === "grid" ? "grid" : "table";
+}
+
 function QuoteStatusBadge({ status }: { status: keyof typeof statusLabels }) {
   return <Badge variant="outline" className={statusClasses[status]}>{statusLabels[status]}</Badge>;
 }
@@ -81,6 +101,23 @@ export default function OrcamentosPage() {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [pendingDuplicate, setPendingDuplicate] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [storageReady, setStorageReady] = useState(false);
+
+  useEffect(() => {
+    setFilters(loadSavedFilters());
+    setViewMode(loadSavedView());
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters, storageReady]);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    localStorage.setItem(VIEW_STORAGE_KEY, viewMode);
+  }, [viewMode, storageReady]);
 
   const { data, isLoading } = useQuotesList(filters);
   const deleteQuote = useDeleteQuote();
@@ -88,6 +125,12 @@ export default function OrcamentosPage() {
 
   function updateFilter(key: keyof QuoteFilters, value: string | undefined) {
     setFilters((f) => ({ ...f, [key]: value }));
+  }
+
+  function clearFilters() {
+    const scope = filters.scope ?? "mine";
+    setFilters({ scope });
+    localStorage.removeItem(FILTERS_STORAGE_KEY);
   }
 
   async function handleDelete(id: string) {
@@ -163,10 +206,12 @@ export default function OrcamentosPage() {
         <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
           <Input
             placeholder="Número"
+            value={filters.numero ?? ""}
             onChange={(e) => updateFilter("numero", e.target.value)}
           />
           <Input
             placeholder="Cliente"
+            value={filters.cliente ?? ""}
             onChange={(e) => updateFilter("cliente", e.target.value)}
           />
           <Select
@@ -211,13 +256,20 @@ export default function OrcamentosPage() {
           <Input
             type="date"
             placeholder="Data inicial"
+            value={filters.dataInicial ?? ""}
             onChange={(e) => updateFilter("dataInicial", e.target.value)}
           />
           <Input
             type="date"
             placeholder="Data final"
+            value={filters.dataFinal ?? ""}
             onChange={(e) => updateFilter("dataFinal", e.target.value)}
           />
+          <div className="flex justify-end sm:col-span-2 lg:col-span-6">
+            <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+              <RotateCcw className="mr-2 h-4 w-4" /> Limpar filtros
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -232,8 +284,8 @@ export default function OrcamentosPage() {
             </p>
           )}
           {data?.items.map((quote) => (
-            <Card key={quote.id} className="flex h-full flex-col">
-              <CardHeader className="pb-3">
+            <Card key={quote.id} className="flex h-full flex-col overflow-hidden border-l-4 border-l-primary shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <CardHeader className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent pb-3">
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>Nº {quote.numero}</span>
                   <span className="text-sm font-normal text-muted-foreground">
@@ -248,12 +300,12 @@ export default function OrcamentosPage() {
                   </Badge>
                   <QuoteStatusBadge status={quote.status} />
                 </div>
-                <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+                <div className="grid gap-x-4 gap-y-2 rounded-xl bg-muted/35 p-3 sm:grid-cols-2">
                   <p className="sm:col-span-2">
-                    <span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
+                    <UserRound className="mr-1.5 inline h-3.5 w-3.5 text-primary" /><span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
                   </p>
                   <p className="sm:col-span-2">
-                    <span className="text-muted-foreground">Empresa:</span>{" "}
+                    <Building2 className="mr-1.5 inline h-3.5 w-3.5 text-primary" /><span className="text-muted-foreground">Empresa:</span>{" "}
                     {quote.company.nomeFantasia || quote.company.razaoSocial}
                   </p>
                   {quote.referencia && (
@@ -275,7 +327,7 @@ export default function OrcamentosPage() {
                     <p><span className="text-muted-foreground">Criado por:</span> {quote.createdByUser.name}</p>
                   )}
                 </div>
-                <p className="text-lg font-bold">{formatCurrencyBRL(Number(quote.total))}</p>
+                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-lg font-bold text-emerald-700">{formatCurrencyBRL(Number(quote.total))}</p>
                 <div className="mt-auto flex flex-wrap items-center gap-1 border-t pt-2">
                   <Button
                     variant="ghost"
@@ -326,6 +378,7 @@ export default function OrcamentosPage() {
                 <TableRow>
                   <TableHead>Número</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Referência</TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Criado por</TableHead>
@@ -338,7 +391,7 @@ export default function OrcamentosPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                       <Search className="mx-auto mb-2 h-5 w-5" />
                       Carregando...
                     </TableCell>
@@ -346,7 +399,7 @@ export default function OrcamentosPage() {
                 )}
                 {!isLoading && data?.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                       Nenhum orçamento encontrado
                     </TableCell>
                   </TableRow>
@@ -355,6 +408,7 @@ export default function OrcamentosPage() {
                   <TableRow key={quote.id}>
                     <TableCell className="font-medium">{quote.numero}</TableCell>
                     <TableCell>{quote.client.nome}</TableCell>
+                    <TableCell className="max-w-56 truncate" title={quote.referencia ?? undefined}>{quote.referencia || "—"}</TableCell>
                     <TableCell>
                       {quote.company.nomeFantasia || quote.company.razaoSocial}
                     </TableCell>

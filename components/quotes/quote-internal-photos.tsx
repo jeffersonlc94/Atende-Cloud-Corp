@@ -83,7 +83,7 @@ export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: st
           <p className="text-sm font-medium">Fotos anexadas</p>
           <p className="text-xs text-muted-foreground">Controle interno — anexe arquivos ou clique nesta área e use Ctrl+V para colar imagens.</p>
         </div>
-        {!disabled && addPhotoMenu}
+        {!disabled && photos.length > 0 && addPhotoMenu}
       </div>
       {photos.length === 0 ? (
         <div className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-6 text-sm text-muted-foreground">

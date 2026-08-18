@@ -136,7 +136,7 @@ function ItemFotoCell({
 }
 
 function MarginEditorCell({
-  control, index, enabled, custoUnitario, margemLucro, freteHabilitado, freteUnitario, valorCalculado, setValue,
+  control, index, enabled, custoUnitario, margemLucro, freteHabilitado, freteUnitario, valorCalculado, valorUnitario, setValue,
 }: {
   control: Control<QuoteFormValues>;
   index: number;
@@ -146,9 +146,16 @@ function MarginEditorCell({
   freteHabilitado: boolean;
   freteUnitario: number;
   valorCalculado: number;
+  valorUnitario: number;
   setValue: UseFormSetValue<QuoteFormValues>;
 }) {
   const [open, setOpen] = useState(false);
+  const previousValueRef = useRef<number | null>(null);
+  const calculationEditedRef = useRef(false);
+
+  function markCalculationEdited() {
+    calculationEditedRef.current = true;
+  }
 
   return (
     <div className="min-w-36 space-y-1.5">
@@ -161,9 +168,22 @@ function MarginEditorCell({
               type="checkbox"
               checked={field.value ?? false}
               onChange={(e) => {
-                field.onChange(e.target.checked);
-                setOpen(e.target.checked);
-                if (e.target.checked) setValue(`itens.${index}.valorUnitario`, valorCalculado, { shouldDirty: true });
+                const checked = e.target.checked;
+                if (checked) {
+                  previousValueRef.current = valorUnitario;
+                  calculationEditedRef.current = false;
+                  field.onChange(true);
+                  setOpen(true);
+                  setValue(`itens.${index}.valorUnitario`, valorCalculado, { shouldDirty: true });
+                } else {
+                  field.onChange(false);
+                  setOpen(false);
+                  if (!calculationEditedRef.current && previousValueRef.current !== null) {
+                    setValue(`itens.${index}.valorUnitario`, previousValueRef.current, { shouldDirty: true });
+                  }
+                  previousValueRef.current = null;
+                  calculationEditedRef.current = false;
+                }
               }}
             />
           )}
@@ -207,6 +227,7 @@ function MarginEditorCell({
                   <CurrencyInput
                     value={field.value as number | undefined}
                     onValueChange={(value) => {
+                      markCalculationEdited();
                       field.onChange(value);
                       const custo = Number(value) || 0;
                       setValue(`itens.${index}.valorUnitario`, computeUnitPriceFromMargin(custo, margemLucro, freteHabilitado ? freteUnitario : 0), { shouldDirty: true });
@@ -230,6 +251,7 @@ function MarginEditorCell({
                       className="pr-7"
                       value={(field.value as number | undefined) ?? ""}
                       onChange={(e) => {
+                        markCalculationEdited();
                         const value = e.target.value === "" ? undefined : Number(e.target.value);
                         field.onChange(value);
                         setValue(`itens.${index}.valorUnitario`, computeUnitPriceFromMargin(custoUnitario, Number(value) || 0, freteHabilitado ? freteUnitario : 0), { shouldDirty: true });
@@ -249,6 +271,7 @@ function MarginEditorCell({
                     type="checkbox"
                     checked={field.value ?? false}
                     onChange={(e) => {
+                      markCalculationEdited();
                       field.onChange(e.target.checked);
                       setValue(
                         `itens.${index}.valorUnitario`,
@@ -271,6 +294,7 @@ function MarginEditorCell({
                     <CurrencyInput
                       value={field.value as number | undefined}
                       onValueChange={(value) => {
+                        markCalculationEdited();
                         field.onChange(value);
                         setValue(
                           `itens.${index}.valorUnitario`,
@@ -412,6 +436,7 @@ export function QuoteItemsTable({
                       freteHabilitado={freteHabilitado}
                       freteUnitario={freteUnitario}
                       valorCalculado={valorCalculado}
+                      valorUnitario={Number(item?.valorUnitario) || 0}
                       setValue={setValue}
                     />
                   </TableCell>
