@@ -1,16 +1,18 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Eye, Loader2, Plus, Trash2 } from "lucide-react";
+import { Camera, ClipboardPaste, Eye, Loader2, Paperclip, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FotoThumb } from "@/components/shared/foto-thumb";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: string[]; onChange: (photos: string[]) => void; disabled?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   async function upload(files: File[]) {
     if (!files.length) return;
@@ -43,6 +45,36 @@ export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: st
     await upload(images);
   }
 
+  async function pasteFromClipboard() {
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      const images: File[] = [];
+      for (const item of clipboardItems) {
+        const imageType = item.types.find((type) => type.startsWith("image/"));
+        if (!imageType) continue;
+        const blob = await item.getType(imageType);
+        images.push(new File([blob], `imagem-colada-${images.length + 1}.${imageType.split("/")[1] || "png"}`, { type: imageType }));
+      }
+      if (!images.length) return toast.error("Nenhuma imagem encontrada para colar");
+      await upload(images);
+      setMenuOpen(false);
+    } catch {
+      toast.info("Clique na área de fotos e pressione Ctrl+V para colar");
+    }
+  }
+
+  const addPhotoMenu = (
+    <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+      <PopoverTrigger type="button" disabled={uploading} className="inline-flex h-8 items-center justify-center rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent">
+        {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Adicionar fotos
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-56 space-y-1 p-2">
+        <Button type="button" variant="ghost" className="w-full justify-start" onClick={pasteFromClipboard}><ClipboardPaste className="mr-2 h-4 w-4" /> Colar imagem</Button>
+        <Button type="button" variant="ghost" className="w-full justify-start" onClick={() => { setMenuOpen(false); inputRef.current?.click(); }}><Paperclip className="mr-2 h-4 w-4" /> Anexar arquivo</Button>
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
     <div className="space-y-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary" tabIndex={disabled ? -1 : 0} onPaste={handlePaste}>
       <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={(event) => upload(Array.from(event.target.files ?? []))} />
@@ -51,15 +83,12 @@ export function QuoteInternalPhotos({ photos, onChange, disabled }: { photos: st
           <p className="text-sm font-medium">Fotos anexadas</p>
           <p className="text-xs text-muted-foreground">Controle interno — anexe arquivos ou clique nesta área e use Ctrl+V para colar imagens.</p>
         </div>
-        {!disabled && <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => inputRef.current?.click()}>
-          {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-          Anexar fotos
-        </Button>}
+        {!disabled && addPhotoMenu}
       </div>
       {photos.length === 0 ? (
-        <button type="button" disabled={disabled || uploading} onClick={() => inputRef.current?.click()} className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-muted/40 disabled:pointer-events-none">
-          <Camera className="h-7 w-7" /><span>Nenhuma foto anexada — clique para anexar ou use Ctrl+V</span>
-        </button>
+        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+          <Camera className="h-7 w-7" /><span>Nenhuma foto adicionada</span>{!disabled && addPhotoMenu}
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {photos.map((url, index) => (

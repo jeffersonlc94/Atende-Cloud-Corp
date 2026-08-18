@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calculator, Camera, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Calculator, Camera, ClipboardPaste, Loader2, Paperclip, Plus, Trash2, X } from "lucide-react";
 import { formatCurrencyBRL } from "@/lib/format";
 import { computeItemTotal, computeUnitPriceFromMargin } from "@/lib/quote-calc";
 import type { QuoteFormValues } from "@/lib/validations";
@@ -37,6 +37,7 @@ function ItemFotoCell({
   index: number;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -74,6 +75,23 @@ function ItemFotoCell({
           await uploadFile(file);
         }
 
+        async function pasteFromClipboard() {
+          try {
+            const clipboardItems = await navigator.clipboard.read();
+            for (const item of clipboardItems) {
+              const imageType = item.types.find((type) => type.startsWith("image/"));
+              if (!imageType) continue;
+              const blob = await item.getType(imageType);
+              await uploadFile(new File([blob], `imagem-colada.${imageType.split("/")[1] || "png"}`, { type: imageType }));
+              setMenuOpen(false);
+              return;
+            }
+            toast.error("Nenhuma imagem encontrada para colar");
+          } catch {
+            toast.info("Clique nesta área e pressione Ctrl+V para colar a imagem");
+          }
+        }
+
         return (
           <div className="flex items-center justify-center rounded outline-none focus-visible:ring-2 focus-visible:ring-primary" tabIndex={0} onPaste={handlePaste} title="Clique e use Ctrl+V para colar uma imagem">
             <input
@@ -96,20 +114,19 @@ function ItemFotoCell({
                 </button>
               </div>
             ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-                title="Adicionar foto (opcional)"
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}
-              </Button>
+              <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+                <PopoverTrigger type="button" disabled={uploading} title="Adicionar foto" className="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-background hover:bg-accent">
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-52 space-y-1 p-2">
+                  <Button type="button" variant="ghost" className="w-full justify-start" onClick={pasteFromClipboard}>
+                    <ClipboardPaste className="mr-2 h-4 w-4" /> Colar imagem
+                  </Button>
+                  <Button type="button" variant="ghost" className="w-full justify-start" onClick={() => { setMenuOpen(false); fileInputRef.current?.click(); }}>
+                    <Paperclip className="mr-2 h-4 w-4" /> Anexar arquivo
+                  </Button>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
         );
