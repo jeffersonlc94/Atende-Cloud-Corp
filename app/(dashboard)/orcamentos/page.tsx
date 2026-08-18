@@ -11,6 +11,8 @@ import {
   useQuotesList,
   useDeleteQuote,
   useDuplicateQuote,
+  useQuoteDrafts,
+  useDeleteQuoteDraft,
   type QuoteFilters,
 } from "@/hooks/use-quotes";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -53,6 +55,7 @@ import {
   RotateCcw,
   Building2,
   UserRound,
+  FilePenLine,
 } from "lucide-react";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -100,6 +103,7 @@ export default function OrcamentosPage() {
   const [filters, setFilters] = useState<QuoteFilters>({ scope: "mine" });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [pendingDuplicate, setPendingDuplicate] = useState<string | null>(null);
+  const [pendingDraftDelete, setPendingDraftDelete] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [storageReady, setStorageReady] = useState(false);
 
@@ -119,9 +123,17 @@ export default function OrcamentosPage() {
     localStorage.setItem(VIEW_STORAGE_KEY, viewMode);
   }, [viewMode, storageReady]);
 
-  const { data, isLoading } = useQuotesList(filters);
+  const { data, isLoading } = useQuotesList(filters, filters.status !== "Rascunho");
+  const { data: drafts = [] } = useQuoteDrafts();
+  const deleteDraft = useDeleteQuoteDraft();
   const deleteQuote = useDeleteQuote();
   const duplicateQuote = useDuplicateQuote();
+  const visibleDrafts = drafts.filter((draft) => {
+    if (filters.scope === "global" || (filters.status && filters.status !== "Rascunho")) return false;
+    const draftData = draft.data;
+    if (filters.cliente && !String(draftData.clientNome ?? "").toLowerCase().includes(filters.cliente.toLowerCase())) return false;
+    return true;
+  });
 
   function updateFilter(key: keyof QuoteFilters, value: string | undefined) {
     setFilters((f) => ({ ...f, [key]: value }));
@@ -247,6 +259,7 @@ export default function OrcamentosPage() {
             <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="Rascunho">Rascunho</SelectItem>
               <SelectItem value="Negociacao">Em negociação</SelectItem>
               <SelectItem value="Enviado">Enviado</SelectItem>
               <SelectItem value="NaoAprovado">Não aprovado</SelectItem>
@@ -272,6 +285,33 @@ export default function OrcamentosPage() {
           </div>
         </CardContent>
       </Card>
+
+      {visibleDrafts.length > 0 && (
+        <Card className="border-dashed border-amber-300 bg-amber-50/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base text-amber-900"><FilePenLine className="h-4 w-4" /> Rascunhos</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {visibleDrafts.map((draft) => (
+              <div key={draft.id} className="rounded-xl border border-amber-200 bg-background p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <Badge className="border-amber-300 bg-amber-100 text-amber-900" variant="outline">Rascunho</Badge>
+                  <span className="text-xs text-muted-foreground">{new Date(draft.updatedAt).toLocaleString("pt-BR")}</span>
+                </div>
+                <p className="mt-3 font-medium">{String(draft.data.clientNome || "Cliente ainda não informado")}</p>
+                <p className="mt-1 truncate text-sm text-muted-foreground">{String(draft.data.referencia || "Sem referência")}</p>
+                <div className="mt-4 flex gap-2 border-t pt-3">
+                  <Button size="sm" onClick={() => router.push(`/orcamentos/novo?draftId=${draft.id}`)}><Pencil className="mr-2 h-4 w-4" /> Continuar edição</Button>
+                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setPendingDraftDelete(draft.id)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+      {filters.status === "Rascunho" && visibleDrafts.length === 0 && (
+        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Nenhum rascunho encontrado.</CardContent></Card>
+      )}
 
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -501,6 +541,20 @@ export default function OrcamentosPage() {
         description="Um novo orçamento será criado a partir deste."
         confirmLabel="Duplicar"
         onConfirm={() => pendingDuplicate && handleDuplicate(pendingDuplicate)}
+      />
+      <ConfirmDialog
+        open={!!pendingDraftDelete}
+        onOpenChange={(open) => !open && setPendingDraftDelete(null)}
+        title="Excluir este rascunho?"
+        description="O conteúdo salvo automaticamente será removido."
+        confirmLabel="Excluir rascunho"
+        variant="destructive"
+        onConfirm={async () => {
+          if (!pendingDraftDelete) return;
+          try { await deleteDraft.mutateAsync(pendingDraftDelete); toast.success("Rascunho excluído"); }
+          catch { toast.error("Erro ao excluir rascunho"); }
+          finally { setPendingDraftDelete(null); }
+        }}
       />
     </div>
   );

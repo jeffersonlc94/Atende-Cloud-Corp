@@ -38,6 +38,7 @@ model User {
   updatedAt            DateTime @updatedAt
 
   quotes        Quote[]
+  quoteDrafts   QuoteDraft[]
   updatedQuotes Quote[]       @relation("QuoteUpdatedBy")
   mileageLogs   MileageLog[]
   checklists    Checklist[]
@@ -142,6 +143,19 @@ model Quote {
   itens QuoteItem[]
 
   @@map("quotes")
+}
+
+model QuoteDraft {
+  id              String   @id @default(cuid())
+  data            Json     @default("{}")
+  autoSave        Boolean  @default(true)
+  createdByUserId String
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([createdByUserId, updatedAt])
+  @@map("quote_drafts")
 }
 
 model QuoteItem {

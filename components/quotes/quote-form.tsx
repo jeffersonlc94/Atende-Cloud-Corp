@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { quoteSchema, type QuoteFormValues } from "@/lib/validations";
 import { useCompanies } from "@/hooks/use-companies";
 import { useUpdateClient } from "@/hooks/use-clients";
-import { useCreateQuote, useUpdateQuote, type QuoteRecord } from "@/hooks/use-quotes";
+import { useCreateQuote, useUpdateQuote, useCreateQuoteDraft, useUpdateQuoteDraft, useDeleteQuoteDraft, type QuoteDraftRecord, type QuoteRecord } from "@/hooks/use-quotes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,6 +57,8 @@ import {
   StickyNote,
   Pencil,
   Unlock,
+  Cloud,
+  CloudOff,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -122,12 +124,15 @@ function ClosingDiscountField({
   );
 }
 
-export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
+export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; draft?: QuoteDraftRecord }) {
   const router = useRouter();
   const { data: session } = useSession();
   const { data: companies = [] } = useCompanies();
   const createQuote = useCreateQuote();
   const updateQuote = useUpdateQuote();
+  const createDraft = useCreateQuoteDraft();
+  const updateDraft = useUpdateQuoteDraft();
+  const deleteDraft = useDeleteQuoteDraft();
   const [previewing, setPreviewing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [reopenConfirmOpen, setReopenConfirmOpen] = useState(false);
@@ -138,12 +143,20 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
     initialData?.client.id ?? null
   );
   const [editClientOpen, setEditClientOpen] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(draft?.id ?? null);
+  const [autoSave, setAutoSave] = useState(draft?.autoSave ?? false);
+  const [autoSavePromptOpen, setAutoSavePromptOpen] = useState(!initialData && !draft);
+  const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved" | "error">(draft ? "saved" : "idle");
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateDraftRef = useRef(updateDraft.mutateAsync);
+  updateDraftRef.current = updateDraft.mutateAsync;
 
   const {
     register,
     control,
     handleSubmit,
     watch,
+    getValues,
     setValue,
     formState: { errors },
   } = useForm<QuoteFormValues>({
@@ -209,6 +222,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           descontoProdutosValor: undefined,
           descontoServicosTipo: undefined,
           descontoServicosValor: undefined,
+          ...(draft?.data ?? {}),
         },
   });
 
@@ -256,6 +270,57 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
     return base.toLocaleDateString("pt-BR");
   }, [values.dataEmissao, values.validadeDias]);
 
+  useEffect(() => {
+    if (!draftId || !autoSave || initialData) return;
+    const subscription = watch((data) => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      setAutoSaveState("saving");
+      autoSaveTimer.current = setTimeout(async () => {
+        try {
+          await updateDraftRef.current({ id: draftId, data: data as Partial<QuoteFormValues>, autoSave: true });
+          setAutoSaveState("saved");
+        } catch {
+          setAutoSaveState("error");
+        }
+      }, 1200);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [autoSave, draftId, initialData, watch]);
+
+  async function enableAutoSave() {
+    try {
+      const created = await createDraft.mutateAsync({ data: getValues(), autoSave: true });
+      setDraftId(created.id);
+      setAutoSave(true);
+      setAutoSaveState("saved");
+      router.replace(`/orcamentos/novo?draftId=${created.id}`);
+      toast.success("Salvamento automático ativado");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao ativar salvamento automático");
+    }
+  }
+
+  async function saveAsDraft() {
+    try {
+      setAutoSaveState("saving");
+      if (draftId) {
+        await updateDraft.mutateAsync({ id: draftId, data: getValues(), autoSave });
+      } else {
+        const created = await createDraft.mutateAsync({ data: getValues(), autoSave: false });
+        setDraftId(created.id);
+        router.replace(`/orcamentos/novo?draftId=${created.id}`);
+      }
+      setAutoSaveState("saved");
+      toast.success("Rascunho salvo");
+    } catch (error) {
+      setAutoSaveState("error");
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar rascunho");
+    }
+  }
+
   async function persist(data: QuoteFormValues) {
     if (initialData) {
       await updateQuote.mutateAsync({ id: initialData.id, data });
@@ -268,6 +333,9 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   async function confirmAndPersist(data: QuoteFormValues) {
     try {
       await persist(data);
+      if (draftId) {
+        try { await deleteDraft.mutateAsync(draftId); } catch { /* orçamento já foi finalizado; não repetir a criação */ }
+      }
       toast.success(initialData ? "Orçamento atualizado com sucesso" : "Orçamento criado com sucesso");
       router.push("/orcamentos");
       router.refresh();
@@ -291,8 +359,11 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
       setPreviewing(true);
       try {
         const id = await persist(data);
+        if (draftId) {
+          try { await deleteDraft.mutateAsync(draftId); } catch { /* não bloquear a visualização */ }
+        }
         if (!initialData) {
-          toast.success("Orçamento salvo como rascunho para pré-visualização");
+          toast.success("Orçamento finalizado para pré-visualização");
           router.refresh();
         }
         router.push(`/orcamentos/${id}/imprimir`);
@@ -346,13 +417,16 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {!initialData && !approvedLocked && <Button type="button" variant="outline" disabled={createDraft.isPending || updateDraft.isPending} onClick={saveAsDraft}>
+            <Cloud className="mr-2 h-4 w-4" /> Salvar rascunho
+          </Button>}
           {!approvedLocked && <Button type="submit" disabled={isSaving}>
             {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Salvar
+            {initialData ? "Salvar alterações" : "Finalizar orçamento"}
           </Button>}
           {approvedLocked && (
             <Button type="button" onClick={() => setReopenConfirmOpen(true)} disabled={reopening}>
@@ -603,12 +677,29 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         </div>
       </fieldset>
 
+      {!initialData && (draftId || autoSave) && (
+        <div className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-xs shadow-lg">
+          {autoSaveState === "error" ? <CloudOff className="h-4 w-4 text-destructive" /> : autoSaveState === "saving" ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Cloud className="h-4 w-4 text-emerald-600" />}
+          {autoSaveState === "saving" ? "Salvando rascunho..." : autoSaveState === "error" ? "Erro ao salvar rascunho" : autoSave ? "Rascunho salvo automaticamente" : "Rascunho salvo"}
+        </div>
+      )}
+
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title={isEditing ? "Deseja salvar as alterações?" : "Confirma a criação deste orçamento?"}
         description={isEditing ? "O orçamento será atualizado com os dados informados." : "Um novo orçamento será criado com os dados informados."}
         onConfirm={() => pendingData && confirmAndPersist(pendingData)}
+      />
+
+      <ConfirmDialog
+        open={autoSavePromptOpen}
+        onOpenChange={setAutoSavePromptOpen}
+        title="Deseja utilizar o salvamento automático?"
+        description="O orçamento será guardado como rascunho a cada alteração e poderá ser continuado depois, mesmo após sair do sistema."
+        confirmLabel="Sim, ativar"
+        cancelLabel="Não, continuar sem"
+        onConfirm={enableAutoSave}
       />
 
       <ConfirmDialog
