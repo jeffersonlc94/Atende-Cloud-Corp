@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const item = await prisma.trainingContent.create({
     data: {
       titulo: body.titulo.trim(), descricao: body.descricao?.trim() || null, tipo: body.tipo,
-      arquivoUrl: body.arquivoUrl, nomeArquivo: body.nomeArquivo || null,
+      arquivoUrl: body.arquivoUrl, capaUrl: body.capaUrl || null, nomeArquivo: body.nomeArquivo || null,
       ordem: Number(body.ordem) || 0, categoryId: body.categoryId, createdByUserId: session.user.id,
     },
     include: { category: true, createdByUser: { select: { id: true, name: true } } },

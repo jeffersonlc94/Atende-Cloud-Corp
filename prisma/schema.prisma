@@ -182,6 +182,7 @@ model TrainingContent {
   descricao       String?
   tipo            TrainingContentType
   arquivoUrl      String
+  capaUrl         String?
   nomeArquivo     String?
   ordem           Int                 @default(0)
   categoryId      String
