@@ -234,6 +234,7 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
   const descontoProdutosValor = useWatch({ control, name: "descontoProdutosValor" });
   const descontoServicosTipo = useWatch({ control, name: "descontoServicosTipo" });
   const descontoServicosValor = useWatch({ control, name: "descontoServicosValor" });
+  const itensSnapshot = JSON.stringify(itens ?? []);
 
   const { total, descontoGeral, descontoProdutos, descontoServicos, totalProdutos, totalServicos } = useMemo(() => {
     const itensNormalizados = (itens ?? []).map((item) => ({
@@ -260,7 +261,10 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
       totalProdutos: result.totalProdutos,
       totalServicos: result.totalServicos,
     };
-  }, [itens, descontoGeralTipo, descontoGeralValor, descontoProdutosTipo, descontoProdutosValor, descontoServicosTipo, descontoServicosValor]);
+  // O snapshot garante a atualização mesmo quando react-hook-form preserva a
+  // referência interna do array ao editar o primeiro/único item.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itensSnapshot, descontoGeralTipo, descontoGeralValor, descontoProdutosTipo, descontoProdutosValor, descontoServicosTipo, descontoServicosValor]);
 
   const dataValidade = useMemo(() => {
     if (!values.dataEmissao || !values.validadeDias) return "";

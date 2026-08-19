@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/header";
 import { prisma } from "@/lib/prisma";
 import { Construction } from "lucide-react";
 import { MaintenanceGate } from "@/components/layout/maintenance-gate";
+import { PresenceHeartbeat } from "@/components/layout/presence-heartbeat";
 
 export default async function DashboardLayout({
   children,
@@ -41,6 +42,7 @@ export default async function DashboardLayout({
 
   return (
     <MaintenanceGate>
+    <PresenceHeartbeat />
     <div className="flex h-screen overflow-clip">
       <Sidebar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">

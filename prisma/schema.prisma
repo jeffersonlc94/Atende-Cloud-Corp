@@ -39,6 +39,8 @@ model User {
 
   quotes        Quote[]
   quoteDrafts   QuoteDraft[]
+  trainingContents TrainingContent[]
+  presence      UserPresence?
   updatedQuotes Quote[]       @relation("QuoteUpdatedBy")
   mileageLogs   MileageLog[]
   checklists    Checklist[]
@@ -156,6 +158,53 @@ model QuoteDraft {
 
   @@index([createdByUserId, updatedAt])
   @@map("quote_drafts")
+}
+
+enum TrainingContentType {
+  Videoaula
+  Documento
+}
+
+model TrainingCategory {
+  id        String            @id @default(cuid())
+  nome      String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  contents  TrainingContent[]
+
+  @@map("training_categories")
+}
+
+model TrainingContent {
+  id              String              @id @default(cuid())
+  titulo          String
+  descricao       String?
+  tipo            TrainingContentType
+  arquivoUrl      String
+  nomeArquivo     String?
+  ordem           Int                 @default(0)
+  categoryId      String
+  category        TrainingCategory    @relation(fields: [categoryId], references: [id])
+  createdByUserId String?
+  createdByUser   User?               @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([categoryId, tipo, ordem])
+  @@map("training_contents")
+}
+
+model UserPresence {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path      String?
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lastSeen])
+  @@map("user_presences")
 }
 
 model QuoteItem {
