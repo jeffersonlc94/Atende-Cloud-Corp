@@ -3,12 +3,14 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { unlink } from "fs/promises";
 import path from "path";
+import { canAccessModule } from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function PUT(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "treinamentos")) return NextResponse.json({ error: "Acesso ao módulo não autorizado" }, { status: 403 });
   if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   const body = await req.json();
   const item = await prisma.trainingContent.update({
@@ -22,6 +24,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "treinamentos")) return NextResponse.json({ error: "Acesso ao módulo não autorizado" }, { status: 403 });
   if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   const item = await prisma.trainingContent.delete({ where: { id: (await params).id } });
   if (item.arquivoUrl.startsWith("/uploads/training/")) {

@@ -129,6 +129,8 @@ export const systemSettingsSchema = z.object({
   autoLogoutMinutes: z.number().int().nonnegative().optional(),
   maintenanceMode: z.boolean().optional(),
   maintenanceMessage: z.string().max(500, "Mensagem deve ter no máximo 500 caracteres").optional().default(""),
+  trainingVideoMaxMb: z.number().int().nonnegative().optional(),
+  trainingDocumentMaxMb: z.number().int().positive().optional(),
   notificationCargoPrefs: notificationCargoPrefsSchema.optional(),
 });
 
@@ -354,6 +356,7 @@ export const userSchema = z.object({
   canAccessOrcamentos: z.boolean().optional().default(true),
   canAccessFrota: z.boolean().optional().default(true),
   canAccessEstoque: z.boolean().optional().default(true),
+  canAccessTreinamentos: z.boolean().optional().default(true),
   receiveNotifications: z.boolean().optional().default(true),
   telegramChatId: z.string().optional().default(""),
 });

@@ -32,6 +32,7 @@ model User {
   canAccessFrota       Boolean  @default(true)
   receiveNotifications Boolean  @default(true)
   canAccessEstoque     Boolean  @default(true)
+  canAccessTreinamentos Boolean @default(true)
   telegramChatId       String?
   hidden               Boolean  @default(false)
   createdAt            DateTime @default(now())
@@ -511,6 +512,8 @@ model SystemSettings {
   autoLogoutMinutes      Int?
   maintenanceMode        Boolean  @default(false)
   maintenanceMessage     String?
+  trainingVideoMaxMb     Int      @default(0)
+  trainingDocumentMaxMb  Int      @default(50)
   notificationCargoPrefs Json?
   smtpHost               String?
   smtpPort               Int?

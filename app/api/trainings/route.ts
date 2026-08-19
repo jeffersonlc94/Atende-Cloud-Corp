@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { canAccessModule } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "treinamentos")) return NextResponse.json({ error: "Acesso ao módulo não autorizado" }, { status: 403 });
   const tipo = req.nextUrl.searchParams.get("tipo");
   const categoryId = req.nextUrl.searchParams.get("categoryId");
   const busca = req.nextUrl.searchParams.get("busca")?.trim();
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "treinamentos")) return NextResponse.json({ error: "Acesso ao módulo não autorizado" }, { status: 403 });
   if (session.user.role !== "ADMIN") return NextResponse.json({ error: "Apenas administradores podem cadastrar treinamentos" }, { status: 403 });
   const body = await req.json();
   if (!body.titulo?.trim() || !body.categoryId || !body.arquivoUrl || !["Videoaula", "Documento"].includes(body.tipo)) {

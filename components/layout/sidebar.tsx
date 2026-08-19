@@ -26,6 +26,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const canOrcamentos = isAdmin || session?.user?.canAccessOrcamentos !== false;
   const canFrota = isAdmin || session?.user?.canAccessFrota !== false;
   const canEstoque = isAdmin || session?.user?.canAccessEstoque !== false;
+  const canTreinamentos = isAdmin || session?.user?.canAccessTreinamentos !== false;
 
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
@@ -83,13 +84,13 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           />
         )}
 
-        <NavLink
+        {canTreinamentos && <NavLink
           href="/treinamentos"
           label="Treinamentos"
           Icon={GraduationCap}
           active={pathname.startsWith("/treinamentos")}
           onNavigate={onNavigate}
-        />
+        />}
 
         {isAdmin && usuariosItem && (
           <NavLink

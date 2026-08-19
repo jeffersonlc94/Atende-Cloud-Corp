@@ -15,6 +15,8 @@ export type SystemSettings = {
   autoLogoutMinutes: number | null;
   maintenanceMode: boolean;
   maintenanceMessage: string | null;
+  trainingVideoMaxMb: number;
+  trainingDocumentMaxMb: number;
   notificationCargoPrefs: Record<string, Record<string, boolean>> | null;
   createdAt: string;
   updatedAt: string;
