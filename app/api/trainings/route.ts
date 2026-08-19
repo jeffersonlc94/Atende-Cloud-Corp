@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
   if (!body.titulo?.trim() || !body.categoryId || !body.arquivoUrl || !["Videoaula", "Documento"].includes(body.tipo)) {
     return NextResponse.json({ error: "Preencha título, categoria, tipo e arquivo" }, { status: 400 });
   }
+  if (String(body.descricao || "").length > 250) return NextResponse.json({ error: "A descrição deve ter no máximo 250 caracteres" }, { status: 400 });
   const item = await prisma.trainingContent.create({
     data: {
       titulo: body.titulo.trim(), descricao: body.descricao?.trim() || null, tipo: body.tipo,
