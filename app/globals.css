@@ -148,7 +148,62 @@ html {
   }
 }
 
+.quote-print-page {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  margin-inline: auto;
+  padding: 10mm;
+  background: white;
+}
+
+.quote-print-page > div {
+  max-width: none !important;
+  padding: 0 !important;
+}
+
+.quote-print-page table th {
+  padding: 3px 4px !important;
+}
+
+.quote-print-page table td {
+  padding: 2px 4px !important;
+}
+
 @media print {
+  body:has(.stock-print-document) aside,
+  body:has(.stock-print-document) > div > div > header {
+    display: none !important;
+  }
+
+  body:has(.stock-print-document) main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .stock-print-document {
+    width: 100% !important;
+    margin: 0 !important;
+    break-inside: auto !important;
+  }
+
+  .stock-print-document tr {
+    break-inside: avoid !important;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  #quote-print-area thead {
+    display: table-header-group;
+  }
+
+  #quote-print-area tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
   @page {
     size: A4;
     margin: 0;
@@ -157,6 +212,8 @@ html {
   html,
   body {
     background: #fff !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .print\:hidden {
@@ -168,7 +225,28 @@ html {
     box-shadow: none !important;
     max-width: 100% !important;
     margin: 0 !important;
-    padding: 12mm !important;
+    padding: 0 !important;
+  }
+
+  .quote-print-page {
+    width: 210mm !important;
+    height: 296.5mm !important;
+    min-height: 296.5mm !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    overflow: hidden !important;
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  .quote-print-page:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+
+  #quote-print-area {
+    gap: 0 !important;
+    overflow: visible !important;
   }
 
   #quote-print-area,

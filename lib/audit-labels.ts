@@ -10,9 +10,11 @@ export const entidadeOptions = [
   "Checklist",
   "User",
   "SystemSettings",
+  "Database",
 ] as const;
 
 export const entidadeLabels: Record<string, string> = {
+  Database: "Banco de dados",
   Company: "Empresa",
   Quote: "Orçamento",
   Vehicle: "Veículo",
@@ -24,6 +26,7 @@ export const entidadeLabels: Record<string, string> = {
 };
 
 export const acaoLabels: Record<string, string> = {
+  backup: "Backup",
   create: "Criação",
   update: "Atualização",
   delete: "Exclusão",
@@ -35,4 +38,26 @@ export function labelForEntidade(entidade: string): string {
 
 export function labelForAcao(acao: string): string {
   return acaoLabels[acao] ?? acao;
+}
+
+const auditFieldLabels: Record<string, string> = {
+  name: "Nome", email: "E-mail", role: "Perfil", cargo: "Cargo", status: "Status",
+  numero: "Número", referencia: "Referência", total: "Total", subtotal: "Subtotal",
+  dataEmissao: "Data de emissão", dataValidade: "Data de validade", validadeDias: "Validade em dias",
+  descontoGeralTipo: "Tipo do desconto geral", descontoGeralValor: "Desconto geral",
+  descontoProdutosTipo: "Tipo do desconto em produtos", descontoProdutosValor: "Desconto em produtos",
+  descontoServicosTipo: "Tipo do desconto em serviços", descontoServicosValor: "Desconto em serviços",
+  condicoesPagamento: "Condições de pagamento", prazoEntrega: "Prazo de entrega",
+  observacoesInternas: "Observações internas", tipoItem: "Tipo do item",
+  valorTotal: "Valor total", margemLucro: "Margem de lucro", freteUnitario: "Frete unitário",
+  freteHabilitado: "Frete habilitado", calcularPorMargem: "Cálculo por margem",
+  clientId: "Cliente", companyId: "Empresa", visibilidade: "Visibilidade", itens: "Itens",
+  razaoSocial: "Razão social", nomeFantasia: "Nome fantasia", cnpj: "CNPJ",
+  placa: "Placa", marca: "Marca", modelo: "Modelo", kmAtual: "Quilometragem",
+  descricao: "Descrição", quantidade: "Quantidade", valorUnitario: "Valor unitário",
+  observacoes: "Observações", updatedByUserId: "Atualizado por",
+};
+
+export function labelForAuditField(field: string): string {
+  return auditFieldLabels[field] ?? field.replace(/([a-z])([A-Z])/g, "$1 $2");
 }

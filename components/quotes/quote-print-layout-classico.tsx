@@ -17,12 +17,16 @@ export function QuotePrintLayoutClassico({
   id = "quote-print-area",
   fontFamily,
   fontScale = 1,
+  showFooter = true,
+  itemOffset = 0,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
   fontFamily?: string;
   fontScale?: number;
+  showFooter?: boolean;
+  itemOffset?: number;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -35,28 +39,28 @@ export function QuotePrintLayoutClassico({
   const telefones = [company?.telefone1, company?.telefone2].filter(Boolean).join(" | ");
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum, descontoProdutosNum, descontoServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
     <div
-      className="mx-auto w-full max-w-[210mm] bg-white p-8 text-black print:p-0 print:shadow-none"
+      className="mx-auto w-full max-w-[210mm] bg-white p-6 text-black print:p-0 print:shadow-none"
       style={{ fontFamily: fontFamily || undefined, fontSize: `${16 * fontScale}px` }}
       id={id}
     >
       {/* Cabeçalho */}
-      <div className="border-b-2 border-black pb-4">
-        <div className="flex items-center gap-4">
+      <div className="border-b-2 border-black pb-2">
+        <div className="flex items-center gap-3">
           {company?.logoUrl && !logoError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={company.logoUrl}
               alt="Logo"
-              className="h-24 w-24 shrink-0 object-contain"
+              className="h-20 w-24 shrink-0 object-contain"
               onError={() => setLogoError(true)}
             />
           ) : company?.logoUrl && logoError ? (
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded border border-gray-300 bg-gray-100 text-gray-400">
+            <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded border border-gray-300 bg-gray-100 text-gray-400">
               <Building2 className="h-10 w-10" />
             </div>
           ) : null}
@@ -93,13 +97,13 @@ export function QuotePrintLayoutClassico({
             </p>
           </div>
         </div>
-        <p className="mt-3 text-center text-[1em] font-bold uppercase tracking-widest">
+        <p className="mt-2 text-center text-[0.875em] font-bold uppercase tracking-widest">
           Orçamento
         </p>
       </div>
 
       {/* Dados do cliente */}
-      <div className="mt-4 flex gap-2 text-center text-[0.875em]">
+      <div className="mt-2 flex gap-2 text-left text-[0.75em]">
         <p className="flex-1">
           <span className="font-semibold">CLIENTE:</span>{" "}
           {quote.clienteNome || "—"}
@@ -110,7 +114,7 @@ export function QuotePrintLayoutClassico({
       </div>
 
       {/* Tabela de itens */}
-      <table className="mt-4 w-full border-collapse text-[0.875em]">
+      <table className="mt-2 w-full border-collapse text-[0.75em] leading-tight">
         <thead>
           <tr className="border-y-2 border-black bg-sky-100">
             <th className="w-12 border border-gray-400 p-1.5 text-center">ITEM</th>
@@ -133,7 +137,7 @@ export function QuotePrintLayoutClassico({
           )}
           {quote.itens.map((item, idx) => (
             <tr key={idx} className={idx % 2 === 1 ? "bg-gray-50" : undefined}>
-              <td className="border border-gray-400 p-1.5 text-center">{idx + 1}</td>
+              <td className="border border-gray-400 p-1.5 text-center">{itemOffset + idx + 1}</td>
               <td className="border border-gray-400 p-1.5 text-left">
                 {item.fotoUrl ? (
                   <div className="flex items-center gap-2">
@@ -161,7 +165,7 @@ export function QuotePrintLayoutClassico({
             </tr>
           ))}
         </tbody>
-        <tfoot>
+        {showFooter && <tfoot>
           <tr className="bg-gray-100">
             <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
               Produtos
@@ -170,6 +174,7 @@ export function QuotePrintLayoutClassico({
               {formatCurrencyBRL(totalProdutosNum)}
             </td>
           </tr>
+          {descontoProdutosNum > 0 && <tr className="bg-gray-100"><td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">Desconto produtos</td><td className="border border-gray-400 p-1.5 text-center">- {formatCurrencyBRL(descontoProdutosNum)}</td></tr>}
           <tr className="bg-gray-100">
             <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
               Serviços
@@ -178,10 +183,11 @@ export function QuotePrintLayoutClassico({
               {formatCurrencyBRL(totalServicosNum)}
             </td>
           </tr>
+          {descontoServicosNum > 0 && <tr className="bg-gray-100"><td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">Desconto serviços</td><td className="border border-gray-400 p-1.5 text-center">- {formatCurrencyBRL(descontoServicosNum)}</td></tr>}
           {hasDescontoGeral && (
             <tr className="bg-gray-100">
               <td colSpan={hasItemDesconto ? 5 : 4} className="border border-gray-400 p-1.5 text-right">
-                Desconto
+                Desconto geral
               </td>
               <td className="border border-gray-400 p-1.5 text-center">
                 {formatCurrencyBRL(descontoGeralNum)}
@@ -196,11 +202,11 @@ export function QuotePrintLayoutClassico({
               {formatCurrencyBRL(totalNum)}
             </td>
           </tr>
-        </tfoot>
+        </tfoot>}
       </table>
 
       {/* Condições */}
-      <div className="mt-4 space-y-1 text-[0.875em]">
+      <div className={showFooter ? "print-avoid-break mt-2 space-y-0.5 text-[0.75em]" : "hidden"}>
         {quote.condicoesPagamento && (
           <p>
             <span className="font-semibold">Condições de pagamento:</span>{" "}
@@ -221,19 +227,19 @@ export function QuotePrintLayoutClassico({
       </div>
 
       {/* Validade */}
-      {quote.validadeDias ? (
-        <p className="mt-4 text-center text-[0.875em] font-bold uppercase text-red-600">
+      {showFooter && quote.validadeDias ? (
+        <p className="mt-2 text-center text-[0.75em] font-bold uppercase text-red-600">
           Validade da proposta: este orçamento é válido por {quote.validadeDias} dias
           corridos a partir da data de emissão.
         </p>
       ) : null}
 
       {/* Assinatura */}
-      <div className="mt-16 flex flex-col items-center text-center text-[0.875em]">
+      <div className={showFooter ? "print-avoid-break mt-4 flex flex-col items-center text-center text-[0.75em]" : "hidden"}>
         <p>
           {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
         </p>
-        <div className="mt-12 w-64 border-t border-black text-center pt-1">
+        <div className="mt-5 w-64 border-t border-black text-center pt-1">
           <p>{quote.createdByUserName || company?.nomeResponsavel || "Responsável"}</p>
           <p className="text-[0.75em] text-gray-600">
             {company?.nomeFantasia || company?.razaoSocial}

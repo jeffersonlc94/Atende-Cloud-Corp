@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { maintenanceSchema } from "@/lib/validations";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -16,6 +16,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
+  const before = await prisma.maintenance.findUnique({ where: { id } });
+  if (!before) return NextResponse.json({ error: "Manutenção não encontrada" }, { status: 404 });
   const parsed = maintenanceSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -40,7 +42,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "Maintenance",
     entidadeId: item.id,
-    detalhes: { tipo: item.tipo, vehicleId: item.vehicleId },
+    detalhes: buildAuditChanges(before as unknown as Record<string, unknown>, item as unknown as Record<string, unknown>, { resumo: { tipo: item.tipo, vehicleId: item.vehicleId } }),
     ip: getRequestIp(req),
   });
 
@@ -55,13 +57,14 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
-  await prisma.maintenance.delete({ where: { id } });
+  const item = await prisma.maintenance.delete({ where: { id } });
 
   await registerAudit({
     userId: session.user.id,
     acao: "delete",
     entidade: "Maintenance",
     entidadeId: id,
+    detalhes: buildAuditDeleteDetails(item as unknown as Record<string, unknown>, { resumo: { tipo: item.tipo, vehicleId: item.vehicleId } }),
     ip: getRequestIp(req),
   });
 

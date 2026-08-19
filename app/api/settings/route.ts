@@ -74,6 +74,10 @@ export async function PUT(req: NextRequest) {
   if (hasKey("autoLogoutMinutes")) {
     updateData.autoLogoutMinutes = data.autoLogoutMinutes || null;
   }
+  if (hasKey("maintenanceMode")) updateData.maintenanceMode = data.maintenanceMode ?? false;
+  if (hasKey("maintenanceMessage")) updateData.maintenanceMessage = data.maintenanceMessage || null;
+  if (hasKey("trainingVideoMaxMb")) updateData.trainingVideoMaxMb = data.trainingVideoMaxMb ?? 0;
+  if (hasKey("trainingDocumentMaxMb")) updateData.trainingDocumentMaxMb = data.trainingDocumentMaxMb ?? 50;
   if (hasKey("notificationCargoPrefs")) {
     updateData.notificationCargoPrefs = data.notificationCargoPrefs ?? {};
   }

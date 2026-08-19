@@ -6,7 +6,8 @@ import { quoteSchema } from "@/lib/validations";
 import { generateNextQuoteNumber } from "@/lib/quote-number";
 import { Prisma } from "@prisma/client";
 import { registerAudit, getRequestIp } from "@/lib/audit";
-import { computeQuoteTotals } from "@/lib/quote-calc";
+import { computeQuoteTotals, computeUnitPriceFromMargin } from "@/lib/quote-calc";
+import { quoteStatusOptions } from "@/lib/validations";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
   const createdByUserId = sp.get("userId")?.trim();
   const dataInicial = sp.get("dataInicial")?.trim();
   const dataFinal = sp.get("dataFinal")?.trim();
+  const status = sp.get("status")?.trim();
   const scope = sp.get("scope") === "global" ? "global" : "mine";
   const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
   const pageSize = Math.min(100, parseInt(sp.get("pageSize") ?? "20", 10) || 20);
@@ -32,6 +34,9 @@ export async function GET(req: NextRequest) {
   if (companyId) where.companyId = companyId;
   if (createdByUserId) where.createdByUserId = createdByUserId;
   if (cliente) where.client = { nome: { contains: cliente, mode: "insensitive" } };
+  if (status && quoteStatusOptions.includes(status as (typeof quoteStatusOptions)[number])) {
+    where.status = status as (typeof quoteStatusOptions)[number];
+  }
 
   if (dataInicial || dataFinal) {
     where.dataEmissao = {};
@@ -51,7 +56,9 @@ export async function GET(req: NextRequest) {
     // O filtro por usuário explícito (admin filtrando por criador) tem prioridade.
     if (!createdByUserId) where.createdByUserId = session.user.id;
   } else {
-    where.visibilidade = "Global";
+    // Administradores precisam enxergar o mesmo conjunto completo apresentado
+    // no dashboard. Usuários comuns continuam limitados aos registros globais.
+    if (session.user.role !== "ADMIN") where.visibilidade = "Global";
   }
 
   const [items, total] = await Promise.all([
@@ -95,10 +102,20 @@ export async function POST(req: NextRequest) {
       where: { nome: { equals: clientNome, mode: "insensitive" } },
     })) ?? (await prisma.client.create({ data: { nome: clientNome } }));
 
+  const itensNormalizados = data.itens.map((item) => ({
+    ...item,
+    valorUnitario: item.calcularPorMargem
+      ? computeUnitPriceFromMargin(item.custoUnitario ?? 0, item.margemLucro ?? 0, item.freteHabilitado ? item.freteUnitario ?? 0 : 0)
+      : item.valorUnitario,
+  }));
   const { itensComputados, subtotal, total } = computeQuoteTotals(
-    data.itens,
+    itensNormalizados,
     data.descontoGeralTipo,
-    data.descontoGeralValor
+    data.descontoGeralValor,
+    data.descontoProdutosTipo,
+    data.descontoProdutosValor,
+    data.descontoServicosTipo,
+    data.descontoServicosValor
   );
 
   const itensParaCriar = itensComputados.map((item, idx) => ({
@@ -108,6 +125,11 @@ export async function POST(req: NextRequest) {
     fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
+    calcularPorMargem: item.calcularPorMargem,
+    custoUnitario: item.calcularPorMargem ? item.custoUnitario ?? null : null,
+    margemLucro: item.calcularPorMargem ? item.margemLucro ?? null : null,
+    freteHabilitado: item.calcularPorMargem && item.freteHabilitado,
+    freteUnitario: item.calcularPorMargem && item.freteHabilitado ? item.freteUnitario ?? null : null,
     descontoTipo: item.descontoTipo ?? null,
     descontoValor: item.descontoValor ?? null,
     valorTotal: item.valorTotal,
@@ -136,11 +158,17 @@ export async function POST(req: NextRequest) {
         prazoEntrega: data.prazoEntrega,
         observacoes: data.observacoes,
         observacoesInternas: data.observacoesInternas,
+        fotosInternas: data.fotosInternas,
         subtotal,
         descontoGeralTipo: data.descontoGeralTipo ?? null,
         descontoGeralValor: data.descontoGeralValor ?? null,
+        descontoProdutosTipo: data.descontoProdutosTipo ?? null,
+        descontoProdutosValor: data.descontoProdutosValor ?? null,
+        descontoServicosTipo: data.descontoServicosTipo ?? null,
+        descontoServicosValor: data.descontoServicosValor ?? null,
         total,
         visibilidade: data.visibilidade,
+        status: data.status,
         createdByUserId: session.user.id,
         updatedByUserId: session.user.id,
         itens: { createMany: { data: itensParaCriar } },

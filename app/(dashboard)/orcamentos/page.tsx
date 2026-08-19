@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -11,6 +11,8 @@ import {
   useQuotesList,
   useDeleteQuote,
   useDuplicateQuote,
+  useQuoteDrafts,
+  useDeleteQuoteDraft,
   type QuoteFilters,
 } from "@/hooks/use-quotes";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -50,9 +52,48 @@ import {
   Eye,
   LayoutGrid,
   List,
+  RotateCcw,
+  Building2,
+  UserRound,
+  FilePenLine,
 } from "lucide-react";
 import { formatCurrencyBRL, formatDateBR } from "@/lib/format";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+
+const statusLabels = {
+  Negociacao: "Em negociação",
+  Enviado: "Enviado",
+  NaoAprovado: "Não aprovado",
+  Aprovado: "Aprovado",
+} as const;
+
+const statusClasses = {
+  Negociacao: "border-amber-300 bg-amber-50 text-amber-800",
+  Enviado: "border-blue-300 bg-blue-50 text-blue-800",
+  NaoAprovado: "border-red-300 bg-red-50 text-red-800",
+  Aprovado: "border-emerald-300 bg-emerald-50 text-emerald-800",
+} as const;
+
+const FILTERS_STORAGE_KEY = "orcamentos:filtros";
+const VIEW_STORAGE_KEY = "orcamentos:visualizacao";
+
+function loadSavedFilters(): QuoteFilters {
+  if (typeof window === "undefined") return { scope: "mine" };
+  try {
+    return { scope: "mine", ...JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) || "{}") };
+  } catch {
+    return { scope: "mine" };
+  }
+}
+
+function loadSavedView(): "table" | "grid" {
+  if (typeof window === "undefined") return "table";
+  return localStorage.getItem(VIEW_STORAGE_KEY) === "grid" ? "grid" : "table";
+}
+
+function QuoteStatusBadge({ status }: { status: keyof typeof statusLabels }) {
+  return <Badge variant="outline" className={statusClasses[status]}>{statusLabels[status]}</Badge>;
+}
 
 export default function OrcamentosPage() {
   const router = useRouter();
@@ -62,14 +103,46 @@ export default function OrcamentosPage() {
   const [filters, setFilters] = useState<QuoteFilters>({ scope: "mine" });
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [pendingDuplicate, setPendingDuplicate] = useState<string | null>(null);
+  const [pendingDraftDelete, setPendingDraftDelete] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [storageReady, setStorageReady] = useState(false);
 
-  const { data, isLoading } = useQuotesList(filters);
+  useEffect(() => {
+    setFilters(loadSavedFilters());
+    setViewMode(loadSavedView());
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  }, [filters, storageReady]);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    localStorage.setItem(VIEW_STORAGE_KEY, viewMode);
+  }, [viewMode, storageReady]);
+
+  const { data, isLoading } = useQuotesList(filters, filters.status !== "Rascunho");
+  const { data: drafts = [] } = useQuoteDrafts();
+  const deleteDraft = useDeleteQuoteDraft();
   const deleteQuote = useDeleteQuote();
   const duplicateQuote = useDuplicateQuote();
+  const visibleDrafts = drafts.filter((draft) => {
+    if (filters.scope === "global" || (filters.status && filters.status !== "Rascunho")) return false;
+    const draftData = draft.data;
+    if (filters.cliente && !String(draftData.clientNome ?? "").toLowerCase().includes(filters.cliente.toLowerCase())) return false;
+    return true;
+  });
 
   function updateFilter(key: keyof QuoteFilters, value: string | undefined) {
     setFilters((f) => ({ ...f, [key]: value }));
+  }
+
+  function clearFilters() {
+    const scope = filters.scope ?? "mine";
+    setFilters({ scope });
+    localStorage.removeItem(FILTERS_STORAGE_KEY);
   }
 
   async function handleDelete(id: string) {
@@ -110,7 +183,9 @@ export default function OrcamentosPage() {
           >
             <TabsList>
               <TabsTrigger value="mine">Meus Orçamentos</TabsTrigger>
-              <TabsTrigger value="global">Orçamentos Globais</TabsTrigger>
+              <TabsTrigger value="global">
+                {session?.user?.role === "ADMIN" ? "Todos os Orçamentos" : "Orçamentos Globais"}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="flex items-center rounded-md border p-0.5">
@@ -140,13 +215,15 @@ export default function OrcamentosPage() {
       </div>
 
       <Card>
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6">
           <Input
             placeholder="Número"
+            value={filters.numero ?? ""}
             onChange={(e) => updateFilter("numero", e.target.value)}
           />
           <Input
             placeholder="Cliente"
+            value={filters.cliente ?? ""}
             onChange={(e) => updateFilter("cliente", e.target.value)}
           />
           <Select
@@ -175,18 +252,66 @@ export default function OrcamentosPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select
+            value={filters.status ?? "all"}
+            onValueChange={(v) => updateFilter("status", v === "all" ? undefined : v as QuoteFilters["status"])}
+          >
+            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="Rascunho">Rascunho</SelectItem>
+              <SelectItem value="Negociacao">Em negociação</SelectItem>
+              <SelectItem value="Enviado">Enviado</SelectItem>
+              <SelectItem value="NaoAprovado">Não aprovado</SelectItem>
+              <SelectItem value="Aprovado">Aprovado</SelectItem>
+            </SelectContent>
+          </Select>
           <Input
             type="date"
             placeholder="Data inicial"
+            value={filters.dataInicial ?? ""}
             onChange={(e) => updateFilter("dataInicial", e.target.value)}
           />
           <Input
             type="date"
             placeholder="Data final"
+            value={filters.dataFinal ?? ""}
             onChange={(e) => updateFilter("dataFinal", e.target.value)}
           />
+          <div className="flex justify-end sm:col-span-2 lg:col-span-6">
+            <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
+              <RotateCcw className="mr-2 h-4 w-4" /> Limpar filtros
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      {visibleDrafts.length > 0 && (
+        <Card className="border-dashed border-amber-300 bg-amber-50/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base text-amber-900"><FilePenLine className="h-4 w-4" /> Rascunhos</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {visibleDrafts.map((draft) => (
+              <div key={draft.id} className="rounded-xl border border-amber-200 bg-background p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <Badge className="border-amber-300 bg-amber-100 text-amber-900" variant="outline">Rascunho</Badge>
+                  <span className="text-xs text-muted-foreground">{new Date(draft.updatedAt).toLocaleString("pt-BR")}</span>
+                </div>
+                <p className="mt-3 font-medium">{String(draft.data.clientNome || "Cliente ainda não informado")}</p>
+                <p className="mt-1 truncate text-sm text-muted-foreground">{String(draft.data.referencia || "Sem referência")}</p>
+                <div className="mt-4 flex gap-2 border-t pt-3">
+                  <Button size="sm" onClick={() => router.push(`/orcamentos/novo?draftId=${draft.id}`)}><Pencil className="mr-2 h-4 w-4" /> Continuar edição</Button>
+                  <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setPendingDraftDelete(draft.id)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+      {filters.status === "Rascunho" && visibleDrafts.length === 0 && (
+        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Nenhum rascunho encontrado.</CardContent></Card>
+      )}
 
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -199,8 +324,8 @@ export default function OrcamentosPage() {
             </p>
           )}
           {data?.items.map((quote) => (
-            <Card key={quote.id}>
-              <CardHeader>
+            <Card key={quote.id} className="flex h-full flex-col overflow-hidden border-l-4 border-l-primary shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <CardHeader className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent pb-3">
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>Nº {quote.numero}</span>
                   <span className="text-sm font-normal text-muted-foreground">
@@ -208,19 +333,42 @@ export default function OrcamentosPage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <Badge variant={quote.visibilidade === "Privado" ? "secondary" : "outline"}>
-                  {quote.visibilidade === "Privado" ? "Privado" : "Global"}
-                </Badge>
-                <p>
-                  <span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Empresa:</span>{" "}
-                  {quote.company.nomeFantasia || quote.company.razaoSocial}
-                </p>
-                <p className="text-lg font-bold">{formatCurrencyBRL(Number(quote.total))}</p>
-                <div className="flex flex-wrap items-center gap-1 pt-2">
+              <CardContent className="flex flex-1 flex-col space-y-3 text-sm">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={quote.visibilidade === "Privado" ? "secondary" : "outline"}>
+                    {quote.visibilidade === "Privado" ? "Privado" : "Global"}
+                  </Badge>
+                  <QuoteStatusBadge status={quote.status} />
+                </div>
+                <div className="grid gap-x-4 gap-y-2 rounded-xl bg-muted/35 p-3 sm:grid-cols-2">
+                  <p className="sm:col-span-2">
+                    <UserRound className="mr-1.5 inline h-3.5 w-3.5 text-primary" /><span className="text-muted-foreground">Cliente:</span> {quote.client.nome}
+                  </p>
+                  <p className="sm:col-span-2">
+                    <Building2 className="mr-1.5 inline h-3.5 w-3.5 text-primary" /><span className="text-muted-foreground">Empresa:</span>{" "}
+                    {quote.company.nomeFantasia || quote.company.razaoSocial}
+                  </p>
+                  {quote.referencia && (
+                    <p><span className="text-muted-foreground">Referência:</span> {quote.referencia}</p>
+                  )}
+                  {quote.dataValidade && (
+                    <p><span className="text-muted-foreground">Validade:</span> {formatDateBR(quote.dataValidade)}</p>
+                  )}
+                  {!quote.dataValidade && quote.validadeDias && (
+                    <p><span className="text-muted-foreground">Validade:</span> {quote.validadeDias} dias</p>
+                  )}
+                  {quote.prazoEntrega && (
+                    <p><span className="text-muted-foreground">Prazo:</span> {quote.prazoEntrega}</p>
+                  )}
+                  {quote.condicoesPagamento && (
+                    <p><span className="text-muted-foreground">Pagamento:</span> {quote.condicoesPagamento}</p>
+                  )}
+                  {quote.createdByUser?.name && (
+                    <p><span className="text-muted-foreground">Criado por:</span> {quote.createdByUser.name}</p>
+                  )}
+                </div>
+                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-lg font-bold text-emerald-700">{formatCurrencyBRL(Number(quote.total))}</p>
+                <div className="mt-auto flex flex-wrap items-center gap-1 border-t pt-2">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -270,10 +418,12 @@ export default function OrcamentosPage() {
                 <TableRow>
                   <TableHead>Número</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Referência</TableHead>
                   <TableHead>Empresa</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Criado por</TableHead>
                   <TableHead>Visibilidade</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
@@ -281,7 +431,7 @@ export default function OrcamentosPage() {
               <TableBody>
                 {isLoading && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                       <Search className="mx-auto mb-2 h-5 w-5" />
                       Carregando...
                     </TableCell>
@@ -289,7 +439,7 @@ export default function OrcamentosPage() {
                 )}
                 {!isLoading && data?.items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                       Nenhum orçamento encontrado
                     </TableCell>
                   </TableRow>
@@ -298,6 +448,7 @@ export default function OrcamentosPage() {
                   <TableRow key={quote.id}>
                     <TableCell className="font-medium">{quote.numero}</TableCell>
                     <TableCell>{quote.client.nome}</TableCell>
+                    <TableCell className="max-w-56 truncate" title={quote.referencia ?? undefined}>{quote.referencia || "—"}</TableCell>
                     <TableCell>
                       {quote.company.nomeFantasia || quote.company.razaoSocial}
                     </TableCell>
@@ -308,6 +459,7 @@ export default function OrcamentosPage() {
                         {quote.visibilidade === "Privado" ? "Privado" : "Global"}
                       </Badge>
                     </TableCell>
+                    <TableCell><QuoteStatusBadge status={quote.status} /></TableCell>
                     <TableCell className="text-right">
                       {formatCurrencyBRL(Number(quote.total))}
                     </TableCell>
@@ -389,6 +541,20 @@ export default function OrcamentosPage() {
         description="Um novo orçamento será criado a partir deste."
         confirmLabel="Duplicar"
         onConfirm={() => pendingDuplicate && handleDuplicate(pendingDuplicate)}
+      />
+      <ConfirmDialog
+        open={!!pendingDraftDelete}
+        onOpenChange={(open) => !open && setPendingDraftDelete(null)}
+        title="Excluir este rascunho?"
+        description="O conteúdo salvo automaticamente será removido."
+        confirmLabel="Excluir rascunho"
+        variant="destructive"
+        onConfirm={async () => {
+          if (!pendingDraftDelete) return;
+          try { await deleteDraft.mutateAsync(pendingDraftDelete); toast.success("Rascunho excluído"); }
+          catch { toast.error("Erro ao excluir rascunho"); }
+          finally { setPendingDraftDelete(null); }
+        }}
       />
     </div>
   );

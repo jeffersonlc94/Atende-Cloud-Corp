@@ -1,4 +1,5 @@
 import { formatCurrencyBRL } from "@/lib/format";
+import { aplicarDesconto } from "@/lib/quote-calc";
 
 export type QuotePrintCompany = {
   razaoSocial: string;
@@ -42,6 +43,10 @@ export type QuotePrintData = {
   subtotal?: number | string | null;
   descontoGeralTipo?: "Valor" | "Percentual" | null;
   descontoGeralValor?: number | string | null;
+  descontoProdutosTipo?: "Valor" | "Percentual" | null;
+  descontoProdutosValor?: number | string | null;
+  descontoServicosTipo?: "Valor" | "Percentual" | null;
+  descontoServicosValor?: number | string | null;
   total: number | string;
 };
 
@@ -66,17 +71,19 @@ export function getQuotePrintTotals(quote: QuotePrintData) {
   const subtotalNum =
     quote.subtotal !== null && quote.subtotal !== undefined ? Number(quote.subtotal) : null;
   const totalNum = Number(quote.total);
-  const hasDescontoGeral =
-    (subtotalNum !== null && Math.abs(subtotalNum - totalNum) > 0.001) ||
-    !!(quote.descontoGeralTipo && Number(quote.descontoGeralValor) > 0);
-  const descontoGeralNum = subtotalNum !== null ? Math.max(0, subtotalNum - totalNum) : 0;
-
   const totalProdutosNum = quote.itens
     .filter((item) => (item.tipoItem ?? "Produto") === "Produto")
     .reduce((acc, item) => acc + Number(item.valorTotal), 0);
+
   const totalServicosNum = quote.itens
     .filter((item) => item.tipoItem === "Servico")
     .reduce((acc, item) => acc + Number(item.valorTotal), 0);
+
+  const descontoProdutosNum = totalProdutosNum - aplicarDesconto(totalProdutosNum, quote.descontoProdutosTipo, Number(quote.descontoProdutosValor) || 0);
+  const descontoServicosNum = totalServicosNum - aplicarDesconto(totalServicosNum, quote.descontoServicosTipo, Number(quote.descontoServicosValor) || 0);
+  const subtotalAposCategorias = totalProdutosNum + totalServicosNum - descontoProdutosNum - descontoServicosNum;
+  const descontoGeralNum = Math.max(0, subtotalAposCategorias - totalNum);
+  const hasDescontoGeral = descontoGeralNum > 0.001;
 
   return {
     hasItemDesconto,
@@ -86,5 +93,7 @@ export function getQuotePrintTotals(quote: QuotePrintData) {
     descontoGeralNum,
     totalProdutosNum,
     totalServicosNum,
+    descontoProdutosNum,
+    descontoServicosNum,
   };
 }

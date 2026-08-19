@@ -56,6 +56,14 @@ export function useStockMovements(filters: StockFilters = {}) {
   });
 }
 
+export function useStockMovement(id?: string) {
+  return useQuery({
+    queryKey: ["stock-movement", id],
+    queryFn: () => fetchJson<StockMovementRecord>(`/api/estoque/movements/${id}`),
+    enabled: !!id,
+  });
+}
+
 export function useCreateStockMovement() {
   const qc = useQueryClient();
   return useMutation({

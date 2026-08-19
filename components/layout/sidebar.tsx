@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { navItems, orcamentosNavItems, frotaNavItems, type NavItem } from "./nav-items";
 import { useSystemSettings } from "@/hooks/use-settings";
-import { ChevronDown, Leaf, FileText, Truck, Boxes, type LucideIcon } from "lucide-react";
+import { ChevronDown, Leaf, FileText, Truck, Boxes, GraduationCap, type LucideIcon } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -26,6 +26,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const canOrcamentos = isAdmin || session?.user?.canAccessOrcamentos !== false;
   const canFrota = isAdmin || session?.user?.canAccessFrota !== false;
   const canEstoque = isAdmin || session?.user?.canAccessEstoque !== false;
+  const canTreinamentos = isAdmin || session?.user?.canAccessTreinamentos !== false;
 
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
@@ -82,6 +83,14 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             onNavigate={onNavigate}
           />
         )}
+
+        {canTreinamentos && <NavLink
+          href="/treinamentos"
+          label="Treinamentos"
+          Icon={GraduationCap}
+          active={pathname.startsWith("/treinamentos")}
+          onNavigate={onNavigate}
+        />}
 
         {isAdmin && usuariosItem && (
           <NavLink

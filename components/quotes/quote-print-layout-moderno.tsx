@@ -17,12 +17,16 @@ export function QuotePrintLayoutModerno({
   id = "quote-print-area",
   fontFamily,
   fontScale = 1,
+  showFooter = true,
+  itemOffset = 0,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
   id?: string;
   fontFamily?: string;
   fontScale?: number;
+  showFooter?: boolean;
+  itemOffset?: number;
 }) {
   const enderecoCompleto = [
     company?.endereco,
@@ -34,7 +38,7 @@ export function QuotePrintLayoutModerno({
 
   const [logoError, setLogoError] = useState(false);
 
-  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum } =
+  const { hasItemDesconto, totalNum, hasDescontoGeral, descontoGeralNum, totalProdutosNum, totalServicosNum, descontoProdutosNum, descontoServicosNum } =
     getQuotePrintTotals(quote);
 
   return (
@@ -148,13 +152,13 @@ export function QuotePrintLayoutModerno({
           {quote.itens.map((item, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em]"
+              className="flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em] print:break-inside-avoid"
             >
               <span className="flex flex-1 items-center gap-2">
                 {item.fotoUrl && (
                   <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-9 w-9 shrink-0" />
                 )}
-                {item.descricao}
+                <span><span className="mr-1 text-slate-400">{itemOffset + idx + 1}.</span>{item.descricao}</span>
               </span>
               <span className="w-14 text-center text-slate-500">
                 {Number(item.quantidade).toLocaleString("pt-BR")}
@@ -173,19 +177,21 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Totais */}
-        <div className="mt-4 flex justify-end">
+        <div className={showFooter ? "mt-4 flex justify-end" : "hidden"}>
           <div className="w-64 space-y-1 rounded-lg border border-slate-200 p-4 text-[0.875em]">
             <div className="flex justify-between text-slate-500">
               <span>Produtos</span>
               <span>{formatCurrencyBRL(totalProdutosNum)}</span>
             </div>
+            {descontoProdutosNum > 0 && <div className="flex justify-between text-slate-500"><span>Desconto produtos</span><span>- {formatCurrencyBRL(descontoProdutosNum)}</span></div>}
             <div className="flex justify-between text-slate-500">
               <span>Serviços</span>
               <span>{formatCurrencyBRL(totalServicosNum)}</span>
             </div>
+            {descontoServicosNum > 0 && <div className="flex justify-between text-slate-500"><span>Desconto serviços</span><span>- {formatCurrencyBRL(descontoServicosNum)}</span></div>}
             {hasDescontoGeral && (
               <div className="flex justify-between text-slate-500">
-                <span>Desconto</span>
+                <span>Desconto geral</span>
                 <span>- {formatCurrencyBRL(descontoGeralNum)}</span>
               </div>
             )}
@@ -198,7 +204,7 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Condições */}
-        <div className="mt-4 space-y-1 text-[0.875em] text-slate-600">
+        <div className={showFooter ? "print-avoid-break mt-4 space-y-1 text-[0.875em] text-slate-600" : "hidden"}>
           {quote.condicoesPagamento && (
             <p>
               <span className="font-semibold text-slate-800">Condições de pagamento:</span>{" "}
@@ -219,18 +225,18 @@ export function QuotePrintLayoutModerno({
         </div>
 
         {/* Validade */}
-        {quote.validadeDias ? (
+        {showFooter && quote.validadeDias ? (
           <p className="mt-4 rounded-md bg-amber-50 p-2 text-center text-[0.875em] font-semibold text-amber-700">
             Válido por {quote.validadeDias} dias corridos a partir da data de emissão.
           </p>
         ) : null}
 
         {/* Assinatura */}
-        <div className="mt-10 flex flex-col items-center pb-4 text-center text-[0.875em]">
+        <div className={showFooter ? "print-avoid-break mt-6 flex flex-col items-center pb-2 text-center text-[0.875em]" : "hidden"}>
           <p className="text-slate-500">
             {(company?.cidade || "—")}, {formatDateBR(quote.dataEmissao)}
           </p>
-          <div className="mt-10 w-64 border-t border-slate-400 pt-1">
+          <div className="mt-7 w-64 border-t border-slate-400 pt-1">
             <p className="font-medium text-slate-800">
               {quote.createdByUserName || company?.nomeResponsavel || "Responsável"}
             </p>

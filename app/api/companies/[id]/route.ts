@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { companySchema } from "@/lib/validations";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 import { canDeleteRecords } from "@/lib/permissions";
 
 type Params = { params: Promise<{ id: string }> };
@@ -27,6 +27,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
+  const before = await prisma.company.findUnique({ where: { id } });
+  if (!before) return NextResponse.json({ error: "Empresa não encontrada" }, { status: 404 });
   const parsed = companySchema.safeParse(body);
 
   if (!parsed.success) {
@@ -48,7 +50,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "Company",
     entidadeId: company.id,
-    detalhes: { razaoSocial: company.razaoSocial },
+    detalhes: buildAuditChanges(before as unknown as Record<string, unknown>, company as unknown as Record<string, unknown>, { resumo: { razaoSocial: company.razaoSocial } }),
     ip: getRequestIp(req),
   });
 
@@ -72,13 +74,14 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     );
   }
 
-  await prisma.company.delete({ where: { id } });
+  const company = await prisma.company.delete({ where: { id } });
 
   await registerAudit({
     userId: session.user.id,
     acao: "delete",
     entidade: "Company",
     entidadeId: id,
+    detalhes: buildAuditDeleteDetails(company as unknown as Record<string, unknown>, { resumo: { razaoSocial: company.razaoSocial } }),
     ip: getRequestIp(req),
   });
 

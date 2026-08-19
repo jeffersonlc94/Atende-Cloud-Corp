@@ -56,37 +56,24 @@ export default function ImprimirOrcamentoPage({
         import("jspdf"),
       ]);
 
-      const targetEl = printRef.current.firstElementChild as HTMLElement | null;
-      const captureWidth = targetEl?.scrollWidth || printRef.current.scrollWidth;
-      const captureHeight = targetEl?.scrollHeight || printRef.current.scrollHeight;
-
-      const canvas = await html2canvas(printRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        width: captureWidth,
-        height: captureHeight,
-        windowWidth: captureWidth,
-        windowHeight: captureHeight,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
+      const pages = Array.from(printRef.current.querySelectorAll<HTMLElement>(".quote-print-page"));
+      if (!pages.length) throw new Error("Nenhuma página disponível para gerar o PDF");
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgHeight = (canvas.height * pageWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
-        heightLeft -= pageHeight;
+      for (let index = 0; index < pages.length; index++) {
+        const page = pages[index];
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          width: page.scrollWidth,
+          height: page.scrollHeight,
+          windowWidth: page.scrollWidth,
+          windowHeight: page.scrollHeight,
+        });
+        if (index > 0) pdf.addPage();
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, pageHeight);
       }
 
       pdf.save(`orcamento-${quote.numero}.pdf`);
@@ -171,7 +158,7 @@ export default function ImprimirOrcamentoPage({
         </div>
       </div>
 
-      <div className="py-8">
+      <div className="py-8 print:py-0">
         <div ref={printRef}>
           <QuotePrintLayout
             layout={layout}
@@ -181,7 +168,7 @@ export default function ImprimirOrcamentoPage({
             quote={{
               numero: quote.numero,
               clienteNome: quote.client.nome,
-              createdByUserName: quote.updatedByUser?.name ?? quote.createdByUser?.name,
+              createdByUserName: quote.createdByUser?.name,
               referencia: quote.referencia,
               dataEmissao: quote.dataEmissao,
               validadeDias: quote.validadeDias,
@@ -192,6 +179,10 @@ export default function ImprimirOrcamentoPage({
               subtotal: quote.subtotal,
               descontoGeralTipo: quote.descontoGeralTipo,
               descontoGeralValor: quote.descontoGeralValor,
+              descontoProdutosTipo: quote.descontoProdutosTipo,
+              descontoProdutosValor: quote.descontoProdutosValor,
+              descontoServicosTipo: quote.descontoServicosTipo,
+              descontoServicosValor: quote.descontoServicosValor,
               total: quote.total,
             }}
           />

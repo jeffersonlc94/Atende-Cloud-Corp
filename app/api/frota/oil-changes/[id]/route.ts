@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { canAccessModule } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { oilChangeSchema } from "@/lib/validations";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -16,6 +16,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
+  const before = await prisma.oilChange.findUnique({ where: { id } });
+  if (!before) return NextResponse.json({ error: "Troca de óleo não encontrada" }, { status: 404 });
   const parsed = oilChangeSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -41,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "OilChange",
     entidadeId: item.id,
-    detalhes: { vehicleId: item.vehicleId, km: item.km },
+    detalhes: buildAuditChanges(before as unknown as Record<string, unknown>, item as unknown as Record<string, unknown>, { resumo: { vehicleId: item.vehicleId } }),
     ip: getRequestIp(req),
   });
 
@@ -56,13 +58,14 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
-  await prisma.oilChange.delete({ where: { id } });
+  const item = await prisma.oilChange.delete({ where: { id } });
 
   await registerAudit({
     userId: session.user.id,
     acao: "delete",
     entidade: "OilChange",
     entidadeId: id,
+    detalhes: buildAuditDeleteDetails(item as unknown as Record<string, unknown>, { resumo: { vehicleId: item.vehicleId, km: item.km } }),
     ip: getRequestIp(req),
   });
 

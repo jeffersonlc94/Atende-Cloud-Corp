@@ -5,6 +5,14 @@
 export type DescontoTipo = "Valor" | "Percentual";
 export type TipoItem = "Produto" | "Servico";
 
+export function computeUnitPriceFromMargin(
+  custoUnitario: number,
+  margemPercentual: number,
+  freteUnitario = 0
+): number {
+  return Math.round((custoUnitario * (1 + margemPercentual / 100) + freteUnitario) * 100) / 100;
+}
+
 export function aplicarDesconto(
   base: number,
   tipo: DescontoTipo | null | undefined,
@@ -37,7 +45,11 @@ export function computeQuoteTotals<
 >(
   itens: T[],
   descontoGeralTipo?: DescontoTipo | null,
-  descontoGeralValor?: number | null
+  descontoGeralValor?: number | null,
+  descontoProdutosTipo?: DescontoTipo | null,
+  descontoProdutosValor?: number | null,
+  descontoServicosTipo?: DescontoTipo | null,
+  descontoServicosValor?: number | null
 ) {
   const itensComputados = itens.map((item) => ({
     ...item,
@@ -65,11 +77,15 @@ export function computeQuoteTotals<
       .reduce((acc, i) => acc + i.valorTotal, 0) * 100
   ) / 100;
 
-  const total = Math.round(
-    aplicarDesconto(subtotal, descontoGeralTipo, descontoGeralValor) * 100
-  ) / 100;
+  const totalProdutosComDesconto = aplicarDesconto(totalProdutos, descontoProdutosTipo, descontoProdutosValor);
+  const totalServicosComDesconto = aplicarDesconto(totalServicos, descontoServicosTipo, descontoServicosValor);
+  const descontoProdutos = Math.round((totalProdutos - totalProdutosComDesconto) * 100) / 100;
+  const descontoServicos = Math.round((totalServicos - totalServicosComDesconto) * 100) / 100;
+  const subtotalComDescontos = Math.round((totalProdutosComDesconto + totalServicosComDesconto) * 100) / 100;
+  const total = Math.round(aplicarDesconto(subtotalComDescontos, descontoGeralTipo, descontoGeralValor) * 100) / 100;
 
+  const descontoGeral = Math.round((subtotalComDescontos - total) * 100) / 100;
   const desconto = Math.round((subtotal - total) * 100) / 100;
 
-  return { itensComputados, subtotal, totalProdutos, totalServicos, desconto, total };
+  return { itensComputados, subtotal, totalProdutos, totalServicos, descontoProdutos, descontoServicos, descontoGeral, desconto, total };
 }

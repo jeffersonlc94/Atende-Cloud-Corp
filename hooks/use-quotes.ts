@@ -11,6 +11,11 @@ export type QuoteItemRecord = {
   fotoUrl: string | null;
   quantidade: string;
   valorUnitario: string;
+  calcularPorMargem: boolean;
+  custoUnitario: string | null;
+  margemLucro: string | null;
+  freteHabilitado: boolean;
+  freteUnitario: string | null;
   descontoTipo: "Valor" | "Percentual" | null;
   descontoValor: string | null;
   valorTotal: string;
@@ -29,11 +34,17 @@ export type QuoteRecord = {
   prazoEntrega: string | null;
   observacoes: string | null;
   observacoesInternas: string | null;
+  fotosInternas: string[];
   subtotal: string | null;
   descontoGeralTipo: "Valor" | "Percentual" | null;
   descontoGeralValor: string | null;
+  descontoProdutosTipo: "Valor" | "Percentual" | null;
+  descontoProdutosValor: string | null;
+  descontoServicosTipo: "Valor" | "Percentual" | null;
+  descontoServicosValor: string | null;
   total: string;
   visibilidade: "Global" | "Privado";
+  status: "Negociacao" | "Enviado" | "NaoAprovado" | "Aprovado";
   createdByUserId: string | null;
   createdAt: string;
   company: { id: string; razaoSocial: string; nomeFantasia: string | null } & Record<string, unknown>;
@@ -52,6 +63,15 @@ export type QuoteFilters = {
   dataFinal?: string;
   page?: number;
   scope?: "mine" | "global";
+  status?: "Rascunho" | "Negociacao" | "Enviado" | "NaoAprovado" | "Aprovado";
+};
+
+export type QuoteDraftRecord = {
+  id: string;
+  data: Partial<QuoteFormValues>;
+  autoSave: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -66,7 +86,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
-export function useQuotesList(filters: QuoteFilters) {
+export function useQuotesList(filters: QuoteFilters, enabled = true) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {
     if (v) params.set(k, String(v));
@@ -78,6 +98,7 @@ export function useQuotesList(filters: QuoteFilters) {
       fetchJson<{ items: QuoteRecord[]; total: number; page: number; pageSize: number }>(
         `/api/quotes?${params.toString()}`
       ),
+    enabled,
   });
 }
 
@@ -86,6 +107,41 @@ export function useQuote(id?: string) {
     queryKey: ["quotes", id],
     queryFn: () => fetchJson<QuoteRecord>(`/api/quotes/${id}`),
     enabled: !!id,
+  });
+}
+
+export function useQuoteDrafts() {
+  return useQuery({ queryKey: ["quote-drafts"], queryFn: () => fetchJson<QuoteDraftRecord[]>("/api/quote-drafts") });
+}
+
+export function useQuoteDraft(id?: string | null) {
+  return useQuery({ queryKey: ["quote-drafts", id], queryFn: () => fetchJson<QuoteDraftRecord>(`/api/quote-drafts/${id}`), enabled: !!id });
+}
+
+export function useCreateQuoteDraft() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: { data: Partial<QuoteFormValues>; autoSave: boolean }) => fetchJson<QuoteDraftRecord>("/api/quote-drafts", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["quote-drafts"] }),
+  });
+}
+
+export function useUpdateQuoteDraft() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data, autoSave }: { id: string; data: Partial<QuoteFormValues>; autoSave: boolean }) => fetchJson<QuoteDraftRecord>(`/api/quote-drafts/${id}`, { method: "PUT", body: JSON.stringify({ data, autoSave }) }),
+    onSuccess: (draft) => {
+      qc.setQueryData(["quote-drafts", draft.id], draft);
+      qc.invalidateQueries({ queryKey: ["quote-drafts"] });
+    },
+  });
+}
+
+export function useDeleteQuoteDraft() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fetchJson(`/api/quote-drafts/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["quote-drafts"] }),
   });
 }
 

@@ -7,7 +7,7 @@ export const tipoItemOptions = ["Produto", "Servico"] as const;
 const optionalDescontoTipo = z.enum(descontoTipoOptions).optional();
 
 const optionalDescontoValor = z.preprocess(
-  (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+  (v) => (v === "" || v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
   z.number().nonnegative("Desconto não pode ser negativo").optional()
 );
 
@@ -17,16 +17,44 @@ export const quoteItemSchema = z.object({
   tipoItem: z.enum(tipoItemOptions).default("Produto"),
   descricao: z.string().min(1, "Descrição obrigatória"),
   fotoUrl: z.string().optional(),
-  quantidade: z.number().positive("Quantidade deve ser maior que zero"),
+  quantidade: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number({ error: "Informe a quantidade" }).positive("Quantidade deve ser maior que zero")
+  ),
   valorUnitario: z.preprocess(
-    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? 0 : v),
-    z.number().nonnegative("Valor unitário não pode ser negativo")
+    (v) => (v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number({ error: "Informe o valor unitário" }).positive("Valor unitário deve ser maior que zero")
+  ),
+  calcularPorMargem: z.boolean().optional().default(false),
+  custoUnitario: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().positive("Custo unitário deve ser maior que zero").optional()
+  ),
+  margemLucro: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().nonnegative("Margem não pode ser negativa").optional()
+  ),
+  freteHabilitado: z.boolean().optional().default(false),
+  freteUnitario: z.preprocess(
+    (v) => (v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
+    z.number().positive("Frete deve ser maior que zero").optional()
   ),
   descontoTipo: optionalDescontoTipo,
   descontoValor: optionalDescontoValor,
+}).superRefine((item, ctx) => {
+  if (item.calcularPorMargem && item.custoUnitario === undefined) {
+    ctx.addIssue({ code: "custom", path: ["custoUnitario"], message: "Informe o custo unitário" });
+  }
+  if (item.calcularPorMargem && item.margemLucro === undefined) {
+    ctx.addIssue({ code: "custom", path: ["margemLucro"], message: "Informe a margem" });
+  }
+  if (item.freteHabilitado && item.freteUnitario === undefined) {
+    ctx.addIssue({ code: "custom", path: ["freteUnitario"], message: "Informe o valor do frete" });
+  }
 });
 
 export const visibilidadeOptions = ["Global", "Privado"] as const;
+export const quoteStatusOptions = ["Negociacao", "Enviado", "NaoAprovado", "Aprovado"] as const;
 
 export const quoteSchema = z.object({
   numero: z.string().trim().optional().default(""),
@@ -42,10 +70,16 @@ export const quoteSchema = z.object({
   prazoEntrega: z.string().optional().default(""),
   observacoes: z.string().optional().default(""),
   observacoesInternas: z.string().optional().default(""),
+  fotosInternas: z.array(z.string()).optional().default([]),
   visibilidade: z.enum(visibilidadeOptions).default("Global"),
+  status: z.enum(quoteStatusOptions).default("Negociacao"),
   itens: z.array(quoteItemSchema).min(1, "Adicione ao menos um item"),
   descontoGeralTipo: optionalDescontoTipo,
   descontoGeralValor: optionalDescontoValor,
+  descontoProdutosTipo: optionalDescontoTipo,
+  descontoProdutosValor: optionalDescontoValor,
+  descontoServicosTipo: optionalDescontoTipo,
+  descontoServicosValor: optionalDescontoValor,
 });
 
 export type QuoteFormValues = z.input<typeof quoteSchema>;
@@ -93,6 +127,10 @@ export const systemSettingsSchema = z.object({
   buttonColor: z.string().optional().default(""),
   accentColor: z.string().optional().default(""),
   autoLogoutMinutes: z.number().int().nonnegative().optional(),
+  maintenanceMode: z.boolean().optional(),
+  maintenanceMessage: z.string().max(500, "Mensagem deve ter no máximo 500 caracteres").optional().default(""),
+  trainingVideoMaxMb: z.number().int().nonnegative().optional(),
+  trainingDocumentMaxMb: z.number().int().positive().optional(),
   notificationCargoPrefs: notificationCargoPrefsSchema.optional(),
 });
 
@@ -318,6 +356,7 @@ export const userSchema = z.object({
   canAccessOrcamentos: z.boolean().optional().default(true),
   canAccessFrota: z.boolean().optional().default(true),
   canAccessEstoque: z.boolean().optional().default(true),
+  canAccessTreinamentos: z.boolean().optional().default(true),
   receiveNotifications: z.boolean().optional().default(true),
   telegramChatId: z.string().optional().default(""),
 });

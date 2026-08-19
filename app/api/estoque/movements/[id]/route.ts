@@ -3,9 +3,21 @@ import { auth } from "@/auth";
 import { canAccessModule, canDeleteRecords } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { stockMovementSchema } from "@/lib/validations";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 
 type Params = { params: Promise<{ id: string }> };
+
+export async function GET(_: NextRequest, { params }: Params) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canAccessModule(session, "estoque")) {
+    return NextResponse.json({ error: "Acesso ao módulo não autorizado." }, { status: 403 });
+  }
+  const { id } = await params;
+  const movement = await prisma.stockMovement.findUnique({ where: { id } });
+  if (!movement) return NextResponse.json({ error: "Lançamento não encontrado." }, { status: 404 });
+  return NextResponse.json(movement);
+}
 
 export async function PUT(req: NextRequest, { params }: Params) {
   const session = await auth();
@@ -16,6 +28,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
+  const before = await prisma.stockMovement.findUnique({ where: { id } });
+  if (!before) return NextResponse.json({ error: "Movimentação não encontrada" }, { status: 404 });
   const parsed = stockMovementSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
@@ -44,7 +58,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "StockMovement",
     entidadeId: movement.id,
-    detalhes: { cod: movement.cod, devolvido: movement.devolvido },
+    detalhes: buildAuditChanges(before as unknown as Record<string, unknown>, movement as unknown as Record<string, unknown>, { resumo: { codigo: movement.cod } }),
     ip: getRequestIp(req),
   });
 
@@ -66,7 +80,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     acao: "delete",
     entidade: "StockMovement",
     entidadeId: id,
-    detalhes: { cod: movement.cod, descricao: movement.descricao },
+    detalhes: buildAuditDeleteDetails(movement as unknown as Record<string, unknown>, { resumo: { codigo: movement.cod, descricao: movement.descricao } }),
     ip: getRequestIp(req),
   });
 

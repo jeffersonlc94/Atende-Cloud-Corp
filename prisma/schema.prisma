@@ -32,12 +32,16 @@ model User {
   canAccessFrota       Boolean  @default(true)
   receiveNotifications Boolean  @default(true)
   canAccessEstoque     Boolean  @default(true)
+  canAccessTreinamentos Boolean @default(true)
   telegramChatId       String?
   hidden               Boolean  @default(false)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
   quotes        Quote[]
+  quoteDrafts   QuoteDraft[]
+  trainingContents TrainingContent[]
+  presence      UserPresence?
   updatedQuotes Quote[]       @relation("QuoteUpdatedBy")
   mileageLogs   MileageLog[]
   checklists    Checklist[]
@@ -99,6 +103,13 @@ enum TipoItem {
   Servico
 }
 
+enum QuoteStatus {
+  Negociacao
+  Enviado
+  NaoAprovado
+  Aprovado
+}
+
 model Quote {
   id                 String        @id @default(cuid())
   numero             String        @unique
@@ -114,10 +125,16 @@ model Quote {
   prazoEntrega       String?
   observacoes        String?
   observacoesInternas String?
+  fotosInternas      Json          @default("[]")
   subtotal           Decimal?      @db.Decimal(14, 2)
   descontoGeralTipo  DescontoTipo?
   descontoGeralValor Decimal?      @db.Decimal(14, 2)
+  descontoProdutosTipo  DescontoTipo?
+  descontoProdutosValor Decimal?   @db.Decimal(14, 2)
+  descontoServicosTipo  DescontoTipo?
+  descontoServicosValor Decimal?   @db.Decimal(14, 2)
   total              Decimal       @default(0) @db.Decimal(14, 2)
+  status             QuoteStatus   @default(Negociacao)
   visibilidade       Visibilidade  @default(Global)
   createdByUserId    String?
   createdByUser      User?         @relation(fields: [createdByUserId], references: [id])
@@ -131,6 +148,66 @@ model Quote {
   @@map("quotes")
 }
 
+model QuoteDraft {
+  id              String   @id @default(cuid())
+  data            Json     @default("{}")
+  autoSave        Boolean  @default(true)
+  createdByUserId String
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([createdByUserId, updatedAt])
+  @@map("quote_drafts")
+}
+
+enum TrainingContentType {
+  Videoaula
+  Documento
+}
+
+model TrainingCategory {
+  id        String            @id @default(cuid())
+  nome      String            @unique
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  contents  TrainingContent[]
+
+  @@map("training_categories")
+}
+
+model TrainingContent {
+  id              String              @id @default(cuid())
+  titulo          String
+  descricao       String?
+  tipo            TrainingContentType
+  arquivoUrl      String
+  nomeArquivo     String?
+  ordem           Int                 @default(0)
+  categoryId      String
+  category        TrainingCategory    @relation(fields: [categoryId], references: [id])
+  createdByUserId String?
+  createdByUser   User?               @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([categoryId, tipo, ordem])
+  @@map("training_contents")
+}
+
+model UserPresence {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path      String?
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lastSeen])
+  @@map("user_presences")
+}
+
 model QuoteItem {
   id            String        @id @default(cuid())
   quoteId       String
@@ -141,6 +218,11 @@ model QuoteItem {
   fotoUrl       String?
   quantidade    Decimal       @db.Decimal(14, 3)
   valorUnitario Decimal       @db.Decimal(14, 2)
+  calcularPorMargem Boolean   @default(false)
+  custoUnitario  Decimal?      @db.Decimal(14, 2)
+  margemLucro    Decimal?      @db.Decimal(8, 2)
+  freteHabilitado Boolean      @default(false)
+  freteUnitario   Decimal?     @db.Decimal(14, 2)
   descontoTipo  DescontoTipo?
   descontoValor Decimal?      @db.Decimal(14, 2)
   valorTotal    Decimal       @db.Decimal(14, 2)
@@ -428,6 +510,10 @@ model SystemSettings {
   buttonColor            String?
   accentColor            String?
   autoLogoutMinutes      Int?
+  maintenanceMode        Boolean  @default(false)
+  maintenanceMessage     String?
+  trainingVideoMaxMb     Int      @default(0)
+  trainingDocumentMaxMb  Int      @default(50)
   notificationCargoPrefs Json?
   smtpHost               String?
   smtpPort               Int?

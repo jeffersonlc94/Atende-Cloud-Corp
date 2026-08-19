@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Controller, useForm, useWatch, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { quoteSchema, type QuoteFormValues } from "@/lib/validations";
 import { useCompanies } from "@/hooks/use-companies";
 import { useUpdateClient } from "@/hooks/use-clients";
-import { useCreateQuote, useUpdateQuote, type QuoteRecord } from "@/hooks/use-quotes";
+import { useCreateQuote, useUpdateQuote, useCreateQuoteDraft, useUpdateQuoteDraft, useDeleteQuoteDraft, type QuoteDraftRecord, type QuoteRecord } from "@/hooks/use-quotes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +31,9 @@ import {
 import { ClientCombobox } from "@/components/clients/client-combobox";
 import { EditClientDialog } from "@/components/clients/edit-client-dialog";
 import { QuoteItemsTable } from "./quote-items-table";
+import { QuoteInternalPhotos } from "./quote-internal-photos";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { formatCurrencyBRL } from "@/lib/format";
 import { computeQuoteTotals } from "@/lib/quote-calc";
 import {
@@ -54,6 +56,9 @@ import {
   Lock,
   StickyNote,
   Pencil,
+  Unlock,
+  Cloud,
+  CloudOff,
   type LucideIcon,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -91,25 +96,67 @@ function FieldLabel({ icon: Icon, children }: { icon: LucideIcon; children: Reac
   );
 }
 
-export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
+function ClosingDiscountField({
+  label, typeName, valueName, control, currentType,
+}: {
+  label: string;
+  typeName: "descontoProdutosTipo" | "descontoServicosTipo" | "descontoGeralTipo";
+  valueName: "descontoProdutosValor" | "descontoServicosValor" | "descontoGeralValor";
+  control: Control<QuoteFormValues>;
+  currentType?: "Valor" | "Percentual";
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <Controller control={control} name={typeName} render={({ field }) => (
+        <Select value={field.value ?? "Valor"} onValueChange={field.onChange}>
+          <SelectTrigger className="w-24"><SelectValue>{(value: string) => value === "Percentual" ? "%" : "R$"}</SelectValue></SelectTrigger>
+          <SelectContent><SelectItem value="Valor">R$</SelectItem><SelectItem value="Percentual">%</SelectItem></SelectContent>
+        </Select>
+      )} />
+      <Controller control={control} name={valueName} render={({ field }) => currentType === "Percentual" ? (
+        <div className="relative w-32">
+          <DecimalInput className="pr-6" maximum={100} value={field.value as number | undefined} onValueChange={(value) => field.onChange(value ?? null)} onBlur={field.onBlur} />
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+        </div>
+      ) : <CurrencyInput className="w-32" value={Number(field.value) > 0 ? Number(field.value) : undefined} onValueChange={(value) => field.onChange(value && value > 0 ? value : null)} onBlur={field.onBlur} />} />
+    </div>
+  );
+}
+
+export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; draft?: QuoteDraftRecord }) {
   const router = useRouter();
   const { data: session } = useSession();
   const { data: companies = [] } = useCompanies();
   const createQuote = useCreateQuote();
   const updateQuote = useUpdateQuote();
+  const createDraft = useCreateQuoteDraft();
+  const updateDraft = useUpdateQuoteDraft();
+  const deleteDraft = useDeleteQuoteDraft();
   const [previewing, setPreviewing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [reopenConfirmOpen, setReopenConfirmOpen] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [approvedLocked, setApprovedLocked] = useState(initialData?.status === "Aprovado");
   const [pendingData, setPendingData] = useState<QuoteFormValues | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(
     initialData?.client.id ?? null
   );
   const [editClientOpen, setEditClientOpen] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(draft?.id ?? null);
+  const [autoSave, setAutoSave] = useState(draft?.autoSave ?? false);
+  const [autoSavePromptOpen, setAutoSavePromptOpen] = useState(!initialData && !draft);
+  const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved" | "error">(draft ? "saved" : "idle");
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateDraftRef = useRef(updateDraft.mutateAsync);
+  updateDraftRef.current = updateDraft.mutateAsync;
 
   const {
     register,
     control,
     handleSubmit,
     watch,
+    getValues,
     setValue,
     formState: { errors },
   } = useForm<QuoteFormValues>({
@@ -126,7 +173,9 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           prazoEntrega: initialData.prazoEntrega ?? "",
           observacoes: initialData.observacoes ?? "",
           observacoesInternas: initialData.observacoesInternas ?? "",
+          fotosInternas: initialData.fotosInternas ?? [],
           visibilidade: initialData.visibilidade ?? "Global",
+          status: initialData.status ?? "Negociacao",
           itens: initialData.itens.map((i) => ({
             ordem: i.ordem,
             tipoItem: i.tipoItem ?? "Produto",
@@ -134,14 +183,23 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
             fotoUrl: i.fotoUrl ?? undefined,
             quantidade: Number(i.quantidade),
             valorUnitario: Number(i.valorUnitario),
+            calcularPorMargem: i.calcularPorMargem ?? false,
+            custoUnitario: i.custoUnitario !== null ? Number(i.custoUnitario) : undefined,
+            margemLucro: i.margemLucro !== null ? Number(i.margemLucro) : undefined,
+            freteHabilitado: i.freteHabilitado ?? false,
+            freteUnitario: i.freteUnitario !== null ? Number(i.freteUnitario) : undefined,
             descontoTipo: i.descontoTipo ?? undefined,
             descontoValor: i.descontoValor !== null && i.descontoValor !== undefined ? Number(i.descontoValor) : undefined,
           })),
           descontoGeralTipo: initialData.descontoGeralTipo ?? undefined,
           descontoGeralValor:
             initialData.descontoGeralValor !== null && initialData.descontoGeralValor !== undefined
-              ? Number(initialData.descontoGeralValor)
+              ? Number(initialData.descontoGeralValor) || undefined
               : undefined,
+          descontoProdutosTipo: initialData.descontoProdutosTipo ?? undefined,
+          descontoProdutosValor: initialData.descontoProdutosValor !== null ? Number(initialData.descontoProdutosValor) || undefined : undefined,
+          descontoServicosTipo: initialData.descontoServicosTipo ?? undefined,
+          descontoServicosValor: initialData.descontoServicosValor !== null ? Number(initialData.descontoServicosValor) || undefined : undefined,
         }
       : {
           numero: "",
@@ -154,10 +212,17 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           prazoEntrega: "",
           observacoes: "",
           observacoesInternas: "",
+          fotosInternas: [],
           visibilidade: "Global",
-          itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
+          status: "Negociacao",
+          itens: [{ ordem: 0, tipoItem: "Produto", descricao: "", fotoUrl: undefined, quantidade: 1, valorUnitario: undefined, calcularPorMargem: false, custoUnitario: undefined, margemLucro: undefined, freteHabilitado: false, freteUnitario: undefined, descontoTipo: undefined, descontoValor: undefined }],
           descontoGeralTipo: undefined,
           descontoGeralValor: undefined,
+          descontoProdutosTipo: undefined,
+          descontoProdutosValor: undefined,
+          descontoServicosTipo: undefined,
+          descontoServicosValor: undefined,
+          ...(draft?.data ?? {}),
         },
   });
 
@@ -165,8 +230,13 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const itens = useWatch({ control, name: "itens" });
   const descontoGeralTipo = useWatch({ control, name: "descontoGeralTipo" });
   const descontoGeralValor = useWatch({ control, name: "descontoGeralValor" });
+  const descontoProdutosTipo = useWatch({ control, name: "descontoProdutosTipo" });
+  const descontoProdutosValor = useWatch({ control, name: "descontoProdutosValor" });
+  const descontoServicosTipo = useWatch({ control, name: "descontoServicosTipo" });
+  const descontoServicosValor = useWatch({ control, name: "descontoServicosValor" });
+  const itensSnapshot = JSON.stringify(itens ?? []);
 
-  const { total, descontoGeral, totalProdutos, totalServicos } = useMemo(() => {
+  const { total, descontoGeral, descontoProdutos, descontoServicos, totalProdutos, totalServicos } = useMemo(() => {
     const itensNormalizados = (itens ?? []).map((item) => ({
       quantidade: Number(item?.quantidade) || 0,
       valorUnitario: Number(item?.valorUnitario) || 0,
@@ -177,15 +247,24 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
     const result = computeQuoteTotals(
       itensNormalizados,
       descontoGeralTipo as "Valor" | "Percentual" | undefined,
-      Number(descontoGeralValor) || 0
+      Number(descontoGeralValor) || 0,
+      descontoProdutosTipo as "Valor" | "Percentual" | undefined,
+      Number(descontoProdutosValor) || 0,
+      descontoServicosTipo as "Valor" | "Percentual" | undefined,
+      Number(descontoServicosValor) || 0
     );
     return {
       total: result.total,
-      descontoGeral: result.desconto,
+      descontoGeral: result.descontoGeral,
+      descontoProdutos: result.descontoProdutos,
+      descontoServicos: result.descontoServicos,
       totalProdutos: result.totalProdutos,
       totalServicos: result.totalServicos,
     };
-  }, [itens, descontoGeralTipo, descontoGeralValor]);
+  // O snapshot garante a atualização mesmo quando react-hook-form preserva a
+  // referência interna do array ao editar o primeiro/único item.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itensSnapshot, descontoGeralTipo, descontoGeralValor, descontoProdutosTipo, descontoProdutosValor, descontoServicosTipo, descontoServicosValor]);
 
   const dataValidade = useMemo(() => {
     if (!values.dataEmissao || !values.validadeDias) return "";
@@ -194,6 +273,63 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
     base.setDate(base.getDate() + Number(values.validadeDias));
     return base.toLocaleDateString("pt-BR");
   }, [values.dataEmissao, values.validadeDias]);
+
+  useEffect(() => {
+    if (!draftId || !autoSave || initialData) return;
+    const subscription = watch((data) => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      setAutoSaveState("saving");
+      autoSaveTimer.current = setTimeout(async () => {
+        try {
+          await updateDraftRef.current({ id: draftId, data: data as Partial<QuoteFormValues>, autoSave: true });
+          setAutoSaveState("saved");
+        } catch {
+          setAutoSaveState("error");
+        }
+      }, 1200);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [autoSave, draftId, initialData, watch]);
+
+  useEffect(() => {
+    if (autoSaveState !== "saved") return;
+    const timer = setTimeout(() => setAutoSaveState("idle"), 3500);
+    return () => clearTimeout(timer);
+  }, [autoSaveState]);
+
+  async function enableAutoSave() {
+    try {
+      const created = await createDraft.mutateAsync({ data: getValues(), autoSave: true });
+      setDraftId(created.id);
+      setAutoSave(true);
+      setAutoSaveState("saved");
+      router.replace(`/orcamentos/novo?draftId=${created.id}`);
+      toast.success("Salvamento automático ativado");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao ativar salvamento automático");
+    }
+  }
+
+  async function saveAsDraft() {
+    try {
+      setAutoSaveState("saving");
+      if (draftId) {
+        await updateDraft.mutateAsync({ id: draftId, data: getValues(), autoSave });
+      } else {
+        const created = await createDraft.mutateAsync({ data: getValues(), autoSave: false });
+        setDraftId(created.id);
+        router.replace(`/orcamentos/novo?draftId=${created.id}`);
+      }
+      setAutoSaveState("saved");
+      toast.success("Rascunho salvo");
+    } catch (error) {
+      setAutoSaveState("error");
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar rascunho");
+    }
+  }
 
   async function persist(data: QuoteFormValues) {
     if (initialData) {
@@ -207,6 +343,9 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   async function confirmAndPersist(data: QuoteFormValues) {
     try {
       await persist(data);
+      if (draftId) {
+        try { await deleteDraft.mutateAsync(draftId); } catch { /* orçamento já foi finalizado; não repetir a criação */ }
+      }
       toast.success(initialData ? "Orçamento atualizado com sucesso" : "Orçamento criado com sucesso");
       router.push("/orcamentos");
       router.refresh();
@@ -230,8 +369,11 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
       setPreviewing(true);
       try {
         const id = await persist(data);
+        if (draftId) {
+          try { await deleteDraft.mutateAsync(draftId); } catch { /* não bloquear a visualização */ }
+        }
         if (!initialData) {
-          toast.success("Orçamento salvo como rascunho para pré-visualização");
+          toast.success("Orçamento finalizado para pré-visualização");
           router.refresh();
         }
         router.push(`/orcamentos/${id}/imprimir`);
@@ -249,8 +391,31 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
   const isSaving = createQuote.isPending || updateQuote.isPending;
   const isEditing = !!initialData;
 
+  async function handleReopen() {
+    if (!initialData) return;
+    setReopening(true);
+    try {
+      const res = await fetch(`/api/quotes/${initialData.id}/reopen`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Erro ao reabrir orçamento");
+      setValue("status", "Negociacao", { shouldDirty: false });
+      setApprovedLocked(false);
+      toast.success("Orçamento reaberto para edição");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao reabrir orçamento");
+    } finally {
+      setReopening(false);
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form
+      onSubmit={handleSubmit(onSubmit, () =>
+        toast.error("Preencha a descrição, a quantidade e o valor obrigatório de todos os itens")
+      )}
+      className="space-y-4"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -262,14 +427,36 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={isSaving}>
+          {!initialData && autoSaveState !== "idle" && (
+            <div
+              className={autoSaveState === "error"
+                ? "flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800 shadow-sm"
+                : autoSaveState === "saving"
+                  ? "flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-800 shadow-sm"
+                  : "flex items-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 shadow-sm"}
+              role="status"
+            >
+              {autoSaveState === "error" ? <CloudOff className="h-4 w-4" /> : autoSaveState === "saving" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cloud className="h-4 w-4" />}
+              {autoSaveState === "saving" ? "Salvando rascunho..." : autoSaveState === "error" ? "Erro ao salvar rascunho" : autoSave ? "Rascunho salvo automaticamente" : "Rascunho salvo"}
+            </div>
+          )}
+          {!initialData && !approvedLocked && <Button type="button" variant="outline" disabled={createDraft.isPending || updateDraft.isPending} onClick={saveAsDraft}>
+            <Cloud className="mr-2 h-4 w-4" /> Salvar rascunho
+          </Button>}
+          {!approvedLocked && <Button type="submit" disabled={isSaving}>
             {isSaving ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Salvar
-          </Button>
+            {initialData ? "Salvar alterações" : "Finalizar orçamento"}
+          </Button>}
+          {approvedLocked && (
+            <Button type="button" onClick={() => setReopenConfirmOpen(true)} disabled={reopening}>
+              {reopening ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Unlock className="mr-2 h-4 w-4" />}
+              Reabrir orçamento
+            </Button>
+          )}
           <Button type="button" variant="outline" onClick={handlePreview} disabled={previewing}>
             {previewing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -284,7 +471,13 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         </div>
       </div>
 
-      <div className="space-y-6">
+      {approvedLocked && (
+        <Card className="border-emerald-300 bg-emerald-50 text-emerald-900">
+          <CardContent className="py-3 text-sm font-medium">Orçamento aprovado e bloqueado para edição.</CardContent>
+        </Card>
+      )}
+
+      <fieldset disabled={approvedLocked} className="space-y-6 disabled:opacity-75">
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ClipboardList} title="Dados do Orçamento" description="Informações gerais do orçamento" />
           <CardContent className="grid gap-4 pt-4 pb-5 sm:grid-cols-2">
@@ -409,84 +602,51 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <FieldLabel icon={FileText}>Status</FieldLabel>
+              <Controller control={control} name="status" render={({ field }) => (
+                <Select value={field.value ?? "Negociacao"} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Negociacao">Em negociação</SelectItem>
+                    <SelectItem value="Enviado">Enviado</SelectItem>
+                    <SelectItem value="NaoAprovado">Não aprovado</SelectItem>
+                    <SelectItem value="Aprovado">Aprovado</SelectItem>
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
           </CardContent>
         </Card>
 
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ListOrdered} title="Itens do Orçamento" description="Lista de produtos ou serviços" />
           <CardContent className="space-y-4 pt-4 pb-5">
-            <QuoteItemsTable control={control} register={register} watchItems={itens} />
+          <QuoteItemsTable control={control} register={register} watchItems={itens} setValue={setValue} />
             {errors.itens && !Array.isArray(errors.itens) && (
               <p className="text-sm text-destructive">{errors.itens.message}</p>
             )}
 
             <div className="flex flex-col items-end gap-3 border-t pt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">Desconto geral</span>
-                <Controller
-                  control={control}
-                  name="descontoGeralTipo"
-                  render={({ field }) => (
-                    <Select value={field.value ?? "Valor"} onValueChange={(v) => field.onChange(v)}>
-                      <SelectTrigger className="w-24">
-                        <SelectValue>
-                          {(value: string) => (value === "Percentual" ? "%" : "R$")}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Valor">R$</SelectItem>
-                        <SelectItem value="Percentual">%</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <Controller
-                  control={control}
-                  name="descontoGeralValor"
-                  render={({ field }) =>
-                    (values.descontoGeralTipo ?? "Valor") === "Percentual" ? (
-                      <div className="relative w-32">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          className="pr-6"
-                          value={(field.value as number | undefined) ?? ""}
-                          onChange={(e) =>
-                            field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
-                          }
-                          onBlur={field.onBlur}
-                        />
-                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                          %
-                        </span>
-                      </div>
-                    ) : (
-                      <CurrencyInput
-                        className="w-32"
-                        value={field.value as number | undefined}
-                        onValueChange={field.onChange}
-                        onBlur={field.onBlur}
-                      />
-                    )
-                  }
-                />
-              </div>
+              <ClosingDiscountField label="Desconto em produtos" typeName="descontoProdutosTipo" valueName="descontoProdutosValor" control={control} currentType={descontoProdutosTipo} />
+              <ClosingDiscountField label="Desconto em serviços" typeName="descontoServicosTipo" valueName="descontoServicosValor" control={control} currentType={descontoServicosTipo} />
+              <ClosingDiscountField label="Desconto geral" typeName="descontoGeralTipo" valueName="descontoGeralValor" control={control} currentType={descontoGeralTipo} />
 
               <div className="w-full max-w-xs space-y-1 text-right">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>Produtos</span>
                   <span>{formatCurrencyBRL(totalProdutos)}</span>
                 </div>
+                {descontoProdutos > 0 && <div className="flex items-center justify-between text-sm text-muted-foreground"><span>Desconto produtos</span><span>- {formatCurrencyBRL(descontoProdutos)}</span></div>}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>Serviços</span>
                   <span>{formatCurrencyBRL(totalServicos)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Desconto</span>
+                {descontoServicos > 0 && <div className="flex items-center justify-between text-sm text-muted-foreground"><span>Desconto serviços</span><span>- {formatCurrencyBRL(descontoServicos)}</span></div>}
+                {descontoGeral > 0 && <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Desconto geral</span>
                   <span>{formatCurrencyBRL(descontoGeral)}</span>
-                </div>
+                </div>}
                 <div className="flex items-center justify-between border-t pt-1">
                   <span className="text-sm font-medium text-muted-foreground">TOTAL</span>
                   <span className="text-2xl font-bold text-primary">{formatCurrencyBRL(total)}</span>
@@ -519,6 +679,13 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               placeholder="Anotações internas sobre este orçamento..."
               {...register("observacoesInternas")}
             />
+            <div className="mt-5 border-t pt-5">
+              <QuoteInternalPhotos
+                photos={values.fotosInternas ?? []}
+                disabled={approvedLocked}
+                onChange={(photos) => setValue("fotosInternas", photos, { shouldDirty: true })}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -531,7 +698,7 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
               : new Date().toLocaleString("pt-BR")}
           </span>
         </div>
-      </div>
+      </fieldset>
 
       <ConfirmDialog
         open={confirmOpen}
@@ -539,6 +706,25 @@ export function QuoteForm({ initialData }: { initialData?: QuoteRecord }) {
         title={isEditing ? "Deseja salvar as alterações?" : "Confirma a criação deste orçamento?"}
         description={isEditing ? "O orçamento será atualizado com os dados informados." : "Um novo orçamento será criado com os dados informados."}
         onConfirm={() => pendingData && confirmAndPersist(pendingData)}
+      />
+
+      <ConfirmDialog
+        open={autoSavePromptOpen}
+        onOpenChange={setAutoSavePromptOpen}
+        title="Deseja utilizar o salvamento automático?"
+        description="O orçamento será guardado como rascunho a cada alteração e poderá ser continuado depois, mesmo após sair do sistema."
+        confirmLabel="Sim, ativar"
+        cancelLabel="Não, continuar sem"
+        onConfirm={enableAutoSave}
+      />
+
+      <ConfirmDialog
+        open={reopenConfirmOpen}
+        onOpenChange={setReopenConfirmOpen}
+        title="Orçamento faturado. Deseja reabrir?"
+        description="O status voltará para Em negociação e todos os campos serão liberados para edição."
+        confirmLabel="Reabrir"
+        onConfirm={handleReopen}
       />
 
       {selectedClientId && (

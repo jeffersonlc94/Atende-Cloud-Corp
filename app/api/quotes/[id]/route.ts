@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { quoteSchema } from "@/lib/validations";
-import { registerAudit, getRequestIp } from "@/lib/audit";
+import { registerAudit, getRequestIp, buildAuditChanges, buildAuditDeleteDetails } from "@/lib/audit";
 import {canDeleteRecords, canAccessModule} from "@/lib/permissions";
-import { computeQuoteTotals } from "@/lib/quote-calc";
+import { computeQuoteTotals, computeUnitPriceFromMargin } from "@/lib/quote-calc";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const existingQuote = await prisma.quote.findUnique({
     where: { id },
-    select: { visibilidade: true, createdByUserId: true },
+    include: { itens: true },
   });
   if (!existingQuote) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -62,6 +62,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
       { error: "Este orçamento é privado e só pode ser editado por quem o criou." },
       { status: 403 }
     );
+  }
+  if (existingQuote.status === "Aprovado") {
+    return NextResponse.json({ error: "Orçamento aprovado está bloqueado. Reabra-o antes de editar." }, { status: 409 });
   }
 
   const body = await req.json();
@@ -79,10 +82,20 @@ export async function PUT(req: NextRequest, { params }: Params) {
       where: { nome: { equals: clientNome, mode: "insensitive" } },
     })) ?? (await prisma.client.create({ data: { nome: clientNome } }));
 
+  const itensNormalizados = data.itens.map((item) => ({
+    ...item,
+    valorUnitario: item.calcularPorMargem
+      ? computeUnitPriceFromMargin(item.custoUnitario ?? 0, item.margemLucro ?? 0, item.freteHabilitado ? item.freteUnitario ?? 0 : 0)
+      : item.valorUnitario,
+  }));
   const { itensComputados, subtotal, total } = computeQuoteTotals(
-    data.itens,
+    itensNormalizados,
     data.descontoGeralTipo,
-    data.descontoGeralValor
+    data.descontoGeralValor,
+    data.descontoProdutosTipo,
+    data.descontoProdutosValor,
+    data.descontoServicosTipo,
+    data.descontoServicosValor
   );
 
   const itensParaCriar = itensComputados.map((item, idx) => ({
@@ -92,6 +105,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
     fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
+    calcularPorMargem: item.calcularPorMargem,
+    custoUnitario: item.calcularPorMargem ? item.custoUnitario ?? null : null,
+    margemLucro: item.calcularPorMargem ? item.margemLucro ?? null : null,
+    freteHabilitado: item.calcularPorMargem && item.freteHabilitado,
+    freteUnitario: item.calcularPorMargem && item.freteHabilitado ? item.freteUnitario ?? null : null,
     descontoTipo: item.descontoTipo ?? null,
     descontoValor: item.descontoValor ?? null,
     valorTotal: item.valorTotal,
@@ -122,11 +140,17 @@ export async function PUT(req: NextRequest, { params }: Params) {
         prazoEntrega: data.prazoEntrega,
         observacoes: data.observacoes,
         observacoesInternas: data.observacoesInternas,
+        fotosInternas: data.fotosInternas,
         subtotal,
         descontoGeralTipo: data.descontoGeralTipo ?? null,
         descontoGeralValor: data.descontoGeralValor ?? null,
+        descontoProdutosTipo: data.descontoProdutosTipo ?? null,
+        descontoProdutosValor: data.descontoProdutosValor ?? null,
+        descontoServicosTipo: data.descontoServicosTipo ?? null,
+        descontoServicosValor: data.descontoServicosValor ?? null,
         total,
         visibilidade: data.visibilidade,
+        status: data.status,
         updatedByUserId: session.user.id,
         itens: { createMany: { data: itensParaCriar } },
       },
@@ -145,7 +169,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
     acao: "update",
     entidade: "Quote",
     entidadeId: quote.id,
-    detalhes: { numero: quote.numero, total: quote.total.toString() },
+    detalhes: buildAuditChanges(existingQuote as unknown as Record<string, unknown>, quote as unknown as Record<string, unknown>, {
+      ignore: ["company", "client", "createdByUser", "updatedByUser"],
+      resumo: { numero: quote.numero },
+    }),
     ip: getRequestIp(req),
   });
 
@@ -163,6 +190,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const { id } = await params;
+  const quote = await prisma.quote.findUnique({ where: { id }, include: { itens: true } });
+  if (!quote) return NextResponse.json({ error: "Orçamento não encontrado" }, { status: 404 });
   await prisma.quote.delete({ where: { id } });
 
   await registerAudit({
@@ -170,6 +199,9 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     acao: "delete",
     entidade: "Quote",
     entidadeId: id,
+    detalhes: buildAuditDeleteDetails(quote as unknown as Record<string, unknown>, {
+      ignore: ["createdByUserId", "updatedByUserId"], resumo: { numero: quote.numero },
+    }),
     ip: getRequestIp(req),
   });
 
