@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { BookOpen, FileText, Film, Loader2, Pencil, Plus, Search, Settings, Tags, Trash2, Upload } from "lucide-react";
+import { BookOpen, FileText, Film, LayoutGrid, List, Loader2, Pencil, Plus, Search, Settings, Tags, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useSystemSettings, useUpdateSystemSettings } from "@/hooks/use-settings";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type Category = { id: string; nome: string };
 type Training = { id: string; titulo: string; descricao: string | null; tipo: "Videoaula" | "Documento"; arquivoUrl: string; nomeArquivo: string | null; ordem: number; categoryId: string; category: Category };
@@ -46,6 +47,17 @@ export default function TreinamentosPage() {
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [videoMaxMb, setVideoMaxMb] = useState("0");
   const [documentMaxMb, setDocumentMaxMb] = useState("50");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("treinamentos:visualizacao");
+    if (saved === "table" || saved === "grid") setViewMode(saved);
+  }, []);
+
+  function changeViewMode(mode: "grid" | "table") {
+    setViewMode(mode);
+    localStorage.setItem("treinamentos:visualizacao", mode);
+  }
 
   useEffect(() => {
     if (!settings) return;
@@ -110,17 +122,17 @@ export default function TreinamentosPage() {
   return <div className="space-y-5">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h1 className="flex items-center gap-2 text-2xl font-bold"><BookOpen className="h-6 w-6 text-primary" /> Treinamentos</h1><p className="text-sm text-muted-foreground">Videoaulas e documentos para consulta da equipe</p></div>
-      {isAdmin && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => { setCategoryNames(Object.fromEntries(categories.map((c) => [c.id, c.nome]))); setCategoriesOpen(true); }}><Tags className="mr-2 h-4 w-4" /> Categorias</Button><Button variant="outline" onClick={() => setLimitsOpen(true)}><Settings className="mr-2 h-4 w-4" /> Limites de upload</Button><Button onClick={() => openForm()}><Plus className="mr-2 h-4 w-4" /> Novo conteúdo</Button></div>}
+      <div className="flex flex-wrap gap-2"><div className="flex items-center rounded-md border p-0.5"><Button variant={viewMode === "table" ? "secondary" : "ghost"} size="icon" title="Visualizar em tabela" onClick={() => changeViewMode("table")}><List className="h-4 w-4" /></Button><Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon" title="Visualizar em grade" onClick={() => changeViewMode("grid")}><LayoutGrid className="h-4 w-4" /></Button></div>{isAdmin && <><Button variant="outline" onClick={() => { setCategoryNames(Object.fromEntries(categories.map((c) => [c.id, c.nome]))); setCategoriesOpen(true); }}><Tags className="mr-2 h-4 w-4" /> Categorias</Button><Button variant="outline" onClick={() => setLimitsOpen(true)}><Settings className="mr-2 h-4 w-4" /> Limites de upload</Button><Button onClick={() => openForm()}><Plus className="mr-2 h-4 w-4" /> Novo conteúdo</Button></>}</div>
     </div>
     <Card><CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_220px_220px]">
       <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar título ou descrição" className="pl-9" /></div>
       <Select value={tipo} onValueChange={(value) => value && setTipo(value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todos">Todos os conteúdos</SelectItem><SelectItem value="Videoaula">Videoaulas</SelectItem><SelectItem value="Documento">Documentos</SelectItem></SelectContent></Select>
-      <Select value={categoryId} onValueChange={(value) => value && setCategoryId(value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todas">Todas as categorias</SelectItem>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select>
+      <Select value={categoryId} onValueChange={(value) => value && setCategoryId(value)}><SelectTrigger><SelectValue>{(value) => value === "Todas" ? "Todas as categorias" : categories.find((category) => category.id === value)?.nome || "Todas as categorias"}</SelectValue></SelectTrigger><SelectContent><SelectItem value="Todas">Todas as categorias</SelectItem>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select>
     </CardContent></Card>
-    {loading ? <div className="py-16 text-center"><Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" /></div> : items.length === 0 ? <Card><CardContent className="py-16 text-center text-muted-foreground">Nenhum treinamento encontrado.</CardContent></Card> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{items.map((item) => <Card key={item.id} className="overflow-hidden border-t-4 border-t-primary transition-shadow hover:shadow-md">
+    {loading ? <div className="py-16 text-center"><Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" /></div> : items.length === 0 ? <Card><CardContent className="py-16 text-center text-muted-foreground">Nenhum treinamento encontrado.</CardContent></Card> : viewMode === "grid" ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{items.map((item) => <Card key={item.id} className="overflow-hidden border-t-4 border-t-primary transition-shadow hover:shadow-md">
       <CardHeader className="bg-primary/5 pb-3"><div className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">{item.tipo === "Videoaula" ? <Film /> : <FileText />}</span><div className="flex gap-1"><Badge variant="outline">{item.tipo}</Badge><Badge variant="secondary">{item.category.nome}</Badge></div></div><CardTitle className="mt-3 text-base">{item.titulo}</CardTitle></CardHeader>
       <CardContent className="space-y-4 pt-4"><p className="line-clamp-3 min-h-10 text-sm text-muted-foreground">{item.descricao || "Sem descrição."}</p><div className="flex items-center justify-between border-t pt-3"><Button size="sm" onClick={() => setViewer(item)}>{item.tipo === "Videoaula" ? "Assistir" : "Abrir documento"}</Button>{isAdmin && <div><Button variant="ghost" size="icon-sm" onClick={() => openForm(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button></div>}</div></CardContent>
-    </Card>)}</div>}
+    </Card>)}</div> : <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Título</TableHead><TableHead>Categoria</TableHead><TableHead>Tipo</TableHead><TableHead>Descrição</TableHead><TableHead className="w-56">Ações</TableHead></TableRow></TableHeader><TableBody>{items.map((item) => <TableRow key={item.id}><TableCell className="font-medium">{item.titulo}</TableCell><TableCell><Badge variant="secondary">{item.category.nome}</Badge></TableCell><TableCell><Badge variant="outline">{item.tipo}</Badge></TableCell><TableCell className="max-w-md truncate" title={item.descricao ?? undefined}>{item.descricao || "—"}</TableCell><TableCell><div className="flex items-center gap-1"><Button size="sm" onClick={() => setViewer(item)}>{item.tipo === "Videoaula" ? "Assistir" : "Abrir documento"}</Button>{isAdmin && <><Button variant="ghost" size="icon-sm" title="Editar" onClick={() => openForm(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" title="Excluir" className="text-destructive" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button></>}</div></TableCell></TableRow>)}</TableBody></Table></div></CardContent></Card>}
 
     <Dialog open={!!viewer} onOpenChange={(open) => !open && setViewer(null)}><DialogContent className="h-[92vh] w-[96vw] max-w-none sm:max-w-[96vw] xl:max-w-[1500px]"><DialogHeader><DialogTitle>{viewer?.titulo}</DialogTitle><DialogDescription>{viewer?.category.nome} — {viewer?.tipo}</DialogDescription></DialogHeader><div className="min-h-0 flex-1 overflow-hidden rounded-lg bg-black/90">{viewer?.tipo === "Videoaula" ? <video src={viewer.arquivoUrl} controls className="h-full w-full object-contain" /> : viewer && <iframe src={viewer.arquivoUrl} title={viewer.titulo} className="h-full w-full bg-white" />}</div>{viewer?.tipo === "Documento" && <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => window.open(viewer.arquivoUrl, "_blank")}>Abrir em nova aba / imprimir</Button><a href={viewer.arquivoUrl} download={viewer.nomeArquivo ?? undefined}><Button><Upload className="mr-2 h-4 w-4" /> Baixar</Button></a></div>}</DialogContent></Dialog>
 
