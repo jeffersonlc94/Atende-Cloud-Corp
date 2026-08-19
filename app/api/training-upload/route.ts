@@ -24,7 +24,26 @@ export async function POST(req: NextRequest) {
   const dir = path.join(process.cwd(), "public", "uploads", "training");
   await mkdir(dir, { recursive: true });
   const ext = path.extname(file.name).toLowerCase().replace(/[^.a-z0-9]/g, "") || (isPdf ? ".pdf" : ".mp4");
-  const filename = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`;
-  await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
+  const originalBase = path.basename(file.name, path.extname(file.name)) || "arquivo";
+  const safeBase = originalBase
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 100) || "arquivo";
+  const buffer = Buffer.from(await file.arrayBuffer());
+  let filename = "";
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    filename = attempt === 0
+      ? `${safeBase}${ext}`
+      : `${safeBase}-${Date.now()}${crypto.randomInt(100, 999)}${ext}`;
+    try {
+      await writeFile(path.join(dir, filename), buffer, { flag: "wx" });
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST" || attempt === 4) throw error;
+    }
+  }
   return NextResponse.json({ url: `/uploads/training/${filename}`, nomeArquivo: file.name, tipo: isVideo ? "Videoaula" : "Documento" }, { status: 201 });
 }
