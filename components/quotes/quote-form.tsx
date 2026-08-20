@@ -139,6 +139,8 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
   const [reopening, setReopening] = useState(false);
   const [approvedLocked, setApprovedLocked] = useState(initialData?.status === "Aprovado");
   const [pendingData, setPendingData] = useState<QuoteFormValues | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
+  const finalizingRef = useRef(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(
     initialData?.client.id ?? null
   );
@@ -336,21 +338,32 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
       await updateQuote.mutateAsync({ id: initialData.id, data });
       return initialData.id;
     }
-    const created = await createQuote.mutateAsync(data);
+    const created = await createQuote.mutateAsync({ data, draftId });
     return created.id;
   }
 
   async function confirmAndPersist(data: QuoteFormValues) {
+    if (finalizingRef.current) return;
+    finalizingRef.current = true;
+    setFinalizing(true);
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
     try {
-      await persist(data);
+      const id = await persist(data);
       if (draftId) {
         try { await deleteDraft.mutateAsync(draftId); } catch { /* orçamento já foi finalizado; não repetir a criação */ }
       }
       toast.success(initialData ? "Orçamento atualizado com sucesso" : "Orçamento criado com sucesso");
       router.push("/orcamentos");
       router.refresh();
+      return id;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar orçamento");
+    } finally {
+      finalizingRef.current = false;
+      setFinalizing(false);
     }
   }
 
@@ -388,7 +401,7 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
     }
   );
 
-  const isSaving = createQuote.isPending || updateQuote.isPending;
+  const isSaving = finalizing || createQuote.isPending || updateQuote.isPending;
   const isEditing = !!initialData;
 
   async function handleReopen() {

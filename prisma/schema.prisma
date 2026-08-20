@@ -140,6 +140,7 @@ model Quote {
   createdByUser      User?         @relation(fields: [createdByUserId], references: [id])
   updatedByUserId    String?
   updatedByUser      User?         @relation("QuoteUpdatedBy", fields: [updatedByUserId], references: [id])
+  sourceDraftId      String?       @unique
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 

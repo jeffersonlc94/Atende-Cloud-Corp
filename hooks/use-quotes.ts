@@ -148,10 +148,10 @@ export function useDeleteQuoteDraft() {
 export function useCreateQuote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: QuoteFormValues) =>
+    mutationFn: ({ data, draftId }: { data: QuoteFormValues; draftId?: string | null }) =>
       fetchJson<QuoteRecord>("/api/quotes", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, _draftId: draftId || undefined }),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["quotes"] });
