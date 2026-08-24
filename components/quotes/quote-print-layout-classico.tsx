@@ -114,7 +114,7 @@ export function QuotePrintLayoutClassico({
       </div>
 
       {/* Tabela de itens */}
-      <table className="mt-2 w-full border-collapse text-[0.75em] leading-tight">
+      <table className="mt-2 w-full table-fixed border-collapse text-[0.75em] leading-tight">
         <thead>
           <tr className="border-y-2 border-black bg-sky-100">
             <th className="w-12 border border-gray-400 p-1.5 text-center">ITEM</th>
@@ -138,14 +138,14 @@ export function QuotePrintLayoutClassico({
           {quote.itens.map((item, idx) => (
             <tr key={idx} className={idx % 2 === 1 ? "bg-gray-50" : undefined}>
               <td className="border border-gray-400 p-1.5 text-center">{itemOffset + idx + 1}</td>
-              <td className="border border-gray-400 p-1.5 text-left">
+              <td className="min-w-0 break-words border border-gray-400 p-1.5 text-left [overflow-wrap:anywhere]">
                 {item.fotoUrl ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0" />
-                    <span><span className="block">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block text-[0.9em] leading-tight text-gray-500">{item.observacao}</span>}</span>
+                    <span className="min-w-0 flex-1"><span className="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block whitespace-pre-wrap break-words text-[0.9em] leading-tight text-gray-500 [overflow-wrap:anywhere]">{item.observacao}</span>}</span>
                   </div>
                 ) : (
-                  <><span className="block">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block text-[0.9em] leading-tight text-gray-500">{item.observacao}</span>}</>
+                  <><span className="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block whitespace-pre-wrap break-words text-[0.9em] leading-tight text-gray-500 [overflow-wrap:anywhere]">{item.observacao}</span>}</>
                 )}
               </td>
               <td className="border border-gray-400 p-1.5 text-center">

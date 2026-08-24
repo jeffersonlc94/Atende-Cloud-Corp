@@ -166,13 +166,18 @@ function ItemDescriptionCell({
         </Button>
       </div>
       {open && (
-        <Textarea
-          {...register(`itens.${index}.observacao`)}
-          rows={2}
-          maxLength={500}
-          placeholder="Observação opcional do item"
-          className="min-h-14 resize-y text-xs text-muted-foreground"
-        />
+        <div className="space-y-1">
+          <Textarea
+            {...register(`itens.${index}.observacao`)}
+            rows={2}
+            maxLength={250}
+            placeholder="Observação opcional do item"
+            className="min-h-14 resize-y text-xs text-muted-foreground"
+          />
+          <p className="text-right text-[11px] text-muted-foreground">
+            {observation?.length ?? 0}/250
+          </p>
+        </div>
       )}
     </div>
   );

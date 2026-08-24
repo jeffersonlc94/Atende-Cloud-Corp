@@ -106,7 +106,7 @@ export function QuotePrintLayoutMinimalista({
               <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0 self-center" />
             )}
             <span className="shrink-0 text-neutral-400">{itemOffset + idx + 1}.</span>
-            <span className="flex-1"><span className="block">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block text-[0.85em] leading-tight text-neutral-500">{item.observacao}</span>}</span>
+            <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]"><span className="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block whitespace-pre-wrap break-words text-[0.85em] leading-tight text-neutral-500 [overflow-wrap:anywhere]">{item.observacao}</span>}</span>
             <span className="shrink-0 text-neutral-500">
               {Number(item.quantidade).toLocaleString("pt-BR")} ×{" "}
               {formatCurrencyBRL(Number(item.valorUnitario))}

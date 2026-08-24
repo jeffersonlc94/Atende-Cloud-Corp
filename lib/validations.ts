@@ -16,7 +16,7 @@ export const quoteItemSchema = z.object({
   ordem: z.number().int().nonnegative(),
   tipoItem: z.enum(tipoItemOptions).default("Produto"),
   descricao: z.string().min(1, "Descrição obrigatória"),
-  observacao: z.string().max(500, "A observação deve ter no máximo 500 caracteres").optional().default(""),
+  observacao: z.string().max(250, "A observação deve ter no máximo 250 caracteres").optional().default(""),
   fotoUrl: z.string().optional(),
   quantidade: z.preprocess(
     (v) => (v === "" || v === undefined || v === null || (typeof v === "number" && Number.isNaN(v)) ? undefined : v),
