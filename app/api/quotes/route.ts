@@ -88,6 +88,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
+  const sourceDraftId = typeof body._draftId === "string" && body._draftId.trim() ? body._draftId.trim() : null;
   const parsed = quoteSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -95,6 +96,28 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
+
+  if (sourceDraftId) {
+    const existing = await prisma.quote.findFirst({
+      where: { sourceDraftId, createdByUserId: session.user.id },
+      include: {
+        itens: true,
+        company: true,
+        client: true,
+        createdByUser: { select: { id: true, name: true } },
+        updatedByUser: { select: { id: true, name: true } },
+      },
+    });
+    if (existing) return NextResponse.json(existing);
+
+    const ownedDraft = await prisma.quoteDraft.findFirst({
+      where: { id: sourceDraftId, createdByUserId: session.user.id },
+      select: { id: true },
+    });
+    if (!ownedDraft) {
+      return NextResponse.json({ error: "Rascunho não encontrado ou já finalizado." }, { status: 409 });
+    }
+  }
 
   const clientNome = data.clientNome.trim();
   const client =
@@ -122,6 +145,7 @@ export async function POST(req: NextRequest) {
     ordem: idx,
     tipoItem: item.tipoItem ?? "Produto",
     descricao: item.descricao,
+    observacao: item.observacao?.trim() || null,
     fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,
@@ -142,46 +166,67 @@ export async function POST(req: NextRequest) {
     dataValidade.setDate(dataValidade.getDate() + data.validadeDias);
   }
 
-  const quote = await prisma.$transaction(async (tx) => {
-    const numero = data.numero?.trim() || (await generateNextQuoteNumber(tx));
+  let quote;
+  try {
+    quote = await prisma.$transaction(async (tx) => {
+      const numero = data.numero?.trim() || (await generateNextQuoteNumber(tx));
 
-    return tx.quote.create({
-      data: {
-        numero,
-        companyId: data.companyId,
-        clientId: client.id,
-        referencia: data.referencia,
-        dataEmissao,
-        dataValidade,
-        validadeDias: data.validadeDias ?? null,
-        condicoesPagamento: data.condicoesPagamento,
-        prazoEntrega: data.prazoEntrega,
-        observacoes: data.observacoes,
-        observacoesInternas: data.observacoesInternas,
-        fotosInternas: data.fotosInternas,
-        subtotal,
-        descontoGeralTipo: data.descontoGeralTipo ?? null,
-        descontoGeralValor: data.descontoGeralValor ?? null,
-        descontoProdutosTipo: data.descontoProdutosTipo ?? null,
-        descontoProdutosValor: data.descontoProdutosValor ?? null,
-        descontoServicosTipo: data.descontoServicosTipo ?? null,
-        descontoServicosValor: data.descontoServicosValor ?? null,
-        total,
-        visibilidade: data.visibilidade,
-        status: data.status,
-        createdByUserId: session.user.id,
-        updatedByUserId: session.user.id,
-        itens: { createMany: { data: itensParaCriar } },
-      },
-      include: {
-        itens: true,
-        company: true,
-        client: true,
-        createdByUser: { select: { id: true, name: true } },
-        updatedByUser: { select: { id: true, name: true } },
-      },
+      return tx.quote.create({
+        data: {
+          numero,
+          companyId: data.companyId,
+          clientId: client.id,
+          referencia: data.referencia,
+          dataEmissao,
+          dataValidade,
+          validadeDias: data.validadeDias ?? null,
+          condicoesPagamento: data.condicoesPagamento,
+          prazoEntrega: data.prazoEntrega,
+          observacoes: data.observacoes,
+          observacoesInternas: data.observacoesInternas,
+          fotosInternas: data.fotosInternas,
+          subtotal,
+          descontoGeralTipo: data.descontoGeralTipo ?? null,
+          descontoGeralValor: data.descontoGeralValor ?? null,
+          descontoProdutosTipo: data.descontoProdutosTipo ?? null,
+          descontoProdutosValor: data.descontoProdutosValor ?? null,
+          descontoServicosTipo: data.descontoServicosTipo ?? null,
+          descontoServicosValor: data.descontoServicosValor ?? null,
+          total,
+          visibilidade: data.visibilidade,
+          status: data.status,
+          createdByUserId: session.user.id,
+          updatedByUserId: session.user.id,
+          sourceDraftId,
+          itens: { createMany: { data: itensParaCriar } },
+        },
+        include: {
+          itens: true,
+          company: true,
+          client: true,
+          createdByUser: { select: { id: true, name: true } },
+          updatedByUser: { select: { id: true, name: true } },
+        },
+      });
     });
-  });
+  } catch (error) {
+    // Duas requisições simultâneas podem chegar antes de a primeira terminar.
+    // A restrição única escolhe a vencedora e a segunda recebe o mesmo registro.
+    if (sourceDraftId && error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const existing = await prisma.quote.findFirst({
+        where: { sourceDraftId, createdByUserId: session.user.id },
+        include: {
+          itens: true,
+          company: true,
+          client: true,
+          createdByUser: { select: { id: true, name: true } },
+          updatedByUser: { select: { id: true, name: true } },
+        },
+      });
+      if (existing) return NextResponse.json(existing);
+    }
+    throw error;
+  }
 
   await registerAudit({
     userId: session.user.id,

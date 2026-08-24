@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { BookOpen, FileText, Film, LayoutGrid, List, Loader2, Pencil, Plus, Search, Settings, Tags, Trash2, Upload } from "lucide-react";
+import { BookOpen, FileText, Film, LayoutGrid, List, Loader2, Pencil, Play, Plus, Search, Settings, Tags, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,9 +15,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useSystemSettings, useUpdateSystemSettings } from "@/hooks/use-settings";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getYouTubeThumbnail, getYouTubeVideoId, normalizeYouTubeUrl } from "@/lib/youtube";
 
 type Category = { id: string; nome: string };
-type Training = { id: string; titulo: string; descricao: string | null; tipo: "Videoaula" | "Documento"; arquivoUrl: string; nomeArquivo: string | null; ordem: number; categoryId: string; category: Category };
+type Training = { id: string; titulo: string; descricao: string | null; tipo: "Videoaula" | "Documento"; arquivoUrl: string; capaUrl: string | null; nomeArquivo: string | null; ordem: number; categoryId: string; category: Category };
 
 export default function TreinamentosPage() {
   const { data: session } = useSession();
@@ -41,6 +42,10 @@ export default function TreinamentosPage() {
   const [formCategory, setFormCategory] = useState("");
   const [ordem, setOrdem] = useState("0");
   const [file, setFile] = useState<File | null>(null);
+  const [contentSource, setContentSource] = useState<"arquivo" | "youtube">("arquivo");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
@@ -84,8 +89,9 @@ export default function TreinamentosPage() {
   useEffect(() => { const timer = setTimeout(load, 250); return () => clearTimeout(timer); }, [load]);
 
   function openForm(item?: Training) {
+    const youtube = item ? getYouTubeVideoId(item.arquivoUrl) : null;
     setEditing(item ?? null); setTitulo(item?.titulo ?? ""); setDescricao((item?.descricao ?? "").slice(0, 250));
-    setFormCategory(item?.categoryId ?? categories[0]?.id ?? ""); setOrdem(String(item?.ordem ?? 0)); setFile(null); setFormOpen(true);
+    setFormCategory(item?.categoryId ?? categories[0]?.id ?? ""); setOrdem(String(item?.ordem ?? 0)); setFile(null); setContentSource(youtube ? "youtube" : "arquivo"); setYoutubeUrl(youtube ? `https://www.youtube.com/watch?v=${youtube}` : ""); setCoverFile(null); setCoverUrl(item?.capaUrl ?? null); setFormOpen(true);
   }
 
   async function addCategory(name: string) {
@@ -97,7 +103,11 @@ export default function TreinamentosPage() {
   }
 
   async function save() {
-    if (!titulo.trim() || !formCategory || (!editing && !file)) return toast.error("Preencha título, categoria e arquivo");
+    const normalizedYoutubeUrl = contentSource === "youtube" ? normalizeYouTubeUrl(youtubeUrl) : null;
+    const needsFile = contentSource === "arquivo" && (!editing || !!getYouTubeVideoId(editing.arquivoUrl));
+    if (!titulo.trim() || !formCategory) return toast.error("Preencha título e categoria");
+    if (contentSource === "youtube" && !normalizedYoutubeUrl) return toast.error("Informe um link válido do YouTube");
+    if (needsFile && !file) return toast.error("Selecione o vídeo ou documento PDF");
     setSaving(true);
     try {
       let upload: { url: string; nomeArquivo: string; tipo: "Videoaula" | "Documento" } | null = null;
@@ -111,7 +121,15 @@ export default function TreinamentosPage() {
         if (!uploadBody.url || !uploadBody.nomeArquivo || !uploadBody.tipo) throw new Error("O servidor não retornou os dados do arquivo enviado");
         upload = { url: uploadBody.url, nomeArquivo: uploadBody.nomeArquivo, tipo: uploadBody.tipo };
       }
-      const payload = { titulo, descricao, categoryId: formCategory, ordem: Number(ordem) || 0, ...(upload ? { arquivoUrl: upload.url, nomeArquivo: upload.nomeArquivo, tipo: upload.tipo } : { tipo: editing?.tipo }) };
+      let uploadedCoverUrl = coverUrl;
+      if (coverFile) {
+        const coverData = new FormData(); coverData.append("file", coverFile);
+        const coverRes = await fetch("/api/upload", { method: "POST", body: coverData });
+        const coverBody = await coverRes.json().catch(() => ({}));
+        if (!coverRes.ok) throw new Error(coverBody.error || "Erro ao enviar a capa");
+        uploadedCoverUrl = coverBody.url;
+      }
+      const payload = { titulo, descricao, categoryId: formCategory, ordem: Number(ordem) || 0, capaUrl: uploadedCoverUrl, ...(contentSource === "youtube" ? { arquivoUrl: normalizedYoutubeUrl, nomeArquivo: "YouTube", tipo: "Videoaula" as const } : upload ? { arquivoUrl: upload.url, nomeArquivo: upload.nomeArquivo, tipo: upload.tipo } : { tipo: editing?.tipo }) };
       const res = await fetch(editing ? `/api/trainings/${editing.id}` : "/api/trainings", { method: editing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const body = await res.json().catch(() => ({})); if (!res.ok) throw new Error(body.error || "Erro ao salvar");
       toast.success(editing ? "Treinamento atualizado" : "Treinamento cadastrado"); setFormOpen(false); await load();
@@ -131,10 +149,11 @@ export default function TreinamentosPage() {
       <Select value={tipo} onValueChange={(value) => value && setTipo(value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Todos">Todos os conteúdos</SelectItem><SelectItem value="Videoaula">Videoaulas</SelectItem><SelectItem value="Documento">Documentos</SelectItem></SelectContent></Select>
       <Select value={categoryId} onValueChange={(value) => value && setCategoryId(value)}><SelectTrigger><SelectValue>{(value) => value === "Todas" ? "Todas as categorias" : categories.find((category) => category.id === value)?.nome || "Todas as categorias"}</SelectValue></SelectTrigger><SelectContent><SelectItem value="Todas">Todas as categorias</SelectItem>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select>
     </CardContent></Card>
-    {loading ? <div className="py-16 text-center"><Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" /></div> : items.length === 0 ? <Card><CardContent className="py-16 text-center text-muted-foreground">Nenhum treinamento encontrado.</CardContent></Card> : viewMode === "grid" ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{items.map((item) => <Card key={item.id} className="overflow-hidden border-t-4 border-t-primary transition-shadow hover:shadow-md">
-      <CardHeader className="min-w-0 bg-primary/5 pb-3"><div className="flex items-start justify-between gap-2"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">{item.tipo === "Videoaula" ? <Film /> : <FileText />}</span><div className="flex flex-wrap justify-end gap-1"><Badge variant="outline">{item.tipo}</Badge><Badge variant="secondary">{item.category.nome}</Badge></div></div><CardTitle className="mt-3 break-words text-base [overflow-wrap:anywhere]">{item.titulo}</CardTitle></CardHeader>
-      <CardContent className="min-w-0 space-y-4 pt-4"><p className="line-clamp-3 min-h-10 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">{item.descricao || "Sem descrição."}</p><div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3"><Button size="sm" onClick={() => setViewer(item)}>{item.tipo === "Videoaula" ? "Assistir" : "Abrir documento"}</Button>{isAdmin && <div className="flex shrink-0"><Button variant="ghost" size="icon-sm" onClick={() => openForm(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button></div>}</div></CardContent>
-    </Card>)}</div> : <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Título</TableHead><TableHead>Categoria</TableHead><TableHead>Tipo</TableHead><TableHead>Descrição</TableHead><TableHead className="w-56">Ações</TableHead></TableRow></TableHeader><TableBody>{items.map((item) => <TableRow key={item.id}><TableCell className="font-medium">{item.titulo}</TableCell><TableCell><Badge variant="secondary">{item.category.nome}</Badge></TableCell><TableCell><Badge variant="outline">{item.tipo}</Badge></TableCell><TableCell className="max-w-md truncate" title={item.descricao ?? undefined}>{item.descricao || "—"}</TableCell><TableCell><div className="flex items-center gap-1"><Button size="sm" onClick={() => setViewer(item)}>{item.tipo === "Videoaula" ? "Assistir" : "Abrir documento"}</Button>{isAdmin && <><Button variant="ghost" size="icon-sm" title="Editar" onClick={() => openForm(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" title="Excluir" className="text-destructive" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button></>}</div></TableCell></TableRow>)}</TableBody></Table></div></CardContent></Card>}
+    {loading ? <div className="py-16 text-center"><Loader2 className="mx-auto h-7 w-7 animate-spin text-primary" /></div> : items.length === 0 ? <Card><CardContent className="py-16 text-center text-muted-foreground">Nenhum treinamento encontrado.</CardContent></Card> : viewMode === "grid" ? <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{items.map((item) => <Card key={item.id} className="h-fit overflow-hidden border-t-4 border-t-primary transition-shadow hover:shadow-md">
+      {(item.capaUrl || getYouTubeThumbnail(item.arquivoUrl)) && <button type="button" onClick={() => setViewer(item)} className="relative block h-36 w-full overflow-hidden bg-muted"><img src={item.capaUrl || getYouTubeThumbnail(item.arquivoUrl) || ""} alt={`Capa de ${item.titulo}`} className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />{getYouTubeVideoId(item.arquivoUrl) && <span className="absolute inset-0 flex items-center justify-center bg-black/10"><span className="flex h-11 w-16 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg"><Play className="h-7 w-7 fill-current" /></span></span>}</button>}
+      <CardHeader className="min-w-0 bg-primary/5 p-3"><div className="flex items-start justify-between gap-2"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">{item.tipo === "Videoaula" ? <Film className="h-4 w-4" /> : <FileText className="h-4 w-4" />}</span><div className="flex flex-wrap justify-end gap-1"><Badge className={item.tipo === "Videoaula" ? "border-violet-200 bg-violet-100 text-violet-800 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200" : "border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200"}>{item.tipo}</Badge><Badge className="border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">{item.category.nome}</Badge></div></div><CardTitle className="mt-2 break-words text-sm [overflow-wrap:anywhere]">{item.titulo}</CardTitle></CardHeader>
+      <CardContent className="min-w-0 space-y-3 p-3"><p className="line-clamp-2 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">{item.descricao || "Sem descrição."}</p><div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2"><Button size="sm" onClick={() => setViewer(item)}>{item.tipo === "Videoaula" ? "Assistir" : "Abrir documento"}</Button>{isAdmin && <div className="flex shrink-0"><Button variant="ghost" size="icon-sm" onClick={() => openForm(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" className="text-destructive" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button></div>}</div></CardContent>
+    </Card>)}</div> : <Card><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-20">Capa</TableHead><TableHead>Título</TableHead><TableHead>Categoria</TableHead><TableHead>Tipo</TableHead><TableHead>Descrição</TableHead><TableHead className="w-56">Ações</TableHead></TableRow></TableHeader><TableBody>{items.map((item) => { const thumbnail = item.capaUrl || getYouTubeThumbnail(item.arquivoUrl); return <TableRow key={item.id}><TableCell>{thumbnail ? <img src={thumbnail} alt="" className="h-10 w-16 rounded object-cover" /> : <span className="flex h-10 w-16 items-center justify-center rounded bg-primary/10 text-primary">{item.tipo === "Videoaula" ? <Film className="h-4 w-4" /> : <FileText className="h-4 w-4" />}</span>}</TableCell><TableCell className="font-medium">{item.titulo}</TableCell><TableCell><Badge className="border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">{item.category.nome}</Badge></TableCell><TableCell><Badge className={item.tipo === "Videoaula" ? "border-violet-200 bg-violet-100 text-violet-800 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200" : "border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200"}>{getYouTubeVideoId(item.arquivoUrl) ? "YouTube" : item.tipo}</Badge></TableCell><TableCell className="max-w-md truncate" title={item.descricao ?? undefined}>{item.descricao || "—"}</TableCell><TableCell><div className="flex items-center gap-1"><Button size="sm" onClick={() => setViewer(item)}>{item.tipo === "Videoaula" ? "Assistir" : "Abrir documento"}</Button>{isAdmin && <><Button variant="ghost" size="icon-sm" title="Editar" onClick={() => openForm(item)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" title="Excluir" className="text-destructive" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button></>}</div></TableCell></TableRow>})}</TableBody></Table></div></CardContent></Card>}
 
     <Dialog open={!!viewer} onOpenChange={(open) => !open && setViewer(null)}>
       <DialogContent className="h-[96vh] w-[98vw] max-w-none grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden p-3 sm:max-w-[98vw]">
@@ -146,17 +165,18 @@ export default function TreinamentosPage() {
           {viewer?.tipo === "Documento" && <div className="flex shrink-0 gap-2"><Button size="sm" variant="outline" onClick={() => window.open(viewer.arquivoUrl, "_blank")}>Nova aba / imprimir</Button><Button size="sm" onClick={() => { const link = document.createElement("a"); link.href = viewer.arquivoUrl; link.download = viewer.nomeArquivo || "documento.pdf"; link.click(); }}><Upload className="mr-2 h-4 w-4" /> Baixar</Button></div>}
         </DialogHeader>
         <div className="min-h-0 overflow-hidden rounded-lg bg-neutral-900">
-          {viewer?.tipo === "Videoaula" ? <video src={viewer.arquivoUrl} controls autoPlay className="h-full w-full object-contain" /> : viewer && <iframe src={`${viewer.arquivoUrl}#view=FitH`} title={viewer.titulo} className="block h-full w-full border-0 bg-white" />}
+          {viewer?.tipo === "Videoaula" ? getYouTubeVideoId(viewer.arquivoUrl) ? <iframe src={`${normalizeYouTubeUrl(viewer.arquivoUrl)}?autoplay=1&rel=0`} title={viewer.titulo} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="h-full w-full border-0" /> : <video src={viewer.arquivoUrl} controls autoPlay className="h-full w-full object-contain" /> : viewer && <iframe src={`${viewer.arquivoUrl}#view=FitH`} title={viewer.titulo} className="block h-full w-full border-0 bg-white" />}
         </div>
       </DialogContent>
     </Dialog>
 
-    <Dialog open={formOpen} onOpenChange={setFormOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{editing ? "Editar treinamento" : "Novo treinamento"}</DialogTitle><DialogDescription>Vídeos ficam no volume de uploads; POPs devem ser enviados como Documento PDF.</DialogDescription></DialogHeader><div className="grid gap-4 py-2">
+    <Dialog open={formOpen} onOpenChange={setFormOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{editing ? "Editar treinamento" : "Novo treinamento"}</DialogTitle><DialogDescription>Envie um arquivo ou informe um link do YouTube. POPs devem ser enviados como Documento PDF.</DialogDescription></DialogHeader><div className="grid gap-4 py-2">
       <div className="space-y-2"><Label>Título *</Label><Input value={titulo} onChange={(e) => setTitulo(e.target.value)} /></div>
       <div className="space-y-2"><div className="flex items-center justify-between"><Label>Descrição</Label><span className="text-xs text-muted-foreground">{descricao.length}/250</span></div><Textarea rows={5} maxLength={250} className="max-h-40" value={descricao} onChange={(e) => setDescricao(e.target.value)} /></div>
       <div className="grid gap-3 sm:grid-cols-[1fr_120px]"><div className="space-y-2"><Label>Categoria *</Label><Select value={formCategory} onValueChange={(value) => value && setFormCategory(value)}><SelectTrigger><SelectValue placeholder="Selecione">{(value) => categories.find((category) => category.id === value)?.nome || "Selecione"}</SelectValue></SelectTrigger><SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label>Ordem</Label><Input type="number" value={ordem} onChange={(e) => setOrdem(e.target.value)} /></div></div>
       <div className="flex gap-2"><Input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="Nova categoria (ex.: SGBR)" /><Button type="button" variant="outline" onClick={() => addCategory(newCategory)}>Criar categoria</Button></div>
-      {!editing && <div className="space-y-2"><Label>Vídeo ou documento PDF *</Label><Input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /><p className="text-xs text-muted-foreground">Vídeos: {settings?.trainingVideoMaxMb ? `até ${settings.trainingVideoMaxMb} MB` : "sem limite definido no aplicativo"}; PDFs: até {settings?.trainingDocumentMaxMb ?? 50} MB. O tipo é identificado automaticamente.</p></div>}
+      <div className="space-y-3"><Label>Origem do conteúdo *</Label><div className="grid grid-cols-2 gap-2"><Button type="button" variant={contentSource === "arquivo" ? "default" : "outline"} onClick={() => setContentSource("arquivo")}><Upload className="mr-2 h-4 w-4" /> Arquivo</Button><Button type="button" variant={contentSource === "youtube" ? "default" : "outline"} onClick={() => setContentSource("youtube")}><Play className="mr-2 h-4 w-4" /> YouTube</Button></div>{contentSource === "youtube" ? <div className="space-y-2"><Label>Link do vídeo no YouTube *</Label><Input type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." /><p className="text-xs text-muted-foreground">Aceita links de vídeos, Shorts e links compartilhados youtu.be. O vídeo será exibido dentro do sistema.</p></div> : <div className="space-y-2"><Label>Vídeo ou documento PDF {(!editing || !!getYouTubeVideoId(editing.arquivoUrl)) && "*"}</Label><Input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime,application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} /><p className="text-xs text-muted-foreground">{editing && !getYouTubeVideoId(editing.arquivoUrl) ? "Deixe vazio para manter o arquivo atual. " : ""}Vídeos: {settings?.trainingVideoMaxMb ? `até ${settings.trainingVideoMaxMb} MB` : "sem limite definido no aplicativo"}; PDFs: até {settings?.trainingDocumentMaxMb ?? 50} MB.</p></div>}</div>
+      <div className="space-y-2"><Label>Capa / thumbnail (opcional)</Label><Input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} />{coverUrl && !coverFile && <div className="flex items-center gap-3"><img src={coverUrl} alt="Capa atual" className="h-20 w-32 rounded-lg border object-cover" /><Button type="button" size="sm" variant="outline" onClick={() => setCoverUrl(null)}>Remover capa</Button></div>}<p className="text-xs text-muted-foreground">Recomendado: imagem horizontal em 16:9, JPG, PNG ou WebP.</p></div>
       <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setFormOpen(false)}>Cancelar</Button><Button onClick={save} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Salvar alterações" : "Enviar e cadastrar"}</Button></div>
     </div></DialogContent></Dialog>
 

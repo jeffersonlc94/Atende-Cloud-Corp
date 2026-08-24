@@ -154,11 +154,11 @@ export function QuotePrintLayoutModerno({
               key={idx}
               className="flex items-center gap-3 rounded-lg bg-slate-50 p-2 text-[0.875em] print:break-inside-avoid"
             >
-              <span className="flex flex-1 items-center gap-2">
+              <span className="flex min-w-0 flex-1 items-center gap-2">
                 {item.fotoUrl && (
                   <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-9 w-9 shrink-0" />
                 )}
-                <span><span className="mr-1 text-slate-400">{itemOffset + idx + 1}.</span>{item.descricao}</span>
+                <span className="min-w-0 flex-1"><span className="block whitespace-pre-wrap break-words [overflow-wrap:anywhere]"><span className="mr-1 text-slate-400">{itemOffset + idx + 1}.</span>{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block whitespace-pre-wrap break-words text-[0.85em] leading-tight text-slate-500 [overflow-wrap:anywhere]">{item.observacao}</span>}</span>
               </span>
               <span className="w-14 text-center text-slate-500">
                 {Number(item.quantidade).toLocaleString("pt-BR")}

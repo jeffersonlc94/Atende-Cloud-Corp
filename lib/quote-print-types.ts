@@ -20,6 +20,7 @@ export type QuotePrintCompany = {
 
 export type QuotePrintItem = {
   descricao: string;
+  observacao?: string | null;
   tipoItem?: "Produto" | "Servico" | null;
   fotoUrl?: string | null;
   quantidade: number | string;

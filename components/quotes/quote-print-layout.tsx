@@ -21,14 +21,15 @@ function paginateItems(items: QuotePrintItem[], pageCapacity: number) {
   let usedCapacity = 0;
 
   for (const item of items) {
-    const descriptionLength = item.descricao.trim().length;
-    const itemSize = item.fotoUrl
+    const descriptionLength = item.descricao.trim().length + (item.observacao?.trim().length ?? 0);
+    const baseItemSize = item.fotoUrl
       ? 2
       : descriptionLength > 110
         ? 1.75
         : descriptionLength > 65
           ? 1.35
           : 1;
+    const itemSize = baseItemSize + (item.observacao?.trim() ? 0.45 : 0);
 
     if (page.length > 0 && usedCapacity + itemSize > pageCapacity) {
       pages.push(page);

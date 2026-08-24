@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Controller, useFieldArray, type Control, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calculator, Camera, ClipboardPaste, Loader2, Paperclip, Plus, Trash2, X } from "lucide-react";
+import { Calculator, Camera, ClipboardPaste, Loader2, MessageSquarePlus, Paperclip, Plus, Trash2, X } from "lucide-react";
 import { formatCurrencyBRL } from "@/lib/format";
 import { computeItemTotal, computeUnitPriceFromMargin } from "@/lib/quote-calc";
 import type { QuoteFormValues } from "@/lib/validations";
@@ -135,6 +136,50 @@ function ItemFotoCell({
         );
       }}
     />
+  );
+}
+
+function ItemDescriptionCell({
+  register,
+  index,
+  observation,
+}: {
+  register: UseFormRegister<QuoteFormValues>;
+  index: number;
+  observation?: string;
+}) {
+  const [open, setOpen] = useState(Boolean(observation));
+
+  return (
+    <div className="min-w-72 space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <Input {...register(`itens.${index}.descricao`)} placeholder="Descrição do item" />
+        <Button
+          type="button"
+          variant={observation ? "secondary" : "ghost"}
+          size="icon-sm"
+          onClick={() => setOpen((current) => !current)}
+          title={open ? "Ocultar observação" : "Adicionar observação opcional"}
+          aria-label={open ? "Ocultar observação" : "Adicionar observação opcional"}
+        >
+          {open ? <X className="h-4 w-4" /> : <MessageSquarePlus className="h-4 w-4" />}
+        </Button>
+      </div>
+      {open && (
+        <div className="space-y-1">
+          <Textarea
+            {...register(`itens.${index}.observacao`)}
+            rows={2}
+            maxLength={250}
+            placeholder="Observação opcional do item"
+            className="min-h-14 resize-y text-xs text-muted-foreground"
+          />
+          <p className="text-right text-[11px] text-muted-foreground">
+            {observation?.length ?? 0}/250
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -342,6 +387,7 @@ export function QuoteItemsTable({
       ordem: fields.length,
       tipoItem: "Produto",
       descricao: "",
+      observacao: "",
       fotoUrl: undefined,
       quantidade: 1,
       valorUnitario: undefined,
@@ -416,10 +462,7 @@ export function QuoteItemsTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <Input
-                      {...register(`itens.${index}.descricao`)}
-                      placeholder="Descrição do item"
-                    />
+                    <ItemDescriptionCell register={register} index={index} observation={item?.observacao} />
                   </TableCell>
                   <TableCell>
                     <Input

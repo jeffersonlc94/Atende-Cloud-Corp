@@ -73,6 +73,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
               ordem: i.ordem,
               tipoItem: i.tipoItem,
               descricao: i.descricao,
+              observacao: i.observacao,
               fotoUrl: i.fotoUrl,
               quantidade: i.quantidade,
               valorUnitario: i.valorUnitario,

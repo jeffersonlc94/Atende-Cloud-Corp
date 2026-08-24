@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -13,7 +14,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "default" | "destructive";
-  onConfirm: () => void;
+  onConfirm: () => unknown;
 }
 
 /**
@@ -30,6 +31,11 @@ export function ConfirmDialog({
   variant = "default",
   onConfirm,
 }: ConfirmDialogProps) {
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!open) setConfirming(false);
+  }, [open]);
   // Trava o scroll de TODOS os contêineres (o dashboard rola dentro do
   // <main>, não no body) bloqueando os eventos de rolagem na captura.
   // Como nenhum overflow é alterado, a scrollbar não some e o layout
@@ -69,17 +75,25 @@ export function ConfirmDialog({
             <p className="text-sm text-muted-foreground">{description}</p>
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" disabled={confirming} onClick={() => onOpenChange(false)}>
               {cancelLabel}
             </Button>
             <Button
               variant={variant === "destructive" ? "destructive" : "default"}
-              onClick={() => {
-                onConfirm();
-                onOpenChange(false);
+              disabled={confirming}
+              onClick={async () => {
+                if (confirming) return;
+                setConfirming(true);
+                try {
+                  await onConfirm();
+                  onOpenChange(false);
+                } finally {
+                  setConfirming(false);
+                }
               }}
             >
-              {confirmLabel}
+              {confirming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {confirming ? "Aguarde..." : confirmLabel}
             </Button>
           </div>
         </CardContent>

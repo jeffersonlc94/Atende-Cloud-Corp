@@ -140,6 +140,7 @@ model Quote {
   createdByUser      User?         @relation(fields: [createdByUserId], references: [id])
   updatedByUserId    String?
   updatedByUser      User?         @relation("QuoteUpdatedBy", fields: [updatedByUserId], references: [id])
+  sourceDraftId      String?       @unique
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -182,6 +183,7 @@ model TrainingContent {
   descricao       String?
   tipo            TrainingContentType
   arquivoUrl      String
+  capaUrl         String?
   nomeArquivo     String?
   ordem           Int                 @default(0)
   categoryId      String
@@ -215,6 +217,7 @@ model QuoteItem {
   ordem         Int
   tipoItem      TipoItem      @default(Produto)
   descricao     String
+  observacao    String?
   fotoUrl       String?
   quantidade    Decimal       @db.Decimal(14, 3)
   valorUnitario Decimal       @db.Decimal(14, 2)
