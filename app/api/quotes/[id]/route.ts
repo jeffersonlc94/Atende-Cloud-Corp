@@ -102,6 +102,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     ordem: idx,
     tipoItem: item.tipoItem ?? "Produto",
     descricao: item.descricao,
+    observacao: item.observacao?.trim() || null,
     fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,

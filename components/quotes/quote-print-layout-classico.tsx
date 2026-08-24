@@ -142,10 +142,10 @@ export function QuotePrintLayoutClassico({
                 {item.fotoUrl ? (
                   <div className="flex items-center gap-2">
                     <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-10 w-10 shrink-0" />
-                    <span>{item.descricao}</span>
+                    <span><span className="block">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block text-[0.9em] leading-tight text-gray-500">{item.observacao}</span>}</span>
                   </div>
                 ) : (
-                  item.descricao
+                  <><span className="block">{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block text-[0.9em] leading-tight text-gray-500">{item.observacao}</span>}</>
                 )}
               </td>
               <td className="border border-gray-400 p-1.5 text-center">

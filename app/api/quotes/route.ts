@@ -145,6 +145,7 @@ export async function POST(req: NextRequest) {
     ordem: idx,
     tipoItem: item.tipoItem ?? "Produto",
     descricao: item.descricao,
+    observacao: item.observacao?.trim() || null,
     fotoUrl: item.fotoUrl || null,
     quantidade: item.quantidade,
     valorUnitario: item.valorUnitario,

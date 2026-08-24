@@ -8,6 +8,7 @@ export type QuoteItemRecord = {
   ordem: number;
   tipoItem: "Produto" | "Servico";
   descricao: string;
+  observacao: string | null;
   fotoUrl: string | null;
   quantidade: string;
   valorUnitario: string;

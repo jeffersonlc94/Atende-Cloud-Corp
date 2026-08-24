@@ -54,7 +54,7 @@ const auditFieldLabels: Record<string, string> = {
   clientId: "Cliente", companyId: "Empresa", visibilidade: "Visibilidade", itens: "Itens",
   razaoSocial: "Razão social", nomeFantasia: "Nome fantasia", cnpj: "CNPJ",
   placa: "Placa", marca: "Marca", modelo: "Modelo", kmAtual: "Quilometragem",
-  descricao: "Descrição", quantidade: "Quantidade", valorUnitario: "Valor unitário",
+  descricao: "Descrição", observacao: "Observação do item", quantidade: "Quantidade", valorUnitario: "Valor unitário",
   observacoes: "Observações", updatedByUserId: "Atualizado por",
 };
 

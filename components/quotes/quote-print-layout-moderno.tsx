@@ -158,7 +158,7 @@ export function QuotePrintLayoutModerno({
                 {item.fotoUrl && (
                   <FotoThumb url={item.fotoUrl} alt={item.descricao} className="h-9 w-9 shrink-0" />
                 )}
-                <span><span className="mr-1 text-slate-400">{itemOffset + idx + 1}.</span>{item.descricao}</span>
+                <span><span className="block"><span className="mr-1 text-slate-400">{itemOffset + idx + 1}.</span>{item.descricao}</span>{item.observacao?.trim() && <span className="mt-0.5 block text-[0.85em] leading-tight text-slate-500">{item.observacao}</span>}</span>
               </span>
               <span className="w-14 text-center text-slate-500">
                 {Number(item.quantidade).toLocaleString("pt-BR")}

@@ -217,6 +217,7 @@ model QuoteItem {
   ordem         Int
   tipoItem      TipoItem      @default(Produto)
   descricao     String
+  observacao    String?
   fotoUrl       String?
   quantidade    Decimal       @db.Decimal(14, 3)
   valorUnitario Decimal       @db.Decimal(14, 2)
