@@ -13,8 +13,13 @@ interface ConfirmDialogProps {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  cancelVariant?: "outline" | "destructive";
+  secondaryLabel?: string;
+  stackActions?: boolean;
   variant?: "default" | "destructive";
   onConfirm: () => unknown;
+  onCancel?: () => unknown;
+  onSecondary?: () => unknown;
 }
 
 /**
@@ -28,8 +33,13 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
+  cancelVariant = "outline",
+  secondaryLabel,
+  stackActions = false,
   variant = "default",
   onConfirm,
+  onCancel,
+  onSecondary,
 }: ConfirmDialogProps) {
   const [confirming, setConfirming] = useState(false);
 
@@ -74,12 +84,34 @@ export function ConfirmDialog({
           {description && (
             <p className="text-sm text-muted-foreground">{description}</p>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" disabled={confirming} onClick={() => onOpenChange(false)}>
+          <div className={stackActions ? "flex flex-col gap-2" : "flex flex-wrap justify-end gap-2"}>
+            <Button
+              variant={cancelVariant}
+              className={stackActions ? "order-3 w-full" : undefined}
+              disabled={confirming}
+              onClick={() => {
+                onCancel?.();
+                onOpenChange(false);
+              }}
+            >
               {cancelLabel}
             </Button>
+            {secondaryLabel && (
+              <Button
+                variant="outline"
+                className={stackActions ? "order-2 w-full" : undefined}
+                disabled={confirming}
+                onClick={() => {
+                  onSecondary?.();
+                  onOpenChange(false);
+                }}
+              >
+                {secondaryLabel}
+              </Button>
+            )}
             <Button
               variant={variant === "destructive" ? "destructive" : "default"}
+              className={stackActions ? "order-1 w-full" : undefined}
               disabled={confirming}
               onClick={async () => {
                 if (confirming) return;

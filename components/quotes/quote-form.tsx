@@ -725,10 +725,14 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
       <ConfirmDialog
         open={autoSavePromptOpen}
         onOpenChange={setAutoSavePromptOpen}
-        title="Deseja utilizar o salvamento automático?"
-        description="O orçamento será guardado como rascunho a cada alteração e poderá ser continuado depois, mesmo após sair do sistema."
-        confirmLabel="Sim, ativar"
-        cancelLabel="Não, continuar sem"
+        title="Como deseja continuar?"
+        description="Com o salvamento automático, cada alteração fica guardada como rascunho para você continuar depois."
+        confirmLabel="Ativar e continuar"
+        cancelLabel="Sair do novo orçamento"
+        cancelVariant="destructive"
+        secondaryLabel="Continuar sem salvamento automático"
+        stackActions
+        onCancel={() => router.push("/orcamentos")}
         onConfirm={enableAutoSave}
       />
 
