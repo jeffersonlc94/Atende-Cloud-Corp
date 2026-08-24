@@ -728,7 +728,9 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
         title="Deseja utilizar o salvamento automático?"
         description="O orçamento será guardado como rascunho a cada alteração e poderá ser continuado depois, mesmo após sair do sistema."
         confirmLabel="Sim, ativar"
-        cancelLabel="Não, continuar sem"
+        cancelLabel="Cancelar novo orçamento"
+        secondaryLabel="Não, continuar sem"
+        onCancel={() => router.push("/orcamentos")}
         onConfirm={enableAutoSave}
       />
 

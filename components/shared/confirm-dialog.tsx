@@ -13,8 +13,11 @@ interface ConfirmDialogProps {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  secondaryLabel?: string;
   variant?: "default" | "destructive";
   onConfirm: () => unknown;
+  onCancel?: () => unknown;
+  onSecondary?: () => unknown;
 }
 
 /**
@@ -28,8 +31,11 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
+  secondaryLabel,
   variant = "default",
   onConfirm,
+  onCancel,
+  onSecondary,
 }: ConfirmDialogProps) {
   const [confirming, setConfirming] = useState(false);
 
@@ -74,10 +80,29 @@ export function ConfirmDialog({
           {description && (
             <p className="text-sm text-muted-foreground">{description}</p>
           )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" disabled={confirming} onClick={() => onOpenChange(false)}>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              variant="outline"
+              disabled={confirming}
+              onClick={() => {
+                onCancel?.();
+                onOpenChange(false);
+              }}
+            >
               {cancelLabel}
             </Button>
+            {secondaryLabel && (
+              <Button
+                variant="outline"
+                disabled={confirming}
+                onClick={() => {
+                  onSecondary?.();
+                  onOpenChange(false);
+                }}
+              >
+                {secondaryLabel}
+              </Button>
+            )}
             <Button
               variant={variant === "destructive" ? "destructive" : "default"}
               disabled={confirming}
