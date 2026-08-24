@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   cancelVariant?: "outline" | "destructive";
   secondaryLabel?: string;
+  stackActions?: boolean;
   variant?: "default" | "destructive";
   onConfirm: () => unknown;
   onCancel?: () => unknown;
@@ -34,6 +35,7 @@ export function ConfirmDialog({
   cancelLabel = "Cancelar",
   cancelVariant = "outline",
   secondaryLabel,
+  stackActions = false,
   variant = "default",
   onConfirm,
   onCancel,
@@ -82,9 +84,10 @@ export function ConfirmDialog({
           {description && (
             <p className="text-sm text-muted-foreground">{description}</p>
           )}
-          <div className="flex flex-wrap justify-end gap-2">
+          <div className={stackActions ? "flex flex-col gap-2" : "flex flex-wrap justify-end gap-2"}>
             <Button
               variant={cancelVariant}
+              className={stackActions ? "order-3 w-full" : undefined}
               disabled={confirming}
               onClick={() => {
                 onCancel?.();
@@ -96,6 +99,7 @@ export function ConfirmDialog({
             {secondaryLabel && (
               <Button
                 variant="outline"
+                className={stackActions ? "order-2 w-full" : undefined}
                 disabled={confirming}
                 onClick={() => {
                   onSecondary?.();
@@ -107,6 +111,7 @@ export function ConfirmDialog({
             )}
             <Button
               variant={variant === "destructive" ? "destructive" : "default"}
+              className={stackActions ? "order-1 w-full" : undefined}
               disabled={confirming}
               onClick={async () => {
                 if (confirming) return;
