@@ -13,6 +13,7 @@ interface ConfirmDialogProps {
   description?: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  cancelVariant?: "outline" | "destructive";
   secondaryLabel?: string;
   variant?: "default" | "destructive";
   onConfirm: () => unknown;
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Confirmar",
   cancelLabel = "Cancelar",
+  cancelVariant = "outline",
   secondaryLabel,
   variant = "default",
   onConfirm,
@@ -82,7 +84,7 @@ export function ConfirmDialog({
           )}
           <div className="flex flex-wrap justify-end gap-2">
             <Button
-              variant="outline"
+              variant={cancelVariant}
               disabled={confirming}
               onClick={() => {
                 onCancel?.();
