@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Calculator, Camera, ClipboardPaste, Loader2, MessageSquarePlus, Paperclip, Plus, Trash2, X } from "lucide-react";
+import { Calculator, Camera, ClipboardPaste, GripVertical, Loader2, MessageSquarePlus, Paperclip, Plus, Trash2, X } from "lucide-react";
 import { formatCurrencyBRL } from "@/lib/format";
 import { computeItemTotal, computeUnitPriceFromMargin } from "@/lib/quote-calc";
 import type { QuoteFormValues } from "@/lib/validations";
@@ -371,16 +371,28 @@ export function QuoteItemsTable({
   register,
   watchItems,
   setValue,
+  disabled = false,
 }: {
   control: Control<QuoteFormValues>;
   register: UseFormRegister<QuoteFormValues>;
   watchItems: QuoteFormValues["itens"];
   setValue: UseFormSetValue<QuoteFormValues>;
+  disabled?: boolean;
 }) {
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control,
     name: "itens",
   });
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
+  function reorderItem(fromIndex: number, toIndex: number) {
+    if (disabled || fromIndex === toIndex) return;
+    move(fromIndex, toIndex);
+    for (let index = 0; index < fields.length; index += 1) {
+      setValue(`itens.${index}.ordem`, index, { shouldDirty: true });
+    }
+  }
 
   function addItem() {
     append({
@@ -407,7 +419,7 @@ export function QuoteItemsTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">#</TableHead>
+              <TableHead className="w-16">#</TableHead>
               <TableHead className="w-16">Foto</TableHead>
               <TableHead className="w-32">Tipo</TableHead>
               <TableHead>Descrição</TableHead>
@@ -436,8 +448,46 @@ export function QuoteItemsTable({
               const freteUnitario = Number(item?.freteUnitario) || 0;
               const valorCalculado = computeUnitPriceFromMargin(custoUnitario, margemLucro, freteHabilitado ? freteUnitario : 0);
               return (
-                <TableRow key={field.id}>
-                  <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                <TableRow
+                  key={field.id}
+                  onDragOver={(event) => {
+                    if (disabled || draggedIndex === null) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    setDropTargetIndex(index);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (draggedIndex !== null) reorderItem(draggedIndex, index);
+                    setDraggedIndex(null);
+                    setDropTargetIndex(null);
+                  }}
+                  className={dropTargetIndex === index && draggedIndex !== index ? "bg-primary/10" : undefined}
+                >
+                  <TableCell className="text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        draggable={!disabled}
+                        disabled={disabled}
+                        onDragStart={(event) => {
+                          setDraggedIndex(index);
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", String(index));
+                        }}
+                        onDragEnd={() => {
+                          setDraggedIndex(null);
+                          setDropTargetIndex(null);
+                        }}
+                        className="cursor-grab rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+                        title="Arraste para mudar a posição"
+                        aria-label={`Mover item ${index + 1}`}
+                      >
+                        <GripVertical className="h-4 w-4" />
+                      </button>
+                      <span>{index + 1}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <ItemFotoCell control={control} index={index} />
                   </TableCell>

@@ -636,7 +636,7 @@ export function QuoteForm({ initialData, draft }: { initialData?: QuoteRecord; d
         <Card className="py-0 gap-0 rounded-2xl">
           <SectionHeader icon={ListOrdered} title="Itens do Orçamento" description="Lista de produtos ou serviços" />
           <CardContent className="space-y-4 pt-4 pb-5">
-          <QuoteItemsTable control={control} register={register} watchItems={itens} setValue={setValue} />
+          <QuoteItemsTable control={control} register={register} watchItems={itens} setValue={setValue} disabled={approvedLocked} />
             {errors.itens && !Array.isArray(errors.itens) && (
               <p className="text-sm text-destructive">{errors.itens.message}</p>
             )}
