@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { navItems, orcamentosNavItems, frotaNavItems, type NavItem } from "./nav-items";
+import { navItems, orcamentosNavItems, cotacoesNavItems, frotaNavItems, type NavItem } from "./nav-items";
 import { useSystemSettings } from "@/hooks/use-settings";
-import { ChevronDown, Leaf, FileText, Truck, Boxes, GraduationCap, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
+import { ChevronDown, Leaf, FileText, ShoppingCart, Truck, Boxes, GraduationCap, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -46,6 +46,7 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
   const canFrota = isAdmin || session?.user?.canAccessFrota !== false;
   const canEstoque = isAdmin || session?.user?.canAccessEstoque !== false;
   const canTreinamentos = isAdmin || session?.user?.canAccessTreinamentos !== false;
+  const canCotacoes = isAdmin || session?.user?.canAccessCotacoes !== false;
 
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
@@ -64,6 +65,22 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
             active={pathname === "/orcamentos/dashboard"}
             onNavigate={onNavigate}
             collapsed={collapsed}
+          />
+        )}
+
+        {canCotacoes && (
+          <NavGroup
+            label="Cotações"
+            Icon={ShoppingCart}
+            items={cotacoesNavItems}
+            onNavigate={onNavigate}
+            collapsed={collapsed}
+            onExpand={onExpand}
+            isActive={(item) =>
+              item.href === "/cotacoes"
+                ? pathname === "/cotacoes" || /^\/cotacoes\/[^/]+$/.test(pathname)
+                : pathname === item.href || (item.href === "/fornecedores" && pathname.startsWith("/fornecedores"))
+            }
           />
         )}
 

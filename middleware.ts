@@ -28,6 +28,14 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/acesso-negado", nextUrl.origin));
   }
 
+  if (
+    !isAdmin &&
+    (nextUrl.pathname.startsWith("/cotacoes") || nextUrl.pathname.startsWith("/fornecedores")) &&
+    user?.canAccessCotacoes === false
+  ) {
+    return NextResponse.redirect(new URL("/acesso-negado", nextUrl.origin));
+  }
+
   return NextResponse.next();
 });
 

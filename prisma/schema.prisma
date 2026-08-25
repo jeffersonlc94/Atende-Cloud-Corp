@@ -21,32 +21,35 @@ enum Cargo {
 }
 
 model User {
-  id                   String   @id @default(cuid())
-  name                 String
-  email                String   @unique
-  passwordHash         String
-  role                 Role     @default(USER)
-  cargo                Cargo?
-  avatarUrl            String?
-  canAccessOrcamentos  Boolean  @default(true)
-  canAccessFrota       Boolean  @default(true)
-  receiveNotifications Boolean  @default(true)
-  canAccessEstoque     Boolean  @default(true)
-  canAccessTreinamentos Boolean @default(true)
-  telegramChatId       String?
-  hidden               Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  name                  String
+  email                 String   @unique
+  passwordHash          String
+  role                  Role     @default(USER)
+  cargo                 Cargo?
+  avatarUrl             String?
+  canAccessOrcamentos   Boolean  @default(true)
+  canAccessFrota        Boolean  @default(true)
+  receiveNotifications  Boolean  @default(true)
+  canAccessEstoque      Boolean  @default(true)
+  canAccessTreinamentos Boolean  @default(true)
+  canAccessCotacoes     Boolean  @default(true)
+  telegramChatId        String?
+  hidden                Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  quotes        Quote[]
-  quoteDrafts   QuoteDraft[]
-  trainingContents TrainingContent[]
-  presence      UserPresence?
-  updatedQuotes Quote[]       @relation("QuoteUpdatedBy")
-  mileageLogs   MileageLog[]
-  checklists    Checklist[]
-  maintenances  Maintenance[]
-  auditLogs     AuditLog[]
+  quotes                    Quote[]
+  quoteDrafts               QuoteDraft[]
+  trainingContents          TrainingContent[]
+  presence                  UserPresence?
+  updatedQuotes             Quote[]             @relation("QuoteUpdatedBy")
+  mileageLogs               MileageLog[]
+  checklists                Checklist[]
+  maintenances              Maintenance[]
+  auditLogs                 AuditLog[]
+  supplierQuotations        SupplierQuotation[] @relation("SupplierQuotationCreatedBy")
+  updatedSupplierQuotations SupplierQuotation[] @relation("SupplierQuotationUpdatedBy")
 
   @@map("users")
 }
@@ -71,8 +74,9 @@ model Company {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  quotes   Quote[]
-  vehicles Vehicle[]
+  quotes             Quote[]
+  supplierQuotations SupplierQuotation[]
+  vehicles           Vehicle[]
 
   @@map("companies")
 }
@@ -111,38 +115,38 @@ enum QuoteStatus {
 }
 
 model Quote {
-  id                 String        @id @default(cuid())
-  numero             String        @unique
-  companyId          String
-  company            Company       @relation(fields: [companyId], references: [id])
-  clientId           String
-  client             Client        @relation(fields: [clientId], references: [id])
-  referencia         String?
-  dataEmissao        DateTime      @default(now())
-  dataValidade       DateTime?
-  validadeDias       Int?
-  condicoesPagamento String?
-  prazoEntrega       String?
-  observacoes        String?
-  observacoesInternas String?
-  fotosInternas      Json          @default("[]")
-  subtotal           Decimal?      @db.Decimal(14, 2)
-  descontoGeralTipo  DescontoTipo?
-  descontoGeralValor Decimal?      @db.Decimal(14, 2)
+  id                    String        @id @default(cuid())
+  numero                String        @unique
+  companyId             String
+  company               Company       @relation(fields: [companyId], references: [id])
+  clientId              String
+  client                Client        @relation(fields: [clientId], references: [id])
+  referencia            String?
+  dataEmissao           DateTime      @default(now())
+  dataValidade          DateTime?
+  validadeDias          Int?
+  condicoesPagamento    String?
+  prazoEntrega          String?
+  observacoes           String?
+  observacoesInternas   String?
+  fotosInternas         Json          @default("[]")
+  subtotal              Decimal?      @db.Decimal(14, 2)
+  descontoGeralTipo     DescontoTipo?
+  descontoGeralValor    Decimal?      @db.Decimal(14, 2)
   descontoProdutosTipo  DescontoTipo?
-  descontoProdutosValor Decimal?   @db.Decimal(14, 2)
+  descontoProdutosValor Decimal?      @db.Decimal(14, 2)
   descontoServicosTipo  DescontoTipo?
-  descontoServicosValor Decimal?   @db.Decimal(14, 2)
-  total              Decimal       @default(0) @db.Decimal(14, 2)
-  status             QuoteStatus   @default(Negociacao)
-  visibilidade       Visibilidade  @default(Global)
-  createdByUserId    String?
-  createdByUser      User?         @relation(fields: [createdByUserId], references: [id])
-  updatedByUserId    String?
-  updatedByUser      User?         @relation("QuoteUpdatedBy", fields: [updatedByUserId], references: [id])
-  sourceDraftId      String?       @unique
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  descontoServicosValor Decimal?      @db.Decimal(14, 2)
+  total                 Decimal       @default(0) @db.Decimal(14, 2)
+  status                QuoteStatus   @default(Negociacao)
+  visibilidade          Visibilidade  @default(Global)
+  createdByUserId       String?
+  createdByUser         User?         @relation(fields: [createdByUserId], references: [id])
+  updatedByUserId       String?
+  updatedByUser         User?         @relation("QuoteUpdatedBy", fields: [updatedByUserId], references: [id])
+  sourceDraftId         String?       @unique
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   itens QuoteItem[]
 
@@ -211,24 +215,24 @@ model UserPresence {
 }
 
 model QuoteItem {
-  id            String        @id @default(cuid())
-  quoteId       String
-  quote         Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  ordem         Int
-  tipoItem      TipoItem      @default(Produto)
-  descricao     String
-  observacao    String?
-  fotoUrl       String?
-  quantidade    Decimal       @db.Decimal(14, 3)
-  valorUnitario Decimal       @db.Decimal(14, 2)
-  calcularPorMargem Boolean   @default(false)
-  custoUnitario  Decimal?      @db.Decimal(14, 2)
-  margemLucro    Decimal?      @db.Decimal(8, 2)
-  freteHabilitado Boolean      @default(false)
-  freteUnitario   Decimal?     @db.Decimal(14, 2)
-  descontoTipo  DescontoTipo?
-  descontoValor Decimal?      @db.Decimal(14, 2)
-  valorTotal    Decimal       @db.Decimal(14, 2)
+  id                String        @id @default(cuid())
+  quoteId           String
+  quote             Quote         @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  ordem             Int
+  tipoItem          TipoItem      @default(Produto)
+  descricao         String
+  observacao        String?
+  fotoUrl           String?
+  quantidade        Decimal       @db.Decimal(14, 3)
+  valorUnitario     Decimal       @db.Decimal(14, 2)
+  calcularPorMargem Boolean       @default(false)
+  custoUnitario     Decimal?      @db.Decimal(14, 2)
+  margemLucro       Decimal?      @db.Decimal(8, 2)
+  freteHabilitado   Boolean       @default(false)
+  freteUnitario     Decimal?      @db.Decimal(14, 2)
+  descontoTipo      DescontoTipo?
+  descontoValor     Decimal?      @db.Decimal(14, 2)
+  valorTotal        Decimal       @db.Decimal(14, 2)
 
   @@map("quote_items")
 }
@@ -238,6 +242,96 @@ model QuoteCounter {
   lastNum Int    @default(0)
 
   @@map("quote_counter")
+}
+
+enum SupplierQuotationType {
+  FornecedorUnico
+  MultiplosFornecedores
+}
+
+enum SupplierQuotationStatus {
+  Rascunho
+  EmCotacao
+  Recebida
+  Aprovada
+  NaoAprovada
+  Finalizada
+}
+
+model Supplier {
+  id           String   @id @default(cuid())
+  razaoSocial  String
+  nomeFantasia String?
+  cnpjCpf      String?
+  telefone     String?
+  email        String?
+  endereco     String?
+  contato      String?
+  observacoes  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  primaryQuotations SupplierQuotation[]     @relation("PrimarySupplier")
+  quotationItems    SupplierQuotationItem[]
+
+  @@index([razaoSocial])
+  @@map("suppliers")
+}
+
+model SupplierQuotation {
+  id                  String                  @id @default(cuid())
+  numero              String                  @unique
+  companyId           String
+  company             Company                 @relation(fields: [companyId], references: [id])
+  tipo                SupplierQuotationType   @default(FornecedorUnico)
+  primarySupplierId   String?
+  primarySupplier     Supplier?               @relation("PrimarySupplier", fields: [primarySupplierId], references: [id])
+  referencia          String?
+  dataCotacao         DateTime                @default(now())
+  observacoes         String?
+  observacoesInternas String?
+  status              SupplierQuotationStatus @default(EmCotacao)
+  total               Decimal                 @default(0) @db.Decimal(14, 2)
+  createdByUserId     String?
+  createdByUser       User?                   @relation("SupplierQuotationCreatedBy", fields: [createdByUserId], references: [id])
+  updatedByUserId     String?
+  updatedByUser       User?                   @relation("SupplierQuotationUpdatedBy", fields: [updatedByUserId], references: [id])
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+
+  itens SupplierQuotationItem[]
+
+  @@index([dataCotacao])
+  @@index([status])
+  @@map("supplier_quotations")
+}
+
+model SupplierQuotationItem {
+  id               String            @id @default(cuid())
+  quotationId      String
+  quotation        SupplierQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  supplierId       String
+  supplier         Supplier          @relation(fields: [supplierId], references: [id])
+  ordem            Int
+  codigoProduto    String?
+  codigoFornecedor String?
+  descricao        String
+  fotoUrl          String?
+  quantidade       Decimal           @db.Decimal(14, 3)
+  valorUnitario    Decimal           @db.Decimal(14, 2)
+  observacao       String?
+  valorTotal       Decimal           @db.Decimal(14, 2)
+
+  @@index([quotationId, ordem])
+  @@index([supplierId])
+  @@map("supplier_quotation_items")
+}
+
+model SupplierQuotationCounter {
+  id      String @id @default("default")
+  lastNum Int    @default(0)
+
+  @@map("supplier_quotation_counter")
 }
 
 // ==========================================================================

@@ -11,6 +11,8 @@ export const entidadeOptions = [
   "User",
   "SystemSettings",
   "Database",
+  "Supplier",
+  "SupplierQuotation",
 ] as const;
 
 export const entidadeLabels: Record<string, string> = {
@@ -23,6 +25,8 @@ export const entidadeLabels: Record<string, string> = {
   Checklist: "Checklist",
   User: "Usuário",
   SystemSettings: "Configurações do Sistema",
+  Supplier: "Fornecedor",
+  SupplierQuotation: "Cotação de fornecedor",
 };
 
 export const acaoLabels: Record<string, string> = {
@@ -56,6 +60,8 @@ const auditFieldLabels: Record<string, string> = {
   placa: "Placa", marca: "Marca", modelo: "Modelo", kmAtual: "Quilometragem",
   descricao: "Descrição", observacao: "Observação do item", quantidade: "Quantidade", valorUnitario: "Valor unitário",
   observacoes: "Observações", updatedByUserId: "Atualizado por",
+  supplierId: "Fornecedor", primarySupplierId: "Fornecedor principal", tipo: "Tipo da cotação",
+  dataCotacao: "Data da cotação", codigoProduto: "Código do produto", codigoFornecedor: "Código do fornecedor",
 };
 
 export function labelForAuditField(field: string): string {

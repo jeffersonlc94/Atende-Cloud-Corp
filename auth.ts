@@ -42,6 +42,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           canAccessFrota: user.canAccessFrota,
           canAccessEstoque: user.canAccessEstoque,
           canAccessTreinamentos: user.canAccessTreinamentos,
+          canAccessCotacoes: user.canAccessCotacoes,
         };
       },
     }),
@@ -59,6 +60,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.canAccessFrota = fresh.canAccessFrota;
           token.canAccessEstoque = fresh.canAccessEstoque;
           token.canAccessTreinamentos = fresh.canAccessTreinamentos;
+          token.canAccessCotacoes = fresh.canAccessCotacoes;
           token.picture = fresh.avatarUrl ?? null;
           token.name = fresh.name;
           token.email = fresh.email;
@@ -74,6 +76,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           canAccessFrota?: boolean;
           canAccessEstoque?: boolean;
           canAccessTreinamentos?: boolean;
+          canAccessCotacoes?: boolean;
         };
         token.role = u.role;
         token.cargo = u.cargo ?? null;
@@ -81,6 +84,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.canAccessFrota = u.canAccessFrota ?? true;
         token.canAccessEstoque = u.canAccessEstoque ?? true;
         token.canAccessTreinamentos = u.canAccessTreinamentos ?? true;
+        token.canAccessCotacoes = u.canAccessCotacoes ?? true;
         token.id = user.id;
         token.picture = user.image ?? null;
       }
@@ -95,6 +99,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.canAccessFrota = (token.canAccessFrota as boolean | undefined) ?? true;
         session.user.canAccessEstoque = (token.canAccessEstoque as boolean | undefined) ?? true;
         session.user.canAccessTreinamentos = (token.canAccessTreinamentos as boolean | undefined) ?? true;
+        session.user.canAccessCotacoes = (token.canAccessCotacoes as boolean | undefined) ?? true;
         session.user.image = (token.picture as string | null) ?? null;
       }
       return session;
