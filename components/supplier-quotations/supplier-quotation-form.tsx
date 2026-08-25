@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { supplierQuotationSchema, supplierQuotationStatuses, type SupplierQuotationFormValues } from "@/lib/supplier-quotation-validation";
-import { useCreateSupplierQuotation, useSuppliers, useUpdateSupplierQuotation, type SupplierQuotationRecord } from "@/hooks/use-supplier-quotations";
+import { useCreateSupplierQuotation, useReopenSupplierQuotation, useSuppliers, useUpdateSupplierQuotation, type SupplierQuotationRecord } from "@/hooks/use-supplier-quotations";
 import { SupplierDialog } from "./supplier-dialog";
 import { SupplierItemPhotoCell } from "./supplier-item-photo-cell";
 import { QuoteInternalPhotos } from "@/components/quotes/quote-internal-photos";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,10 +33,16 @@ export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRe
   const suppliersQuery = useSuppliers();
   const create = useCreateSupplierQuotation();
   const update = useUpdateSupplierQuotation();
+  const reopen = useReopenSupplierQuotation();
   const [supplierDialog, setSupplierDialog] = useState(false);
+  const [supplierTargetIndex, setSupplierTargetIndex] = useState<number | null>(null);
   const [dragged, setDragged] = useState<number | null>(null);
   const [openObservations, setOpenObservations] = useState<Record<number, boolean>>({});
-  const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<SupplierQuotationFormValues>({ resolver: zodResolver(supplierQuotationSchema), defaultValues: initialValues(record) });
+  const [autoSavePromptOpen, setAutoSavePromptOpen] = useState(!record);
+  const [autoSave, setAutoSave] = useState(false);
+  const [autoSaveState, setAutoSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [reopenOpen, setReopenOpen] = useState(false);
+  const { control, register, handleSubmit, setValue, reset, formState: { errors } } = useForm<SupplierQuotationFormValues>({ resolver: zodResolver(supplierQuotationSchema), defaultValues: initialValues(record) });
   const { fields, append, remove, move } = useFieldArray({ control, name: "itens" });
   const values = useWatch({ control });
   const items = values.itens ?? [];
@@ -44,15 +51,36 @@ export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRe
   const supplierMap = new Map((suppliersQuery.data ?? []).map(s => [s.id, s]));
   const subtotals = items.reduce<Record<string, number>>((acc, item) => { const id = tipo === "FornecedorUnico" ? values.primarySupplierId || "" : item?.supplierId || ""; acc[id] = (acc[id] || 0) + (Number(item?.quantidade) || 0) * (Number(item?.valorUnitario) || 0); return acc; }, {});
   const saving = create.isPending || update.isPending;
+  const finalized = record?.status === "Finalizada";
+
+  useEffect(() => {
+    if (!autoSave || record) return;
+    setAutoSaveState("saving");
+    const timer = window.setTimeout(() => {
+      window.localStorage.setItem("supplier-quotation-draft", JSON.stringify(values));
+      setAutoSaveState("saved");
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [autoSave, record, values]);
+
+  function enableAutoSave() {
+    const saved = window.localStorage.getItem("supplier-quotation-draft");
+    if (saved) {
+      try { if (window.confirm("Existe um rascunho anterior. Deseja continuar de onde parou?")) reset(JSON.parse(saved)); } catch { /* rascunho inválido */ }
+    }
+    setAutoSave(true);
+  }
 
   return <form className="space-y-6 p-6" onSubmit={handleSubmit(async data => {
-    try { const saved = record ? await update.mutateAsync({ id: record.id, data }) : await create.mutateAsync(data); toast.success(record ? "Cotação atualizada" : "Cotação criada"); router.push(`/cotacoes/${saved.id}`); }
+    try { const saved = record ? await update.mutateAsync({ id: record.id, data }) : await create.mutateAsync(data); window.localStorage.removeItem("supplier-quotation-draft"); toast.success(record ? "Cotação atualizada" : "Cotação criada"); router.push(`/cotacoes/${saved.id}`); }
     catch (e) { toast.error(e instanceof Error ? e.message : "Erro ao salvar cotação"); }
   }, () => toast.error("Revise os campos obrigatórios da cotação."))}>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h1 className="flex items-center gap-2 text-2xl font-bold"><ShoppingCart className="h-6 w-6 text-primary" />{record ? `Cotação Nº ${record.numero}` : "Nova Cotação"}</h1><p className="text-sm text-muted-foreground">Cotação de compras com um ou vários fornecedores.</p></div>
-      <div className="flex gap-2"><Button type="button" variant="outline" onClick={() => router.push("/cotacoes")}><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button>{record && <Button type="button" variant="outline" onClick={() => router.push(`/cotacoes/${record.id}/imprimir`)}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>}<Button type="submit" disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Salvar cotação</Button></div>
+      <div className="flex gap-2">{autoSave && !record && <span className="self-center text-xs text-emerald-700">{autoSaveState === "saving" ? "Salvando rascunho..." : "Rascunho salvo automaticamente"}</span>}<Button type="button" variant="outline" onClick={() => router.push("/cotacoes")}><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button>{record && <Button type="button" variant="outline" onClick={() => router.push(`/cotacoes/${record.id}/imprimir`)}><Printer className="mr-2 h-4 w-4" />Imprimir</Button>}{finalized ? <Button type="button" variant="outline" onClick={() => setReopenOpen(true)}>Reabrir cotação</Button> : <Button type="submit" disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Salvar cotação</Button>}</div>
     </div>
+
+    <fieldset disabled={finalized} className="space-y-6 disabled:opacity-75">
 
     <section className="rounded-2xl border bg-card shadow-sm">
       <div className="border-b px-5 py-4"><h2 className="font-semibold">Dados da cotação</h2></div>
@@ -60,7 +88,7 @@ export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRe
         <div className="space-y-2"><Label>Número</Label><Input placeholder="Automático" {...register("numero")} /></div>
         <div className="space-y-2"><Label>Data *</Label><Input type="date" {...register("dataCotacao")} /></div>
         <div className="space-y-2"><Label>Tipo de cotação *</Label><Controller control={control} name="tipo" render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue>{value => value === "MultiplosFornecedores" ? "Vários fornecedores" : "Fornecedor único"}</SelectValue></SelectTrigger><SelectContent><SelectItem value="FornecedorUnico">Fornecedor único</SelectItem><SelectItem value="MultiplosFornecedores">Vários fornecedores</SelectItem></SelectContent></Select>} /></div>
-        {tipo === "FornecedorUnico" && <div className="space-y-2"><Label>Fornecedor *</Label><div className="flex gap-2"><Controller control={control} name="primarySupplierId" render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger className="flex-1"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{suppliersQuery.data?.map(s => <SelectItem key={s.id} value={s.id}>{s.razaoSocial}</SelectItem>)}</SelectContent></Select>} /><Button type="button" variant="outline" size="icon" onClick={() => setSupplierDialog(true)}><Plus className="h-4 w-4" /></Button></div>{errors.primarySupplierId && <p className="text-xs text-destructive">{errors.primarySupplierId.message}</p>}</div>}
+        {tipo === "FornecedorUnico" && <div className="space-y-2"><Label>Fornecedor *</Label><div className="flex gap-2"><Controller control={control} name="primarySupplierId" render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger className="flex-1"><SelectValue placeholder="Selecione">{value => suppliersQuery.data?.find(supplier => supplier.id === value)?.razaoSocial || "Selecione o fornecedor"}</SelectValue></SelectTrigger><SelectContent>{suppliersQuery.data?.map(s => <SelectItem key={s.id} value={s.id}>{s.razaoSocial}</SelectItem>)}</SelectContent></Select>} /><Button type="button" variant="outline" size="icon" onClick={() => { setSupplierTargetIndex(null); setSupplierDialog(true); }}><Plus className="h-4 w-4" /></Button></div>{errors.primarySupplierId && <p className="text-xs text-destructive">{errors.primarySupplierId.message}</p>}</div>}
         <div className="space-y-2"><Label>Status</Label><Controller control={control} name="status" render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue>{value => statusLabels[value as keyof typeof statusLabels] || value}</SelectValue></SelectTrigger><SelectContent>{supplierQuotationStatuses.map(s => <SelectItem key={s} value={s}>{statusLabels[s]}</SelectItem>)}</SelectContent></Select>} /></div>
         <div className="space-y-2 md:col-span-2 lg:col-span-3"><Label>Referência / Assunto</Label><Input placeholder="Ex.: Compra de equipamentos" {...register("referencia")} /></div>
       </div>
@@ -73,7 +101,7 @@ export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRe
         <tbody>{fields.map((field, index) => { const item = items[index]; const lineTotal = (Number(item?.quantidade) || 0) * (Number(item?.valorUnitario) || 0); const observationOpen = openObservations[index] || Boolean(item?.observacao); return <tr key={field.id} className="border-t align-top" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (dragged !== null && dragged !== index) { move(dragged, index); fields.forEach((_, i) => setValue(`itens.${i}.ordem`, i, { shouldDirty: true })); } setDragged(null); }}>
           <td className="p-3"><div className="flex items-center gap-1"><button type="button" draggable onDragStart={e => { setDragged(index); e.dataTransfer.effectAllowed = "move"; }} onDragEnd={() => setDragged(null)} className="cursor-grab rounded p-1 text-muted-foreground hover:bg-muted"><GripVertical className="h-4 w-4" /></button>{index + 1}</div></td>
           <td className="p-2"><SupplierItemPhotoCell control={control} index={index} /></td>
-          {tipo === "MultiplosFornecedores" && <td className="p-2"><Controller control={control} name={`itens.${index}.supplierId`} render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Fornecedor" /></SelectTrigger><SelectContent>{suppliersQuery.data?.map(s => <SelectItem key={s.id} value={s.id}>{s.razaoSocial}</SelectItem>)}</SelectContent></Select>} /></td>}
+          {tipo === "MultiplosFornecedores" && <td className="p-2"><div className="flex gap-1"><Controller control={control} name={`itens.${index}.supplierId`} render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger className="min-w-0 flex-1"><SelectValue placeholder="Fornecedor">{value => suppliersQuery.data?.find(supplier => supplier.id === value)?.razaoSocial || "Selecione"}</SelectValue></SelectTrigger><SelectContent>{suppliersQuery.data?.map(s => <SelectItem key={s.id} value={s.id}>{s.razaoSocial}</SelectItem>)}</SelectContent></Select>} /><Button type="button" variant="outline" size="icon" onClick={() => { setSupplierTargetIndex(index); setSupplierDialog(true); }}><Plus className="h-4 w-4" /></Button></div></td>}
           <td className="p-2"><Input {...register(`itens.${index}.codigoProduto`)} /></td><td className="p-2"><Input {...register(`itens.${index}.codigoFornecedor`)} /></td>
           <td className="p-2"><div className="flex gap-1"><Input placeholder="Descrição do item" {...register(`itens.${index}.descricao`)} /><Button type="button" variant={observationOpen ? "secondary" : "ghost"} size="icon" onClick={() => setOpenObservations(current => ({ ...current, [index]: !observationOpen }))}>{observationOpen ? <X className="h-4 w-4" /> : <MessageSquarePlus className="h-4 w-4" />}</Button></div>{observationOpen && <Textarea rows={2} maxLength={500} className="mt-2 min-h-14 resize-y text-xs" placeholder="Observação opcional do item" {...register(`itens.${index}.observacao`)} />}</td>
           <td className="p-2"><Input type="number" min="0.001" step="0.001" {...register(`itens.${index}.quantidade`, { valueAsNumber: true })} /></td><td className="p-2"><Controller control={control} name={`itens.${index}.valorUnitario`} render={({ field }) => <CurrencyInput value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} />} /></td><td className="p-3 text-right font-medium">{formatCurrencyBRL(lineTotal)}</td><td><Button type="button" variant="ghost" size="icon" disabled={fields.length === 1} onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button></td>
@@ -85,6 +113,9 @@ export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRe
 
     <section className="grid gap-5 md:grid-cols-2"><div className="rounded-2xl border bg-card p-5 shadow-sm"><Label>Observações</Label><Textarea className="mt-2" rows={5} {...register("observacoes")} /></div><div className="rounded-2xl border bg-card p-5 shadow-sm"><Label>Observações internas</Label><p className="mb-2 text-xs text-muted-foreground">Não aparecem no PDF.</p><Textarea rows={5} {...register("observacoesInternas")} /></div></section>
     <section className="rounded-2xl border bg-card p-5 shadow-sm"><QuoteInternalPhotos photos={values.fotosInternas ?? []} onChange={photos => setValue("fotosInternas", photos, { shouldDirty: true })} /></section>
-    <SupplierDialog open={supplierDialog} onOpenChange={setSupplierDialog} onSaved={supplier => setValue("primarySupplierId", supplier.id, { shouldValidate: true })} />
+    </fieldset>
+    <SupplierDialog open={supplierDialog} onOpenChange={setSupplierDialog} onSaved={supplier => { if (supplierTargetIndex === null) setValue("primarySupplierId", supplier.id, { shouldValidate: true }); else setValue(`itens.${supplierTargetIndex}.supplierId`, supplier.id, { shouldValidate: true }); }} />
+    <ConfirmDialog open={autoSavePromptOpen} onOpenChange={setAutoSavePromptOpen} title="Ativar salvamento automático?" description="As alterações serão guardadas como rascunho neste computador para você continuar depois." confirmLabel="Ativar e continuar" cancelLabel="Continuar sem salvamento" onConfirm={enableAutoSave} />
+    <ConfirmDialog open={reopenOpen} onOpenChange={setReopenOpen} title="Cotação finalizada. Deseja reabrir?" description="O status voltará para Em cotação e os campos serão liberados." confirmLabel="Reabrir" onConfirm={async () => { if (!record) return; await reopen.mutateAsync(record.id); toast.success("Cotação reaberta"); router.refresh(); }} />
   </form>;
 }

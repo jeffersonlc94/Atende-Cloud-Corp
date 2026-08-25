@@ -23,6 +23,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const id = (await params).id;
   const before = await prisma.supplierQuotation.findUnique({ where: { id }, include: { itens: true } });
   if (!before) return NextResponse.json({ error: "Cotação não encontrada." }, { status: 404 });
+  if (before.status === "Finalizada") return NextResponse.json({ error: "Cotação finalizada. Reabra antes de editar." }, { status: 423 });
   const parsed = supplierQuotationSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const d = parsed.data;
