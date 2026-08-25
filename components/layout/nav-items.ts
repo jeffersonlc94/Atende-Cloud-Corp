@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   Settings,
   Info,
+  ShoppingCart,
+  Store,
 } from "lucide-react";
 
 export type NavItem = {
@@ -36,6 +38,12 @@ export const orcamentosNavItems: NavItem[] = [
   { label: "Listar Orçamentos", href: "/orcamentos", icon: ListChecks },
 ];
 
+export const cotacoesNavItems: NavItem[] = [
+  { label: "Nova Cotação", href: "/cotacoes/novo", icon: FilePlus2 },
+  { label: "Listar Cotações", href: "/cotacoes", icon: ListChecks },
+  { label: "Fornecedores", href: "/fornecedores", icon: Store },
+];
+
 export const navItems: NavItem[] = [
   {
     label: "Dashboard",
@@ -46,6 +54,11 @@ export const navItems: NavItem[] = [
     label: "Orçamentos",
     href: "/orcamentos",
     icon: FileText,
+  },
+  {
+    label: "Cotações",
+    href: "/cotacoes",
+    icon: ShoppingCart,
   },
   {
     label: "Empresas Emissoras",

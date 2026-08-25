@@ -13,6 +13,7 @@ export type AppUser = {
   canAccessFrota: boolean;
   canAccessEstoque: boolean;
   canAccessTreinamentos: boolean;
+  canAccessCotacoes: boolean;
   receiveNotifications: boolean;
   telegramChatId: string | null;
   avatarUrl?: string | null;

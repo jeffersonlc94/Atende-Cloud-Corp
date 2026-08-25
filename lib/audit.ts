@@ -13,7 +13,9 @@ export type AuditEntity =
   | "User"
   | "SystemSettings"
   | "Database"
-  | "StockMovement";
+  | "StockMovement"
+  | "Supplier"
+  | "SupplierQuotation";
 
 export type RegisterAuditParams = {
   userId?: string | null;

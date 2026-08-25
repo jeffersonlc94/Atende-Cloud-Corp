@@ -38,6 +38,7 @@ import {
   Truck,
   Boxes,
   GraduationCap,
+  ShoppingCart,
   BellRing,
   Send,
   type LucideIcon,
@@ -83,6 +84,7 @@ const emptyValues: UserFormValues = {
   canAccessFrota: true,
   canAccessEstoque: true,
   canAccessTreinamentos: true,
+  canAccessCotacoes: true,
   receiveNotifications: true,
   telegramChatId: "",
 };
@@ -113,6 +115,7 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
   const canAccessFrota = watch("canAccessFrota");
   const canAccessEstoque = watch("canAccessEstoque");
   const canAccessTreinamentos = watch("canAccessTreinamentos");
+  const canAccessCotacoes = watch("canAccessCotacoes");
   const receiveNotifications = watch("receiveNotifications");
   const isEditing = !!initialData;
 
@@ -276,6 +279,14 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
               />
               <GraduationCap className="h-4 w-4 text-muted-foreground" />
               Treinamentos
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium">
+              <Checkbox
+                checked={!!canAccessCotacoes}
+                onCheckedChange={(v) => setValue("canAccessCotacoes", v === true)}
+              />
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              Cotações de Fornecedores
             </label>
             <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium sm:col-span-2">
               <Checkbox
