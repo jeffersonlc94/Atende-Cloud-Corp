@@ -38,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       itens: { create: d.itens.map((item, index) => ({ ordem: index,
         supplierId: d.tipo === "FornecedorUnico" ? d.primarySupplierId : item.supplierId,
         codigoProduto: item.codigoProduto || null, codigoFornecedor: item.codigoFornecedor || null,
-        descricao: item.descricao, quantidade: item.quantidade, valorUnitario: item.valorUnitario,
+        descricao: item.descricao, fotoUrl: item.fotoUrl || null, quantidade: item.quantidade, valorUnitario: item.valorUnitario,
         observacao: item.observacao || null, valorTotal: item.quantidade * item.valorUnitario,
       })) },
     }, include: includeQuotation });

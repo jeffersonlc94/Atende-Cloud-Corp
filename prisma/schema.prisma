@@ -316,6 +316,7 @@ model SupplierQuotationItem {
   codigoProduto    String?
   codigoFornecedor String?
   descricao        String
+  fotoUrl          String?
   quantidade       Decimal           @db.Decimal(14, 3)
   valorUnitario    Decimal           @db.Decimal(14, 2)
   observacao       String?

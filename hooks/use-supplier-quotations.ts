@@ -14,7 +14,7 @@ export type SupplierQuotationRecord = {
   primarySupplier: SupplierRecord | null;
   createdByUser: { id: string; name: string } | null;
   updatedByUser: { id: string; name: string } | null;
-  itens: Array<{ id: string; ordem: number; supplierId: string; codigoProduto: string | null; codigoFornecedor: string | null; descricao: string; quantidade: string; valorUnitario: string; observacao: string | null; valorTotal: string; supplier: SupplierRecord }>;
+  itens: Array<{ id: string; ordem: number; supplierId: string; codigoProduto: string | null; codigoFornecedor: string | null; descricao: string; fotoUrl: string | null; quantidade: string; valorUnitario: string; observacao: string | null; valorTotal: string; supplier: SupplierRecord }>;
 };
 
 async function json<T>(url: string, init?: RequestInit): Promise<T> {

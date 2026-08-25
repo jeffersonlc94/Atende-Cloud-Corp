@@ -20,6 +20,7 @@ const quotationItemSchema = z.object({
   codigoProduto: z.string().trim().max(80).optional().default(""),
   codigoFornecedor: z.string().trim().max(80).optional().default(""),
   descricao: z.string().trim().min(1, "Descrição do item é obrigatória").max(500),
+  fotoUrl: z.string().trim().optional().default(""),
   quantidade: z.number().positive("Quantidade deve ser maior que zero"),
   valorUnitario: z.number().positive("Valor unitário deve ser maior que zero"),
   observacao: z.string().trim().max(500).optional().default(""),

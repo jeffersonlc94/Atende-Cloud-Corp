@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       dataCotacao: new Date(), observacoes: source.observacoes, observacoesInternas: source.observacoesInternas,
       status: "Rascunho", total: source.total, createdByUserId: session.user.id, updatedByUserId: session.user.id,
       itens: { create: source.itens.map(i => ({ ordem: i.ordem, supplierId: i.supplierId, codigoProduto: i.codigoProduto,
-        codigoFornecedor: i.codigoFornecedor, descricao: i.descricao, quantidade: i.quantidade,
+        codigoFornecedor: i.codigoFornecedor, descricao: i.descricao, fotoUrl: i.fotoUrl, quantidade: i.quantidade,
         valorUnitario: i.valorUnitario, observacao: i.observacao, valorTotal: i.valorTotal })) },
     } });
   });
