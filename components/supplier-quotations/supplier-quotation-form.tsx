@@ -6,10 +6,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { supplierQuotationSchema, supplierQuotationStatuses, type SupplierQuotationFormValues } from "@/lib/supplier-quotation-validation";
-import { useCompanies } from "@/hooks/use-companies";
 import { useCreateSupplierQuotation, useSuppliers, useUpdateSupplierQuotation, type SupplierQuotationRecord } from "@/hooks/use-supplier-quotations";
 import { SupplierDialog } from "./supplier-dialog";
 import { SupplierItemPhotoCell } from "./supplier-item-photo-cell";
+import { QuoteInternalPhotos } from "@/components/quotes/quote-internal-photos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,13 +23,12 @@ const statusLabels = { Rascunho: "Rascunho", EmCotacao: "Em cotação", Recebida
 const emptyItem = { ordem: 0, supplierId: "", codigoProduto: "", codigoFornecedor: "", descricao: "", fotoUrl: "", quantidade: 1, valorUnitario: 0, observacao: "" };
 
 function initialValues(record?: SupplierQuotationRecord): SupplierQuotationFormValues {
-  if (!record) return { numero: "", companyId: "", tipo: "FornecedorUnico", primarySupplierId: "", referencia: "", dataCotacao: new Date().toISOString().slice(0, 10), observacoes: "", observacoesInternas: "", status: "EmCotacao", itens: [{ ...emptyItem }] };
-  return { numero: record.numero, companyId: record.companyId, tipo: record.tipo, primarySupplierId: record.primarySupplierId || "", referencia: record.referencia || "", dataCotacao: record.dataCotacao.slice(0, 10), observacoes: record.observacoes || "", observacoesInternas: record.observacoesInternas || "", status: record.status, itens: record.itens.map((i, index) => ({ ordem: index, supplierId: i.supplierId, codigoProduto: i.codigoProduto || "", codigoFornecedor: i.codigoFornecedor || "", descricao: i.descricao, fotoUrl: i.fotoUrl || "", quantidade: Number(i.quantidade), valorUnitario: Number(i.valorUnitario), observacao: i.observacao || "" })) };
+  if (!record) return { numero: "", companyId: "", tipo: "FornecedorUnico", primarySupplierId: "", referencia: "", dataCotacao: new Date().toISOString().slice(0, 10), observacoes: "", observacoesInternas: "", fotosInternas: [], status: "EmCotacao", itens: [{ ...emptyItem }] };
+  return { numero: record.numero, companyId: "", tipo: record.tipo, primarySupplierId: record.primarySupplierId || "", referencia: record.referencia || "", dataCotacao: record.dataCotacao.slice(0, 10), observacoes: record.observacoes || "", observacoesInternas: record.observacoesInternas || "", fotosInternas: record.fotosInternas || [], status: record.status, itens: record.itens.map((i, index) => ({ ordem: index, supplierId: i.supplierId, codigoProduto: i.codigoProduto || "", codigoFornecedor: i.codigoFornecedor || "", descricao: i.descricao, fotoUrl: i.fotoUrl || "", quantidade: Number(i.quantidade), valorUnitario: Number(i.valorUnitario), observacao: i.observacao || "" })) };
 }
 
 export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRecord }) {
   const router = useRouter();
-  const companies = useCompanies();
   const suppliersQuery = useSuppliers();
   const create = useCreateSupplierQuotation();
   const update = useUpdateSupplierQuotation();
@@ -58,7 +57,6 @@ export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRe
     <section className="rounded-2xl border bg-card shadow-sm">
       <div className="border-b px-5 py-4"><h2 className="font-semibold">Dados da cotação</h2></div>
       <div className="grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3">
-        <div className="space-y-2"><Label>Empresa emissora *</Label><Controller control={control} name="companyId" render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecione a empresa" /></SelectTrigger><SelectContent>{companies.data?.map(c => <SelectItem key={c.id} value={c.id}>{c.nomeFantasia || c.razaoSocial}</SelectItem>)}</SelectContent></Select>} />{errors.companyId && <p className="text-xs text-destructive">{errors.companyId.message}</p>}</div>
         <div className="space-y-2"><Label>Número</Label><Input placeholder="Automático" {...register("numero")} /></div>
         <div className="space-y-2"><Label>Data *</Label><Input type="date" {...register("dataCotacao")} /></div>
         <div className="space-y-2"><Label>Tipo de cotação *</Label><Controller control={control} name="tipo" render={({ field }) => <Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue>{value => value === "MultiplosFornecedores" ? "Vários fornecedores" : "Fornecedor único"}</SelectValue></SelectTrigger><SelectContent><SelectItem value="FornecedorUnico">Fornecedor único</SelectItem><SelectItem value="MultiplosFornecedores">Vários fornecedores</SelectItem></SelectContent></Select>} /></div>
@@ -86,6 +84,7 @@ export function SupplierQuotationForm({ record }: { record?: SupplierQuotationRe
     </section>
 
     <section className="grid gap-5 md:grid-cols-2"><div className="rounded-2xl border bg-card p-5 shadow-sm"><Label>Observações</Label><Textarea className="mt-2" rows={5} {...register("observacoes")} /></div><div className="rounded-2xl border bg-card p-5 shadow-sm"><Label>Observações internas</Label><p className="mb-2 text-xs text-muted-foreground">Não aparecem no PDF.</p><Textarea rows={5} {...register("observacoesInternas")} /></div></section>
+    <section className="rounded-2xl border bg-card p-5 shadow-sm"><QuoteInternalPhotos photos={values.fotosInternas ?? []} onChange={photos => setValue("fotosInternas", photos, { shouldDirty: true })} /></section>
     <SupplierDialog open={supplierDialog} onOpenChange={setSupplierDialog} onSaved={supplier => setValue("primarySupplierId", supplier.id, { shouldValidate: true })} />
   </form>;
 }

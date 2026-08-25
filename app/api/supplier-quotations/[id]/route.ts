@@ -30,10 +30,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const quotation = await prisma.$transaction(async (tx) => {
     await tx.supplierQuotationItem.deleteMany({ where: { quotationId: id } });
     return tx.supplierQuotation.update({ where: { id }, data: {
-      numero: d.numero || before.numero, companyId: d.companyId, tipo: d.tipo,
+      numero: d.numero || before.numero, companyId: null, tipo: d.tipo,
       primarySupplierId: d.tipo === "FornecedorUnico" ? d.primarySupplierId : null,
       referencia: d.referencia || null, dataCotacao: new Date(d.dataCotacao),
-      observacoes: d.observacoes || null, observacoesInternas: d.observacoesInternas || null,
+      observacoes: d.observacoes || null, observacoesInternas: d.observacoesInternas || null, fotosInternas: d.fotosInternas,
       status: d.status, total, updatedByUserId: session.user.id,
       itens: { create: d.itens.map((item, index) => ({ ordem: index,
         supplierId: d.tipo === "FornecedorUnico" ? d.primarySupplierId : item.supplierId,

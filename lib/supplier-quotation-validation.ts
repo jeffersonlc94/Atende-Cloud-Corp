@@ -28,13 +28,14 @@ const quotationItemSchema = z.object({
 
 export const supplierQuotationSchema = z.object({
   numero: z.string().trim().max(30).optional().default(""),
-  companyId: z.string().min(1, "Empresa emissora é obrigatória"),
+  companyId: z.string().optional().default(""),
   tipo: z.enum(supplierQuotationTypes),
   primarySupplierId: z.string().trim().optional().default(""),
   referencia: z.string().trim().max(250).optional().default(""),
   dataCotacao: z.string().min(1, "Data é obrigatória"),
   observacoes: z.string().trim().max(2000).optional().default(""),
   observacoesInternas: z.string().trim().max(2000).optional().default(""),
+  fotosInternas: z.array(z.string()).optional().default([]),
   status: z.enum(supplierQuotationStatuses),
   itens: z.array(quotationItemSchema).min(1, "Adicione pelo menos um item"),
 }).superRefine((data, ctx) => {

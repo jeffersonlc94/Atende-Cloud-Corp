@@ -5,12 +5,12 @@ import type { SupplierFormValues, SupplierQuotationFormValues } from "@/lib/supp
 
 export type SupplierRecord = SupplierFormValues & { id: string; createdAt: string; updatedAt: string };
 export type SupplierQuotationRecord = {
-  id: string; numero: string; companyId: string; tipo: "FornecedorUnico" | "MultiplosFornecedores";
+  id: string; numero: string; companyId: string | null; tipo: "FornecedorUnico" | "MultiplosFornecedores";
   primarySupplierId: string | null; referencia: string | null; dataCotacao: string;
-  observacoes: string | null; observacoesInternas: string | null;
+  observacoes: string | null; observacoesInternas: string | null; fotosInternas: string[];
   status: "Rascunho" | "EmCotacao" | "Recebida" | "Aprovada" | "NaoAprovada" | "Finalizada";
   total: string; createdAt: string; updatedAt: string;
-  company: { id: string; razaoSocial: string; nomeFantasia: string | null; logoUrl?: string | null; cnpj?: string | null; endereco?: string | null; cidade?: string | null; estado?: string | null; telefone1?: string | null; email?: string | null };
+  company: { id: string; razaoSocial: string; nomeFantasia: string | null; logoUrl?: string | null; cnpj?: string | null; endereco?: string | null; cidade?: string | null; estado?: string | null; telefone1?: string | null; email?: string | null } | null;
   primarySupplier: SupplierRecord | null;
   createdByUser: { id: string; name: string } | null;
   updatedByUser: { id: string; name: string } | null;
@@ -25,8 +25,8 @@ async function json<T>(url: string, init?: RequestInit): Promise<T> {
 
 export function useSuppliers(search = "") { return useQuery({ queryKey: ["suppliers", search], queryFn: () => json<SupplierRecord[]>(`/api/suppliers?search=${encodeURIComponent(search)}`) }); }
 export function useSupplier(id?: string) { return useQuery({ queryKey: ["suppliers", id], queryFn: () => json<SupplierRecord>(`/api/suppliers/${id}`), enabled: !!id }); }
-export function useCreateSupplier() { const qc = useQueryClient(); return useMutation({ mutationFn: (data: SupplierFormValues) => json<SupplierRecord>("/api/suppliers", { method: "POST", body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: ["suppliers"] }) }); }
-export function useUpdateSupplier() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id, data }: { id: string; data: SupplierFormValues }) => json<SupplierRecord>(`/api/suppliers/${id}`, { method: "PUT", body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: ["suppliers"] }) }); }
+export function useCreateSupplier() { const qc = useQueryClient(); return useMutation({ mutationFn: (data: SupplierFormValues) => json<SupplierRecord>("/api/suppliers", { method: "POST", body: JSON.stringify(data) }), onSuccess: supplier => { qc.setQueryData<SupplierRecord[]>(["suppliers", ""], current => current?.some(item => item.id === supplier.id) ? current : [...(current ?? []), supplier].sort((a, b) => a.razaoSocial.localeCompare(b.razaoSocial))); qc.invalidateQueries({ queryKey: ["suppliers"] }); } }); }
+export function useUpdateSupplier() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id, data }: { id: string; data: SupplierFormValues }) => json<SupplierRecord>(`/api/suppliers/${id}`, { method: "PUT", body: JSON.stringify(data) }), onSuccess: supplier => { qc.setQueriesData<SupplierRecord[]>({ queryKey: ["suppliers"] }, current => current?.map(item => item.id === supplier.id ? supplier : item)); qc.invalidateQueries({ queryKey: ["suppliers"] }); } }); }
 export function useDeleteSupplier() { const qc = useQueryClient(); return useMutation({ mutationFn: (id: string) => json(`/api/suppliers/${id}`, { method: "DELETE" }), onSuccess: () => qc.invalidateQueries({ queryKey: ["suppliers"] }) }); }
 
 export type SupplierQuotationFilters = { numero?: string; referencia?: string; supplierId?: string; status?: string; tipo?: string; dataInicial?: string; dataFinal?: string };

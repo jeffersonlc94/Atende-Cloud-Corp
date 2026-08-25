@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canAccessModule } from "@/lib/permissions";
 import { getRequestIp, registerAudit } from "@/lib/audit";
+import { Prisma } from "@prisma/client";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -15,9 +16,9 @@ export async function POST(req: NextRequest, { params }: Params) {
   const duplicate = await prisma.$transaction(async tx => {
     const counter = await tx.supplierQuotationCounter.upsert({ where: { id: "default" }, create: { lastNum: 1 }, update: { lastNum: { increment: 1 } } });
     return tx.supplierQuotation.create({ data: {
-      numero: String(counter.lastNum).padStart(6, "0"), companyId: source.companyId, tipo: source.tipo,
+      numero: String(counter.lastNum).padStart(6, "0"), companyId: null, tipo: source.tipo,
       primarySupplierId: source.primarySupplierId, referencia: source.referencia ? `Cópia - ${source.referencia}` : "Cópia",
-      dataCotacao: new Date(), observacoes: source.observacoes, observacoesInternas: source.observacoesInternas,
+      dataCotacao: new Date(), observacoes: source.observacoes, observacoesInternas: source.observacoesInternas, fotosInternas: source.fotosInternas as Prisma.InputJsonValue,
       status: "Rascunho", total: source.total, createdByUserId: session.user.id, updatedByUserId: session.user.id,
       itens: { create: source.itens.map(i => ({ ordem: i.ordem, supplierId: i.supplierId, codigoProduto: i.codigoProduto,
         codigoFornecedor: i.codigoFornecedor, descricao: i.descricao, fotoUrl: i.fotoUrl, quantidade: i.quantidade,
