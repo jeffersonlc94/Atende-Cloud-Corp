@@ -78,7 +78,7 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
             onExpand={onExpand}
             isActive={(item) =>
               item.href === "/cotacoes"
-                ? pathname === "/cotacoes" || /^\/cotacoes\/[^/]+$/.test(pathname)
+                ? pathname === "/cotacoes" || (/^\/cotacoes\/[^/]+$/.test(pathname) && pathname !== "/cotacoes/novo")
                 : pathname === item.href || (item.href === "/fornecedores" && pathname.startsWith("/fornecedores"))
             }
           />

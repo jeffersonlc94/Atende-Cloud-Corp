@@ -281,8 +281,8 @@ model Supplier {
 model SupplierQuotation {
   id                  String                  @id @default(cuid())
   numero              String                  @unique
-  companyId           String
-  company             Company                 @relation(fields: [companyId], references: [id])
+  companyId           String?
+  company             Company?                @relation(fields: [companyId], references: [id])
   tipo                SupplierQuotationType   @default(FornecedorUnico)
   primarySupplierId   String?
   primarySupplier     Supplier?               @relation("PrimarySupplier", fields: [primarySupplierId], references: [id])
@@ -290,6 +290,7 @@ model SupplierQuotation {
   dataCotacao         DateTime                @default(now())
   observacoes         String?
   observacoesInternas String?
+  fotosInternas       Json                    @default("[]")
   status              SupplierQuotationStatus @default(EmCotacao)
   total               Decimal                 @default(0) @db.Decimal(14, 2)
   createdByUserId     String?

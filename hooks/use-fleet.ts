@@ -420,6 +420,7 @@ export function useCreateVehicleDocument(vehicleId: string) {
       qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] });
       qc.invalidateQueries({ queryKey: ["vehicle-documents-all"] });
       qc.invalidateQueries({ queryKey: ["fleet-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["fleet-alerts"] });
       qc.invalidateQueries({ queryKey: ["vehicles", vehicleId] });
     },
   });
@@ -436,6 +437,9 @@ export function useUpdateVehicleDocument(vehicleId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] });
       qc.invalidateQueries({ queryKey: ["vehicle-documents-all"] });
+      qc.invalidateQueries({ queryKey: ["fleet-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["fleet-alerts"] });
+      qc.invalidateQueries({ queryKey: ["vehicles", vehicleId] });
     },
   });
 }
@@ -448,6 +452,9 @@ export function useDeleteVehicleDocument(vehicleId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicle-documents", vehicleId] });
       qc.invalidateQueries({ queryKey: ["vehicle-documents-all"] });
+      qc.invalidateQueries({ queryKey: ["fleet-dashboard"] });
+      qc.invalidateQueries({ queryKey: ["fleet-alerts"] });
+      qc.invalidateQueries({ queryKey: ["vehicles", vehicleId] });
     },
   });
 }

@@ -57,10 +57,10 @@ export async function POST(req: NextRequest) {
     }
     return tx.supplierQuotation.create({
       data: {
-        numero, companyId: d.companyId, tipo: d.tipo,
+        numero, companyId: null, tipo: d.tipo,
         primarySupplierId: d.tipo === "FornecedorUnico" ? d.primarySupplierId : null,
         referencia: d.referencia || null, dataCotacao: new Date(d.dataCotacao),
-        observacoes: d.observacoes || null, observacoesInternas: d.observacoesInternas || null,
+        observacoes: d.observacoes || null, observacoesInternas: d.observacoesInternas || null, fotosInternas: d.fotosInternas,
         status: d.status, total, createdByUserId: session.user.id, updatedByUserId: session.user.id,
         itens: { create: d.itens.map((item, index) => ({
           ordem: index,

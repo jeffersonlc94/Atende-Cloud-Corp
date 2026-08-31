@@ -23,6 +23,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const id = (await params).id;
   const before = await prisma.supplierQuotation.findUnique({ where: { id }, include: { itens: true } });
   if (!before) return NextResponse.json({ error: "Cotação não encontrada." }, { status: 404 });
+  if (before.status === "Finalizada") return NextResponse.json({ error: "Cotação finalizada. Reabra antes de editar." }, { status: 423 });
   const parsed = supplierQuotationSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   const d = parsed.data;
@@ -30,10 +31,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const quotation = await prisma.$transaction(async (tx) => {
     await tx.supplierQuotationItem.deleteMany({ where: { quotationId: id } });
     return tx.supplierQuotation.update({ where: { id }, data: {
-      numero: d.numero || before.numero, companyId: d.companyId, tipo: d.tipo,
+      numero: d.numero || before.numero, companyId: null, tipo: d.tipo,
       primarySupplierId: d.tipo === "FornecedorUnico" ? d.primarySupplierId : null,
       referencia: d.referencia || null, dataCotacao: new Date(d.dataCotacao),
-      observacoes: d.observacoes || null, observacoesInternas: d.observacoesInternas || null,
+      observacoes: d.observacoes || null, observacoesInternas: d.observacoesInternas || null, fotosInternas: d.fotosInternas,
       status: d.status, total, updatedByUserId: session.user.id,
       itens: { create: d.itens.map((item, index) => ({ ordem: index,
         supplierId: d.tipo === "FornecedorUnico" ? d.primarySupplierId : item.supplierId,
