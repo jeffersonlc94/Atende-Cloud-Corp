@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { navItems, orcamentosNavItems, cotacoesNavItems, frotaNavItems, type NavItem } from "./nav-items";
 import { useSystemSettings } from "@/hooks/use-settings";
-import { ChevronDown, Leaf, FileText, ShoppingCart, Truck, Boxes, GraduationCap, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
+import { ChevronDown, Leaf, FileText, ShoppingCart, Truck, Boxes, GraduationCap, HardDriveDownload, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -47,6 +47,7 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
   const canEstoque = isAdmin || session?.user?.canAccessEstoque !== false;
   const canTreinamentos = isAdmin || session?.user?.canAccessTreinamentos !== false;
   const canCotacoes = isAdmin || session?.user?.canAccessCotacoes !== false;
+  const canArquivosTecnicos = isAdmin || session?.user?.canAccessArquivosTecnicos !== false;
 
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
@@ -131,6 +132,15 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
           label="Treinamentos"
           Icon={GraduationCap}
           active={pathname.startsWith("/treinamentos")}
+          onNavigate={onNavigate}
+          collapsed={collapsed}
+        />}
+
+        {canArquivosTecnicos && <NavLink
+          href="/arquivos-tecnicos"
+          label="Drivers e Arquivos"
+          Icon={HardDriveDownload}
+          active={pathname.startsWith("/arquivos-tecnicos")}
           onNavigate={onNavigate}
           collapsed={collapsed}
         />}

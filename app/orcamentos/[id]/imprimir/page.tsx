@@ -10,6 +10,14 @@ import {
   type QuotePrintLayoutId,
 } from "@/components/quotes/quote-print-layout";
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -43,12 +51,14 @@ export default function ImprimirOrcamentoPage({
   const { data: quote, isLoading } = useQuote(id);
   const printRef = useRef<HTMLDivElement>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfSizeDialogOpen, setPdfSizeDialogOpen] = useState(false);
   const [layout, setLayout] = useState<QuotePrintLayoutId>("classico");
   const [fontFamilyKey, setFontFamilyKey] = useState<(typeof fontFamilyOptions)[number]["value"]>("default");
   const [fontSizeKey, setFontSizeKey] = useState<(typeof fontSizeOptions)[number]["value"]>("1");
 
-  async function handleGeneratePdf() {
+  async function handleGeneratePdf(size: "standard" | "reduced") {
     if (!printRef.current || !quote) return;
+    setPdfSizeDialogOpen(false);
     setGeneratingPdf(true);
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
@@ -58,13 +68,19 @@ export default function ImprimirOrcamentoPage({
 
       const pages = Array.from(printRef.current.querySelectorAll<HTMLElement>(".quote-print-page"));
       if (!pages.length) throw new Error("Nenhuma página disponível para gerar o PDF");
-      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const reduced = size === "reduced";
+      const pdf = new jsPDF({
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait",
+        compress: reduced,
+      });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       for (let index = 0; index < pages.length; index++) {
         const page = pages[index];
         const canvas = await html2canvas(page, {
-          scale: 2,
+          scale: reduced ? 1.25 : 2,
           useCORS: true,
           backgroundColor: "#ffffff",
           width: page.scrollWidth,
@@ -73,7 +89,20 @@ export default function ImprimirOrcamentoPage({
           windowHeight: page.scrollHeight,
         });
         if (index > 0) pdf.addPage();
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, pageHeight);
+        if (reduced) {
+          pdf.addImage(
+            canvas.toDataURL("image/jpeg", 0.72),
+            "JPEG",
+            0,
+            0,
+            pageWidth,
+            pageHeight,
+            undefined,
+            "FAST",
+          );
+        } else {
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidth, pageHeight);
+        }
       }
 
       pdf.save(`orcamento-${quote.numero}.pdf`);
@@ -147,7 +176,7 @@ export default function ImprimirOrcamentoPage({
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="mr-2 h-4 w-4" /> Imprimir
           </Button>
-          <Button onClick={handleGeneratePdf} disabled={generatingPdf}>
+          <Button onClick={() => setPdfSizeDialogOpen(true)} disabled={generatingPdf}>
             {generatingPdf ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -188,6 +217,30 @@ export default function ImprimirOrcamentoPage({
           />
         </div>
       </div>
+
+      <Dialog open={pdfSizeDialogOpen} onOpenChange={setPdfSizeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Escolha o tamanho do orçamento</DialogTitle>
+            <DialogDescription>
+              O formato reduzido gera um arquivo menor, próximo de 2 MB, ideal para enviar por e-mail ou WhatsApp.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-2 sm:grid-cols-2">
+            <Button variant="outline" className="h-auto flex-col items-start gap-1 p-4 text-left" onClick={() => handleGeneratePdf("standard")}>
+              <span className="font-semibold">Tamanho padrão</span>
+              <span className="whitespace-normal text-xs font-normal text-muted-foreground">Maior qualidade e arquivo mais pesado.</span>
+            </Button>
+            <Button className="h-auto flex-col items-start gap-1 p-4 text-left" onClick={() => handleGeneratePdf("reduced")}>
+              <span className="font-semibold">Tamanho reduzido</span>
+              <span className="whitespace-normal text-xs font-normal text-primary-foreground/80">Arquivo compactado, aproximadamente 2 MB.</span>
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPdfSizeDialogOpen(false)}>Cancelar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

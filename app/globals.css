@@ -157,6 +157,17 @@ html {
   background: white;
 }
 
+/* Textos auxiliares dos modelos devem continuar legíveis na impressão.
+   Mantém as cores da identidade visual e converte somente tons cinza em preto. */
+.quote-print-page[class*="text-gray-"],
+.quote-print-page[class*="text-slate-"],
+.quote-print-page[class*="text-neutral-"],
+.quote-print-page [class*="text-gray-"],
+.quote-print-page [class*="text-slate-"],
+.quote-print-page [class*="text-neutral-"] {
+  color: #000 !important;
+}
+
 .quote-print-page > div {
   max-width: none !important;
   padding: 0 !important;

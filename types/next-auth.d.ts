@@ -11,6 +11,7 @@ declare module "next-auth" {
       canAccessEstoque: boolean;
       canAccessTreinamentos: boolean;
       canAccessCotacoes: boolean;
+      canAccessArquivosTecnicos: boolean;
     } & DefaultSession["user"];
   }
 
@@ -22,6 +23,7 @@ declare module "next-auth" {
     canAccessEstoque?: boolean;
     canAccessTreinamentos?: boolean;
     canAccessCotacoes?: boolean;
+    canAccessArquivosTecnicos?: boolean;
   }
 }
 
@@ -35,5 +37,6 @@ declare module "next-auth/jwt" {
     canAccessEstoque?: boolean;
     canAccessTreinamentos?: boolean;
     canAccessCotacoes?: boolean;
+    canAccessArquivosTecnicos?: boolean;
   }
 }

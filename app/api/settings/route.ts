@@ -78,6 +78,7 @@ export async function PUT(req: NextRequest) {
   if (hasKey("maintenanceMessage")) updateData.maintenanceMessage = data.maintenanceMessage || null;
   if (hasKey("trainingVideoMaxMb")) updateData.trainingVideoMaxMb = data.trainingVideoMaxMb ?? 0;
   if (hasKey("trainingDocumentMaxMb")) updateData.trainingDocumentMaxMb = data.trainingDocumentMaxMb ?? 50;
+  if (hasKey("technicalFileMaxMb")) updateData.technicalFileMaxMb = data.technicalFileMaxMb ?? 500;
   if (hasKey("notificationCargoPrefs")) {
     updateData.notificationCargoPrefs = data.notificationCargoPrefs ?? {};
   }

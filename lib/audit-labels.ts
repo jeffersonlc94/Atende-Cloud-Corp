@@ -13,6 +13,8 @@ export const entidadeOptions = [
   "Database",
   "Supplier",
   "SupplierQuotation",
+  "TechnicalFile",
+  "TechnicalCategory",
 ] as const;
 
 export const entidadeLabels: Record<string, string> = {
@@ -27,6 +29,8 @@ export const entidadeLabels: Record<string, string> = {
   SystemSettings: "Configurações do Sistema",
   Supplier: "Fornecedor",
   SupplierQuotation: "Cotação de fornecedor",
+  TechnicalFile: "Arquivo técnico",
+  TechnicalCategory: "Categoria de arquivo técnico",
 };
 
 export const acaoLabels: Record<string, string> = {
@@ -34,6 +38,7 @@ export const acaoLabels: Record<string, string> = {
   create: "Criação",
   update: "Atualização",
   delete: "Exclusão",
+  download: "Download",
 };
 
 export function labelForEntidade(entidade: string): string {
@@ -62,6 +67,8 @@ const auditFieldLabels: Record<string, string> = {
   observacoes: "Observações", updatedByUserId: "Atualizado por",
   supplierId: "Fornecedor", primarySupplierId: "Fornecedor principal", tipo: "Tipo da cotação",
   dataCotacao: "Data da cotação", codigoProduto: "Código do produto", codigoFornecedor: "Código do fornecedor",
+  fabricante: "Fabricante", produto: "Produto / modelo", versao: "Versão",
+  sistemaOperacional: "Sistema operacional", categoryId: "Categoria", nomeOriginal: "Nome do arquivo",
 };
 
 export function labelForAuditField(field: string): string {
