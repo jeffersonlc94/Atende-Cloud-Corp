@@ -12,7 +12,10 @@ export async function GET() {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canAccessModule(session, "arquivosTecnicos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
-  return NextResponse.json(await prisma.technicalOption.findMany({ orderBy: [{ kind: "asc" }, { nome: "asc" }] }));
+  return NextResponse.json(
+    await prisma.technicalOption.findMany({ orderBy: [{ kind: "asc" }, { nome: "asc" }] }),
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } },
+  );
 }
 
 export async function POST(req: NextRequest) {

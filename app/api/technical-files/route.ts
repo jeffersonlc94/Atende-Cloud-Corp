@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       fabricantes: [...new Set(allOptions.map((item) => item.fabricante).filter(Boolean))].sort(),
       produtos: [...new Set(allOptions.map((item) => item.produto).filter(Boolean))].sort(),
     },
-  });
+  }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
 
 export async function POST(req: NextRequest) {
