@@ -44,14 +44,20 @@ export async function GET(req: NextRequest) {
       fabricantes: [...new Set(allOptions.map((item) => item.fabricante).filter(Boolean))].sort(),
       produtos: [...new Set(allOptions.map((item) => item.produto).filter(Boolean))].sort(),
     },
-  });
+  }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
 
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!canAccessModule(session, "arquivosTecnicos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
-  const form = await req.formData();
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch (error) {
+    console.error("[technical-files] Falha ao interpretar o upload:", error);
+    return NextResponse.json({ error: "Não foi possível receber o arquivo. Verifique o tamanho máximo permitido no proxy do servidor." }, { status: 413 });
+  }
   const file = form.get("file") as File | null;
   const nome = String(form.get("nome") || "").trim();
   const produto = String(form.get("produto") || "").trim();
@@ -67,12 +73,19 @@ export async function POST(req: NextRequest) {
   let saved: Awaited<ReturnType<typeof saveTechnicalFile>> | null = null;
   try {
     saved = await saveTechnicalFile(file);
+    const fabricanteValue = String(form.get("fabricante") || "").trim().slice(0, 100);
+    const sistemaValue = String(form.get("sistemaOperacional") || "").trim().slice(0, 120);
+    await Promise.all([
+      prisma.technicalOption.upsert({ where: { kind_nome: { kind: "Produto", nome: produto.slice(0, 160) } }, update: {}, create: { kind: "Produto", nome: produto.slice(0, 160) } }),
+      ...(fabricanteValue ? [prisma.technicalOption.upsert({ where: { kind_nome: { kind: "Fabricante" as const, nome: fabricanteValue } }, update: {}, create: { kind: "Fabricante" as const, nome: fabricanteValue } })] : []),
+      ...(sistemaValue ? [prisma.technicalOption.upsert({ where: { kind_nome: { kind: "SistemaOperacional" as const, nome: sistemaValue } }, update: {}, create: { kind: "SistemaOperacional" as const, nome: sistemaValue } })] : []),
+    ]);
     const item = await prisma.technicalFile.create({
       data: {
         nome: nome.slice(0, 160), descricao: descricao || null, tipo,
-        fabricante: String(form.get("fabricante") || "").trim().slice(0, 100) || null,
+        fabricante: fabricanteValue || null,
         produto: produto.slice(0, 160), versao: String(form.get("versao") || "").trim().slice(0, 80) || null,
-        sistemaOperacional: String(form.get("sistemaOperacional") || "").trim().slice(0, 120) || null,
+        sistemaOperacional: sistemaValue || null,
         nomeOriginal: saved.originalName, nomeArmazenado: saved.storedName, mimeType: file.type || null,
         tamanhoBytes: file.size, categoryId, createdByUserId: session.user.id,
       },
@@ -81,7 +94,12 @@ export async function POST(req: NextRequest) {
     await registerAudit({ userId: session.user.id, acao: "create", entidade: "TechnicalFile", entidadeId: item.id, detalhes: { nome: item.nome, produto: item.produto, nomeOriginal: item.nomeOriginal }, ip: getRequestIp(req) });
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
+    console.error("[technical-files] Falha ao salvar arquivo:", error);
     if (saved) await removeTechnicalFile(saved.storedName);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Não foi possível salvar o arquivo" }, { status: 400 });
+    const code = (error as NodeJS.ErrnoException)?.code;
+    const message = code === "EACCES" || code === "EPERM"
+      ? "O servidor não possui permissão para gravar no volume de arquivos. Reconstrua o contêiner com esta atualização."
+      : error instanceof Error ? error.message : "Não foi possível salvar o arquivo";
+    return NextResponse.json({ error: message }, { status: code === "EACCES" || code === "EPERM" ? 500 : 400 });
   }
 }

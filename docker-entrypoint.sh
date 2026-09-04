@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# Volumes nomeados podem ser criados como root pelo Docker. Corrige a
+# propriedade em toda inicialização e executa a aplicação sem privilégios.
+mkdir -p /app/public/uploads /app/storage/technical-files
+chown -R nextjs:nodejs /app/public/uploads /app/storage
+
 echo "Aplicando migrations (aguardando banco de dados ficar disponível)..."
 attempt=0
 until node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma; do
@@ -17,4 +22,4 @@ echo "Executando seed inicial (idempotente)..."
 node_modules/.bin/tsx prisma/seed.ts || echo "Seed não aplicado (pode já existir ou ter falhado de forma não crítica)."
 
 echo "Iniciando aplicação..."
-exec "$@"
+exec su-exec nextjs "$@"

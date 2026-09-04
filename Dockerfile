@@ -23,7 +23,7 @@ RUN npm run build
 ##### Etapa 3: runtime #####
 FROM node:22-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache openssl tzdata postgresql-client
+RUN apk add --no-cache openssl tzdata postgresql-client su-exec
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -42,8 +42,6 @@ RUN mkdir -p ./public/uploads \
   && chown -R nextjs:nodejs ./public/uploads ./storage \
   && sed -i 's/\r$//' ./docker-entrypoint.sh \
   && chmod +x ./docker-entrypoint.sh
-
-USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000

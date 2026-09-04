@@ -14,7 +14,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const id = (await params).id;
   const before = await prisma.technicalFile.findUnique({ where: { id } });
   if (!before) return NextResponse.json({ error: "Arquivo não encontrado" }, { status: 404 });
-  const form = await req.formData();
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch (error) {
+    console.error("[technical-files] Falha ao interpretar a substituição:", error);
+    return NextResponse.json({ error: "Não foi possível receber o arquivo. Verifique o tamanho máximo permitido no proxy do servidor." }, { status: 413 });
+  }
   const file = form.get("file") as File | null;
   const nome = String(form.get("nome") || "").trim();
   const produto = String(form.get("produto") || "").trim();
@@ -32,13 +38,20 @@ export async function PUT(req: NextRequest, { params }: Params) {
       if (maxMb > 0 && file.size > maxMb * 1024 * 1024) return NextResponse.json({ error: `Arquivo muito grande (limite configurado: ${maxMb} MB)` }, { status: 413 });
       saved = await saveTechnicalFile(file);
     }
+    const fabricanteValue = String(form.get("fabricante") || "").trim().slice(0, 100);
+    const sistemaValue = String(form.get("sistemaOperacional") || "").trim().slice(0, 120);
+    await Promise.all([
+      prisma.technicalOption.upsert({ where: { kind_nome: { kind: "Produto", nome: produto.slice(0, 160) } }, update: {}, create: { kind: "Produto", nome: produto.slice(0, 160) } }),
+      ...(fabricanteValue ? [prisma.technicalOption.upsert({ where: { kind_nome: { kind: "Fabricante" as const, nome: fabricanteValue } }, update: {}, create: { kind: "Fabricante" as const, nome: fabricanteValue } })] : []),
+      ...(sistemaValue ? [prisma.technicalOption.upsert({ where: { kind_nome: { kind: "SistemaOperacional" as const, nome: sistemaValue } }, update: {}, create: { kind: "SistemaOperacional" as const, nome: sistemaValue } })] : []),
+    ]);
     const item = await prisma.technicalFile.update({
       where: { id },
       data: {
         nome: nome.slice(0, 160), descricao: descricao || null, tipo,
-        fabricante: String(form.get("fabricante") || "").trim().slice(0, 100) || null,
+        fabricante: fabricanteValue || null,
         produto: produto.slice(0, 160), versao: String(form.get("versao") || "").trim().slice(0, 80) || null,
-        sistemaOperacional: String(form.get("sistemaOperacional") || "").trim().slice(0, 120) || null,
+        sistemaOperacional: sistemaValue || null,
         categoryId,
         ...(saved && file ? { nomeOriginal: saved.originalName, nomeArmazenado: saved.storedName, mimeType: file.type || null, tamanhoBytes: file.size } : {}),
       },
@@ -48,8 +61,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
     await registerAudit({ userId: session.user.id, acao: "update", entidade: "TechnicalFile", entidadeId: id, detalhes: buildAuditChanges(before as unknown as Record<string, unknown>, item as unknown as Record<string, unknown>, { ignore: ["category", "createdByUser"] }), ip: getRequestIp(req) });
     return NextResponse.json(item);
   } catch (error) {
+    console.error("[technical-files] Falha ao atualizar arquivo:", error);
     if (saved) await removeTechnicalFile(saved.storedName);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Não foi possível atualizar" }, { status: 400 });
+    const code = (error as NodeJS.ErrnoException)?.code;
+    const message = code === "EACCES" || code === "EPERM"
+      ? "O servidor não possui permissão para gravar no volume de arquivos. Reconstrua o contêiner com esta atualização."
+      : error instanceof Error ? error.message : "Não foi possível atualizar";
+    return NextResponse.json({ error: message }, { status: code === "EACCES" || code === "EPERM" ? 500 : 400 });
   }
 }
 
