@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 type TechnicalType = "Driver" | "Firmware" | "Manual" | "Utilitario" | "Outro";
@@ -29,6 +30,8 @@ type TechnicalFile = {
   createdAt: string; updatedAt: string;
 };
 type ApiResponse = { items: TechnicalFile[]; filters: { fabricantes: string[]; produtos: string[] } };
+type OptionKind = "Fabricante" | "Produto" | "SistemaOperacional";
+type TechnicalOption = { id: string; kind: OptionKind; nome: string };
 type FormState = {
   nome: string; descricao: string; tipo: TechnicalType; fabricante: string;
   produto: string; versao: string; sistemaOperacional: string; categoryId: string;
@@ -72,6 +75,7 @@ export default function TechnicalFilesPage() {
   const updateSettings = useUpdateSystemSettings();
   const [items, setItems] = useState<TechnicalFile[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [technicalOptions, setTechnicalOptions] = useState<TechnicalOption[]>([]);
   const [available, setAvailable] = useState<ApiResponse["filters"]>({ fabricantes: [], produtos: [] });
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
@@ -90,6 +94,9 @@ export default function TechnicalFilesPage() {
   const [newCategory, setNewCategory] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
+  const [newOptionNames, setNewOptionNames] = useState<Record<OptionKind, string>>({ Fabricante: "", Produto: "", SistemaOperacional: "" });
+  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [optionNames, setOptionNames] = useState<Record<string, string>>({});
   const [limitsOpen, setLimitsOpen] = useState(false);
   const [maxMb, setMaxMb] = useState("500");
 
@@ -121,6 +128,13 @@ export default function TechnicalFilesPage() {
     setCategories(body);
   }, []);
 
+  const loadOptions = useCallback(async () => {
+    const response = await fetch("/api/technical-options");
+    const body = await response.json().catch(() => []);
+    if (!response.ok) throw new Error(body.error || "Erro ao carregar os cadastros auxiliares");
+    setTechnicalOptions(body);
+  }, []);
+
   const loadFiles = useCallback(async () => {
     if (!canAccess) return;
     setLoading(true);
@@ -145,8 +159,8 @@ export default function TechnicalFilesPage() {
 
   useEffect(() => {
     if (!canAccess) return;
-    loadCategories().catch((error) => toast.error(error.message));
-  }, [canAccess, loadCategories]);
+    Promise.all([loadCategories(), loadOptions()]).catch((error) => toast.error(error.message));
+  }, [canAccess, loadCategories, loadOptions]);
 
   useEffect(() => {
     const timeout = window.setTimeout(loadFiles, 250);
@@ -154,8 +168,9 @@ export default function TechnicalFilesPage() {
   }, [loadFiles]);
 
   const hasFilters = busca || categoryId !== "all" || tipo !== "all" || fabricante !== "all" || produto !== "all";
-  const productsForForm = useMemo(() => [...new Set([...available.produtos, ...items.map((item) => item.produto)])].sort(), [available.produtos, items]);
-  const manufacturersForForm = useMemo(() => [...new Set([...available.fabricantes, ...items.map((item) => item.fabricante).filter(Boolean) as string[]])].sort(), [available.fabricantes, items]);
+  const productsForForm = useMemo(() => [...new Set([...technicalOptions.filter((option) => option.kind === "Produto").map((option) => option.nome), ...available.produtos, ...items.map((item) => item.produto)])].sort(), [available.produtos, items, technicalOptions]);
+  const manufacturersForForm = useMemo(() => [...new Set([...technicalOptions.filter((option) => option.kind === "Fabricante").map((option) => option.nome), ...available.fabricantes, ...items.map((item) => item.fabricante).filter(Boolean) as string[]])].sort(), [available.fabricantes, items, technicalOptions]);
+  const systemsForForm = useMemo(() => technicalOptions.filter((option) => option.kind === "SistemaOperacional").map((option) => option.nome), [technicalOptions]);
 
   function changeView(mode: "table" | "grid") {
     setViewMode(mode);
@@ -218,6 +233,31 @@ export default function TechnicalFilesPage() {
     setEditingCategoryId(null); toast.success("Categoria atualizada"); await loadCategories(); await loadFiles();
   }
 
+  async function createOption(kind: OptionKind) {
+    const nome = newOptionNames[kind].trim();
+    if (!nome) return;
+    const response = await fetch("/api/technical-options", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, nome }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) return toast.error(body.error || "Erro ao criar cadastro");
+    setNewOptionNames((current) => ({ ...current, [kind]: "" })); toast.success("Cadastro criado"); await loadOptions();
+  }
+
+  async function renameOption(option: TechnicalOption) {
+    const response = await fetch(`/api/technical-options/${option.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: optionNames[option.id] ?? option.nome }) });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) return toast.error(body.error || "Erro ao renomear");
+    setEditingOptionId(null); toast.success("Cadastro e arquivos vinculados atualizados"); await loadOptions(); await loadFiles();
+  }
+
+  function optionManager(kind: OptionKind, label: string, placeholder: string) {
+    const options = technicalOptions.filter((option) => option.kind === kind);
+    return <div className="space-y-3 pt-3">
+      <div className="flex gap-2"><Input value={newOptionNames[kind]} maxLength={160} onChange={(e) => setNewOptionNames((current) => ({ ...current, [kind]: e.target.value }))} placeholder={placeholder} /><Button onClick={() => createOption(kind)}><Plus className="mr-2 h-4 w-4" /> Criar</Button></div>
+      <p className="text-xs text-muted-foreground">Ao renomear, todos os arquivos que usam este {label.toLowerCase()} serão atualizados.</p>
+      <div className="max-h-[45vh] space-y-2 overflow-y-auto">{options.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Nenhum cadastro.</p> : options.map((option) => <div key={option.id} className="flex items-center gap-2 rounded-lg border p-2">{editingOptionId === option.id ? <><Input autoFocus value={optionNames[option.id] ?? option.nome} onChange={(e) => setOptionNames((current) => ({ ...current, [option.id]: e.target.value }))} /><Button variant="outline" onClick={() => renameOption(option)}>Salvar</Button></> : <><Badge variant="secondary" className="min-w-0 flex-1 justify-start truncate px-3 py-2 text-sm">{option.nome}</Badge><Button variant="ghost" size="icon-sm" title={`Editar ${label.toLowerCase()}`} onClick={() => { setOptionNames((current) => ({ ...current, [option.id]: option.nome })); setEditingOptionId(option.id); }}><Pencil className="h-4 w-4" /></Button></>}<Button variant="ghost" size="icon-sm" className="text-destructive" title={`Excluir ${label.toLowerCase()}`} onClick={async () => { const response = await fetch(`/api/technical-options/${option.id}`, { method: "DELETE" }); const body = await response.json().catch(() => ({})); if (!response.ok) return toast.error(body.error || "Erro ao excluir"); toast.success("Cadastro excluído da lista"); await loadOptions(); }}><Trash2 className="h-4 w-4" /></Button></div>)}</div>
+    </div>;
+  }
+
   if (session && !canAccess) return <Card><CardContent className="py-16 text-center text-muted-foreground">Você não possui acesso ao módulo Drivers e Arquivos Técnicos.</CardContent></Card>;
 
   return <div className="space-y-5">
@@ -225,7 +265,7 @@ export default function TechnicalFilesPage() {
       <div><h1 className="flex items-center gap-2 text-2xl font-bold"><HardDriveDownload className="h-6 w-6 text-primary" /> Drivers e Arquivos Técnicos</h1><p className="text-sm text-muted-foreground">Biblioteca interna de drivers, firmwares, manuais e utilitários.</p></div>
       <div className="flex flex-wrap gap-2">
         <div className="flex items-center rounded-md border p-0.5"><Button variant={viewMode === "table" ? "secondary" : "ghost"} size="icon" title="Tabela" onClick={() => changeView("table")}><List className="h-4 w-4" /></Button><Button variant={viewMode === "grid" ? "secondary" : "ghost"} size="icon" title="Grade" onClick={() => changeView("grid")}><LayoutGrid className="h-4 w-4" /></Button></div>
-        {isAdmin && <><Button variant="outline" onClick={() => { setCategoryNames(Object.fromEntries(categories.map((c) => [c.id, c.nome]))); setCategoriesOpen(true); }}><Tags className="mr-2 h-4 w-4" /> Categorias</Button><Button variant="outline" onClick={() => setLimitsOpen(true)}><Settings className="mr-2 h-4 w-4" /> Limite</Button></>}
+        {isAdmin && <><Button variant="outline" onClick={() => { setCategoryNames(Object.fromEntries(categories.map((c) => [c.id, c.nome]))); setOptionNames(Object.fromEntries(technicalOptions.map((option) => [option.id, option.nome]))); setCategoriesOpen(true); }}><Tags className="mr-2 h-4 w-4" /> Cadastros</Button><Button variant="outline" onClick={() => setLimitsOpen(true)}><Settings className="mr-2 h-4 w-4" /> Limite</Button></>}
         <Button onClick={() => openForm()}><Plus className="mr-2 h-4 w-4" /> Novo arquivo</Button>
       </div>
     </div>
@@ -250,13 +290,13 @@ export default function TechnicalFilesPage() {
       <div className="space-y-2"><Label>Fabricante</Label><Input list="technical-manufacturers" maxLength={100} value={form.fabricante} onChange={(e) => setForm((current) => ({ ...current, fabricante: e.target.value }))} placeholder="Ex.: Epson" /><datalist id="technical-manufacturers">{manufacturersForForm.map((value) => <option key={value} value={value} />)}</datalist></div>
       <div className="space-y-2"><Label>Produto / modelo *</Label><Input list="technical-products" maxLength={160} value={form.produto} onChange={(e) => setForm((current) => ({ ...current, produto: e.target.value }))} placeholder="Ex.: TM-T20X" /><datalist id="technical-products">{productsForForm.map((value) => <option key={value} value={value} />)}</datalist></div>
       <div className="space-y-2"><Label>Versão</Label><Input maxLength={80} value={form.versao} onChange={(e) => setForm((current) => ({ ...current, versao: e.target.value }))} placeholder="Ex.: 3.2.1" /></div>
-      <div className="space-y-2"><Label>Sistema operacional</Label><Input maxLength={120} value={form.sistemaOperacional} onChange={(e) => setForm((current) => ({ ...current, sistemaOperacional: e.target.value }))} placeholder="Ex.: Windows 10/11 64 bits" /></div>
+      <div className="space-y-2"><Label>Sistema operacional</Label><Input list="technical-systems" maxLength={120} value={form.sistemaOperacional} onChange={(e) => setForm((current) => ({ ...current, sistemaOperacional: e.target.value }))} placeholder="Ex.: Windows 10/11 64 bits" /><datalist id="technical-systems">{systemsForForm.map((value) => <option key={value} value={value} />)}</datalist></div>
       <div className="space-y-2 sm:col-span-2"><div className="flex justify-between"><Label>Descrição</Label><span className="text-xs text-muted-foreground">{form.descricao.length}/500</span></div><Textarea rows={4} maxLength={500} value={form.descricao} onChange={(e) => setForm((current) => ({ ...current, descricao: e.target.value }))} /></div>
       <div className="space-y-2 sm:col-span-2"><Label>Arquivo {editing ? "(opcional para manter o atual)" : "*"}</Label><Input type="file" accept=".zip,.rar,.7z,.exe,.msi,.inf,.cab,.bin,.rom,.fw,.hex,.img,.iso,.pdf,.doc,.docx,.txt,.dmg,.pkg,.deb,.rpm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />{editing && !file && <p className="text-xs text-muted-foreground">Arquivo atual: {editing.nomeOriginal} ({formatBytes(editing.tamanhoBytes)})</p>}<p className="text-xs text-muted-foreground">Limite atual: {settings?.technicalFileMaxMb ? `${settings.technicalFileMaxMb} MB` : "sem limite no aplicativo"}. Arquivos com nomes iguais não são sobrescritos.</p></div>
       <div className="flex justify-end gap-2 sm:col-span-2"><Button variant="outline" onClick={() => setFormOpen(false)}>Cancelar</Button><Button onClick={save} disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}{editing ? "Salvar alterações" : "Enviar e cadastrar"}</Button></div>
     </div></DialogContent></Dialog>
 
-    <Dialog open={categoriesOpen} onOpenChange={setCategoriesOpen}><DialogContent className="max-w-xl"><DialogHeader><DialogTitle>Gerenciar categorias</DialogTitle><DialogDescription>Crie, renomeie ou exclua categorias sem arquivos vinculados.</DialogDescription></DialogHeader><div className="flex gap-2 border-b pb-4"><Input value={newCategory} maxLength={80} onChange={(e) => setNewCategory(e.target.value)} placeholder="Nova categoria" /><Button onClick={createCategory}><Plus className="mr-2 h-4 w-4" /> Criar</Button></div><div className="max-h-[55vh] space-y-2 overflow-y-auto">{categories.map((category) => <div key={category.id} className="flex items-center gap-2 rounded-lg border p-2">{editingCategoryId === category.id ? <><Input value={categoryNames[category.id] ?? category.nome} onChange={(e) => setCategoryNames((current) => ({ ...current, [category.id]: e.target.value }))} /><Button variant="outline" onClick={() => renameCategory(category)}>Salvar</Button></> : <><Badge variant="secondary" className="flex-1 justify-start px-3 py-2 text-sm">{category.nome}</Badge><Button variant="ghost" size="icon-sm" onClick={() => setEditingCategoryId(category.id)}><Pencil className="h-4 w-4" /></Button></>}<Button variant="ghost" size="icon-sm" className="text-destructive" onClick={async () => { const response = await fetch(`/api/technical-categories/${category.id}`, { method: "DELETE" }); const body = await response.json().catch(() => ({})); if (!response.ok) return toast.error(body.error || "Erro ao excluir"); toast.success("Categoria excluída"); await loadCategories(); }}><Trash2 className="h-4 w-4" /></Button></div>)}</div></DialogContent></Dialog>
+    <Dialog open={categoriesOpen} onOpenChange={setCategoriesOpen}><DialogContent className="max-w-3xl"><DialogHeader><DialogTitle>Gerenciar cadastros</DialogTitle><DialogDescription>Crie e edite as opções utilizadas na organização dos arquivos técnicos.</DialogDescription></DialogHeader><Tabs defaultValue="categories"><TabsList className="grid w-full grid-cols-4"><TabsTrigger value="categories">Categorias</TabsTrigger><TabsTrigger value="manufacturers">Fabricantes</TabsTrigger><TabsTrigger value="products">Produtos</TabsTrigger><TabsTrigger value="systems">Sistemas</TabsTrigger></TabsList><TabsContent value="categories" className="space-y-3 pt-3"><div className="flex gap-2"><Input value={newCategory} maxLength={80} onChange={(e) => setNewCategory(e.target.value)} placeholder="Nova categoria" /><Button onClick={createCategory}><Plus className="mr-2 h-4 w-4" /> Criar</Button></div><p className="text-xs text-muted-foreground">Categorias com arquivos vinculados podem ser renomeadas, mas não excluídas.</p><div className="max-h-[45vh] space-y-2 overflow-y-auto">{categories.map((category) => <div key={category.id} className="flex items-center gap-2 rounded-lg border p-2">{editingCategoryId === category.id ? <><Input value={categoryNames[category.id] ?? category.nome} onChange={(e) => setCategoryNames((current) => ({ ...current, [category.id]: e.target.value }))} /><Button variant="outline" onClick={() => renameCategory(category)}>Salvar</Button></> : <><Badge variant="secondary" className="flex-1 justify-start px-3 py-2 text-sm">{category.nome}</Badge><Button variant="ghost" size="icon-sm" title="Editar categoria" onClick={() => setEditingCategoryId(category.id)}><Pencil className="h-4 w-4" /></Button></>}<Button variant="ghost" size="icon-sm" className="text-destructive" title="Excluir categoria" onClick={async () => { const response = await fetch(`/api/technical-categories/${category.id}`, { method: "DELETE" }); const body = await response.json().catch(() => ({})); if (!response.ok) return toast.error(body.error || "Erro ao excluir"); toast.success("Categoria excluída"); await loadCategories(); }}><Trash2 className="h-4 w-4" /></Button></div>)}</div></TabsContent><TabsContent value="manufacturers">{optionManager("Fabricante", "Fabricante", "Novo fabricante")}</TabsContent><TabsContent value="products">{optionManager("Produto", "Produto", "Novo produto / modelo")}</TabsContent><TabsContent value="systems">{optionManager("SistemaOperacional", "Sistema operacional", "Novo sistema operacional")}</TabsContent></Tabs></DialogContent></Dialog>
 
     <Dialog open={limitsOpen} onOpenChange={setLimitsOpen}><DialogContent className="max-w-md"><DialogHeader><DialogTitle>Limite de upload</DialogTitle><DialogDescription>Defina o tamanho máximo de drivers, firmwares e demais arquivos. Use 0 para não limitar pelo aplicativo.</DialogDescription></DialogHeader><div className="space-y-4"><div className="space-y-2"><Label>Limite por arquivo (MB)</Label><Input type="number" min="0" value={maxMb} onChange={(e) => setMaxMb(e.target.value)} /><p className="text-xs text-muted-foreground">O proxy ou servidor web ainda pode possuir um limite próprio.</p></div><div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setLimitsOpen(false)}>Cancelar</Button><Button disabled={updateSettings.isPending} onClick={async () => { try { await updateSettings.mutateAsync({ technicalFileMaxMb: Math.max(0, Number(maxMb) || 0) }); toast.success("Limite atualizado"); setLimitsOpen(false); } catch (error) { toast.error(error instanceof Error ? error.message : "Erro ao salvar limite"); } }}>{updateSettings.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar</Button></div></div></DialogContent></Dialog>
 

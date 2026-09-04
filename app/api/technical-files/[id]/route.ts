@@ -32,13 +32,20 @@ export async function PUT(req: NextRequest, { params }: Params) {
       if (maxMb > 0 && file.size > maxMb * 1024 * 1024) return NextResponse.json({ error: `Arquivo muito grande (limite configurado: ${maxMb} MB)` }, { status: 413 });
       saved = await saveTechnicalFile(file);
     }
+    const fabricanteValue = String(form.get("fabricante") || "").trim().slice(0, 100);
+    const sistemaValue = String(form.get("sistemaOperacional") || "").trim().slice(0, 120);
+    await Promise.all([
+      prisma.technicalOption.upsert({ where: { kind_nome: { kind: "Produto", nome: produto.slice(0, 160) } }, update: {}, create: { kind: "Produto", nome: produto.slice(0, 160) } }),
+      ...(fabricanteValue ? [prisma.technicalOption.upsert({ where: { kind_nome: { kind: "Fabricante" as const, nome: fabricanteValue } }, update: {}, create: { kind: "Fabricante" as const, nome: fabricanteValue } })] : []),
+      ...(sistemaValue ? [prisma.technicalOption.upsert({ where: { kind_nome: { kind: "SistemaOperacional" as const, nome: sistemaValue } }, update: {}, create: { kind: "SistemaOperacional" as const, nome: sistemaValue } })] : []),
+    ]);
     const item = await prisma.technicalFile.update({
       where: { id },
       data: {
         nome: nome.slice(0, 160), descricao: descricao || null, tipo,
-        fabricante: String(form.get("fabricante") || "").trim().slice(0, 100) || null,
+        fabricante: fabricanteValue || null,
         produto: produto.slice(0, 160), versao: String(form.get("versao") || "").trim().slice(0, 80) || null,
-        sistemaOperacional: String(form.get("sistemaOperacional") || "").trim().slice(0, 120) || null,
+        sistemaOperacional: sistemaValue || null,
         categoryId,
         ...(saved && file ? { nomeOriginal: saved.originalName, nomeArmazenado: saved.storedName, mimeType: file.type || null, tamanhoBytes: file.size } : {}),
       },

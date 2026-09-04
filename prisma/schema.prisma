@@ -211,6 +211,24 @@ enum TechnicalFileType {
   Outro
 }
 
+enum TechnicalOptionKind {
+  Fabricante
+  Produto
+  SistemaOperacional
+}
+
+model TechnicalOption {
+  id        String              @id @default(cuid())
+  kind      TechnicalOptionKind
+  nome      String
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@unique([kind, nome])
+  @@index([kind, nome])
+  @@map("technical_options")
+}
+
 model TechnicalCategory {
   id        String          @id @default(cuid())
   nome      String          @unique

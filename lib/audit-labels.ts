@@ -15,6 +15,7 @@ export const entidadeOptions = [
   "SupplierQuotation",
   "TechnicalFile",
   "TechnicalCategory",
+  "TechnicalOption",
 ] as const;
 
 export const entidadeLabels: Record<string, string> = {
@@ -31,6 +32,7 @@ export const entidadeLabels: Record<string, string> = {
   SupplierQuotation: "Cotação de fornecedor",
   TechnicalFile: "Arquivo técnico",
   TechnicalCategory: "Categoria de arquivo técnico",
+  TechnicalOption: "Cadastro auxiliar de arquivo técnico",
 };
 
 export const acaoLabels: Record<string, string> = {

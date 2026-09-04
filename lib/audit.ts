@@ -17,7 +17,8 @@ export type AuditEntity =
   | "Supplier"
   | "SupplierQuotation"
   | "TechnicalFile"
-  | "TechnicalCategory";
+  | "TechnicalCategory"
+  | "TechnicalOption";
 
 export type RegisterAuditParams = {
   userId?: string | null;
