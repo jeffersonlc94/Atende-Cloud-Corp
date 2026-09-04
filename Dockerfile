@@ -38,7 +38,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN mkdir -p ./public/uploads \
-  && chown -R nextjs:nodejs ./public/uploads \
+  && mkdir -p ./storage/technical-files \
+  && chown -R nextjs:nodejs ./public/uploads ./storage \
   && sed -i 's/\r$//' ./docker-entrypoint.sh \
   && chmod +x ./docker-entrypoint.sh
 

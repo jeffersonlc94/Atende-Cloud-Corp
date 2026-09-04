@@ -17,6 +17,7 @@ export type SystemSettings = {
   maintenanceMessage: string | null;
   trainingVideoMaxMb: number;
   trainingDocumentMaxMb: number;
+  technicalFileMaxMb: number;
   notificationCargoPrefs: Record<string, Record<string, boolean>> | null;
   createdAt: string;
   updatedAt: string;

@@ -37,12 +37,14 @@ services:
       - "${APP_PORT:-3000}:3000"
     volumes:
       - app_uploads:/app/public/uploads
+      - app_storage:/app/storage
     networks:
       - atende_network
 
 volumes:
   postgres_data:
   app_uploads:
+  app_storage:
 
 networks:
   atende_network:

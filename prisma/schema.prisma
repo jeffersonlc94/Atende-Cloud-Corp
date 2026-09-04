@@ -21,27 +21,29 @@ enum Cargo {
 }
 
 model User {
-  id                    String   @id @default(cuid())
-  name                  String
-  email                 String   @unique
-  passwordHash          String
-  role                  Role     @default(USER)
-  cargo                 Cargo?
-  avatarUrl             String?
-  canAccessOrcamentos   Boolean  @default(true)
-  canAccessFrota        Boolean  @default(true)
-  receiveNotifications  Boolean  @default(true)
-  canAccessEstoque      Boolean  @default(true)
-  canAccessTreinamentos Boolean  @default(true)
-  canAccessCotacoes     Boolean  @default(true)
-  telegramChatId        String?
-  hidden                Boolean  @default(false)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                        String   @id @default(cuid())
+  name                      String
+  email                     String   @unique
+  passwordHash              String
+  role                      Role     @default(USER)
+  cargo                     Cargo?
+  avatarUrl                 String?
+  canAccessOrcamentos       Boolean  @default(true)
+  canAccessFrota            Boolean  @default(true)
+  receiveNotifications      Boolean  @default(true)
+  canAccessEstoque          Boolean  @default(true)
+  canAccessTreinamentos     Boolean  @default(true)
+  canAccessCotacoes         Boolean  @default(true)
+  canAccessArquivosTecnicos Boolean  @default(true)
+  telegramChatId            String?
+  hidden                    Boolean  @default(false)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   quotes                    Quote[]
   quoteDrafts               QuoteDraft[]
   trainingContents          TrainingContent[]
+  technicalFiles            TechnicalFile[]
   presence                  UserPresence?
   updatedQuotes             Quote[]             @relation("QuoteUpdatedBy")
   mileageLogs               MileageLog[]
@@ -199,6 +201,50 @@ model TrainingContent {
 
   @@index([categoryId, tipo, ordem])
   @@map("training_contents")
+}
+
+enum TechnicalFileType {
+  Driver
+  Firmware
+  Manual
+  Utilitario
+  Outro
+}
+
+model TechnicalCategory {
+  id        String          @id @default(cuid())
+  nome      String          @unique
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  files     TechnicalFile[]
+
+  @@map("technical_categories")
+}
+
+model TechnicalFile {
+  id                 String            @id @default(cuid())
+  nome               String
+  descricao          String?
+  tipo               TechnicalFileType @default(Driver)
+  fabricante         String?
+  produto            String
+  versao             String?
+  sistemaOperacional String?
+  nomeOriginal       String
+  nomeArmazenado     String            @unique
+  mimeType           String?
+  tamanhoBytes       Int
+  categoryId         String
+  category           TechnicalCategory @relation(fields: [categoryId], references: [id])
+  createdByUserId    String?
+  createdByUser      User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([categoryId, tipo])
+  @@index([fabricante])
+  @@index([produto])
+  @@map("technical_files")
 }
 
 model UserPresence {
@@ -612,6 +658,7 @@ model SystemSettings {
   maintenanceMessage     String?
   trainingVideoMaxMb     Int      @default(0)
   trainingDocumentMaxMb  Int      @default(50)
+  technicalFileMaxMb     Int      @default(500)
   notificationCargoPrefs Json?
   smtpHost               String?
   smtpPort               Int?

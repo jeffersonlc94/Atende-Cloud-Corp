@@ -43,6 +43,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           canAccessEstoque: user.canAccessEstoque,
           canAccessTreinamentos: user.canAccessTreinamentos,
           canAccessCotacoes: user.canAccessCotacoes,
+          canAccessArquivosTecnicos: user.canAccessArquivosTecnicos,
         };
       },
     }),
@@ -61,6 +62,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.canAccessEstoque = fresh.canAccessEstoque;
           token.canAccessTreinamentos = fresh.canAccessTreinamentos;
           token.canAccessCotacoes = fresh.canAccessCotacoes;
+          token.canAccessArquivosTecnicos = fresh.canAccessArquivosTecnicos;
           token.picture = fresh.avatarUrl ?? null;
           token.name = fresh.name;
           token.email = fresh.email;
@@ -77,6 +79,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           canAccessEstoque?: boolean;
           canAccessTreinamentos?: boolean;
           canAccessCotacoes?: boolean;
+          canAccessArquivosTecnicos?: boolean;
         };
         token.role = u.role;
         token.cargo = u.cargo ?? null;
@@ -85,6 +88,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.canAccessEstoque = u.canAccessEstoque ?? true;
         token.canAccessTreinamentos = u.canAccessTreinamentos ?? true;
         token.canAccessCotacoes = u.canAccessCotacoes ?? true;
+        token.canAccessArquivosTecnicos = u.canAccessArquivosTecnicos ?? true;
         token.id = user.id;
         token.picture = user.image ?? null;
       }
@@ -100,6 +104,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.canAccessEstoque = (token.canAccessEstoque as boolean | undefined) ?? true;
         session.user.canAccessTreinamentos = (token.canAccessTreinamentos as boolean | undefined) ?? true;
         session.user.canAccessCotacoes = (token.canAccessCotacoes as boolean | undefined) ?? true;
+        session.user.canAccessArquivosTecnicos = (token.canAccessArquivosTecnicos as boolean | undefined) ?? true;
         session.user.image = (token.picture as string | null) ?? null;
       }
       return session;

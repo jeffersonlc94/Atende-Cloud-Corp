@@ -132,6 +132,7 @@ export const systemSettingsSchema = z.object({
   maintenanceMessage: z.string().max(500, "Mensagem deve ter no máximo 500 caracteres").optional().default(""),
   trainingVideoMaxMb: z.number().int().nonnegative().optional(),
   trainingDocumentMaxMb: z.number().int().positive().optional(),
+  technicalFileMaxMb: z.number().int().nonnegative().optional(),
   notificationCargoPrefs: notificationCargoPrefsSchema.optional(),
 });
 
@@ -359,6 +360,7 @@ export const userSchema = z.object({
   canAccessEstoque: z.boolean().optional().default(true),
   canAccessTreinamentos: z.boolean().optional().default(true),
   canAccessCotacoes: z.boolean().optional().default(true),
+  canAccessArquivosTecnicos: z.boolean().optional().default(true),
   receiveNotifications: z.boolean().optional().default(true),
   telegramChatId: z.string().optional().default(""),
 });
