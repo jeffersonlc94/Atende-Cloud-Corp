@@ -533,3 +533,26 @@ export function useFleetAlerts() {
     queryFn: () => fetchJson<FleetAlertRecord[]>("/api/frota/alerts"),
   });
 }
+
+export function useMarkFleetAlertRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { alertId?: string; all?: boolean }) =>
+      fetchJson<{ ok: boolean; count: number }>("/api/frota/alerts", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ["fleet-alerts"] });
+      const previous = queryClient.getQueryData<FleetAlertRecord[]>(["fleet-alerts"]);
+      queryClient.setQueryData<FleetAlertRecord[]>(["fleet-alerts"], (current = []) =>
+        input.all ? [] : current.filter((alert) => alert.id !== input.alertId),
+      );
+      return { previous };
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) queryClient.setQueryData(["fleet-alerts"], context.previous);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["fleet-alerts"] }),
+  });
+}
