@@ -8,8 +8,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "./theme-toggle";
 import { MobileNav } from "./mobile-nav";
-import { useFleetAlerts } from "@/hooks/use-fleet";
-import { LogOut, Bell, Search, HelpCircle, AlertTriangle, UserCircle } from "lucide-react";
+import { useFleetAlerts, useMarkFleetAlertRead } from "@/hooks/use-fleet";
+import { LogOut, Bell, Search, HelpCircle, AlertTriangle, UserCircle, Check, CheckCheck } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -33,6 +33,7 @@ export function Header() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { data: alerts = [] } = useFleetAlerts();
+  const markAlertRead = useMarkFleetAlertRead();
   const name = session?.user?.name ?? "";
   const initials = name
     .split(" ")
@@ -94,7 +95,20 @@ export function Header() {
             }
           />
           <PopoverContent align="end" className="w-80">
-            <p className="px-1 pb-1 text-sm font-semibold">Notificações</p>
+            <div className="flex items-center justify-between gap-2 px-1 pb-1">
+              <p className="text-sm font-semibold">Notificações</p>
+              {alertCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={markAlertRead.isPending}
+                  onClick={() => markAlertRead.mutate({ all: true })}
+                  className="h-7 px-2 text-xs"
+                >
+                  <CheckCheck className="mr-1 h-3.5 w-3.5" /> Marcar todas como lidas
+                </Button>
+              )}
+            </div>
             <div className="max-h-80 space-y-1 overflow-y-auto">
               {alertCount === 0 && (
                 <p className="px-1 py-2 text-sm text-muted-foreground">
@@ -113,12 +127,26 @@ export function Header() {
                       <p className="truncate font-medium">{a.titulo}</p>
                       <p className="truncate text-xs text-muted-foreground">{a.descricao}</p>
                     </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      title="Marcar como lida"
+                      aria-label={`Marcar ${a.titulo} como lida`}
+                      disabled={markAlertRead.isPending}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        markAlertRead.mutate({ alertId: a.id });
+                      }}
+                      className="ml-auto shrink-0"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
                   </>
                 );
                 return a.vehicleId ? (
-                  <button
+                  <div
                     key={a.id}
-                    type="button"
                     onClick={() => {
                       setNotifOpen(false);
                       const destination =
@@ -127,10 +155,18 @@ export function Header() {
                           : `/frota/veiculos/${a.vehicleId}`;
                       router.push(destination);
                     }}
-                    className="flex w-full items-start gap-2 rounded-md px-1 py-1.5 text-left text-sm hover:bg-muted"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        setNotifOpen(false);
+                        router.push(a.tipo === "checklist" ? `/frota/checklists?vehicleId=${a.vehicleId}` : `/frota/veiculos/${a.vehicleId}`);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="flex w-full cursor-pointer items-start gap-2 rounded-md px-1 py-1.5 text-left text-sm hover:bg-muted"
                   >
                     {content}
-                  </button>
+                  </div>
                 ) : (
                   <div key={a.id} className="flex items-start gap-2 rounded-md px-1 py-1.5 text-sm">
                     {content}

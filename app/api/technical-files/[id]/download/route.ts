@@ -22,12 +22,13 @@ export async function GET(req: NextRequest, { params }: Params) {
     const info = await stat(fullPath);
     await registerAudit({ userId: session.user.id, acao: "download", entidade: "TechnicalFile", entidadeId: id, detalhes: { nome: item.nome, produto: item.produto, nomeOriginal: item.nomeOriginal }, ip: getRequestIp(req) });
     const asciiName = item.nomeOriginal.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
+    const inline = req.nextUrl.searchParams.get("inline") === "1" && item.mimeType === "application/pdf";
     const stream = Readable.toWeb(createReadStream(fullPath)) as ReadableStream;
     return new NextResponse(stream, {
       headers: {
         "Content-Type": item.mimeType || "application/octet-stream",
         "Content-Length": String(info.size),
-        "Content-Disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(item.nomeOriginal)}`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(item.nomeOriginal)}`,
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "private, no-store",
       },
