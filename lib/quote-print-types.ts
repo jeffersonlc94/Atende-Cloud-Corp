@@ -55,6 +55,7 @@ export const quotePrintLayoutOptions = [
   { value: "classico", label: "Clássico" },
   { value: "moderno", label: "Moderno" },
   { value: "minimalista", label: "Minimalista" },
+  { value: "produtos", label: "Produtos em destaque" },
 ] as const;
 
 export type QuotePrintLayoutId = (typeof quotePrintLayoutOptions)[number]["value"];
