@@ -3,6 +3,7 @@
 import { QuotePrintLayoutClassico } from "@/components/quotes/quote-print-layout-classico";
 import { QuotePrintLayoutModerno } from "@/components/quotes/quote-print-layout-moderno";
 import { QuotePrintLayoutMinimalista } from "@/components/quotes/quote-print-layout-minimalista";
+import { QuotePrintLayoutProdutos } from "@/components/quotes/quote-print-layout-produtos";
 import type {
   QuotePrintCompany,
   QuotePrintData,
@@ -45,6 +46,13 @@ function paginateItems(items: QuotePrintItem[], pageCapacity: number) {
   return pages;
 }
 
+function paginateFeaturedItems(items: QuotePrintItem[], pageSize: number) {
+  if (items.length === 0) return [[]];
+  const pages: QuotePrintItem[][] = [];
+  for (let index = 0; index < items.length; index += pageSize) pages.push(items.slice(index, index + pageSize));
+  return pages;
+}
+
 export function QuotePrintLayout({
   company,
   quote,
@@ -66,7 +74,8 @@ export function QuotePrintLayout({
     : (fontScale ?? 1) >= 1.1
       ? Math.floor(baseCapacity * 0.84)
       : baseCapacity;
-  const pages = paginateItems(quote.itens, pageCapacity);
+  const featuredPageSize = (fontScale ?? 1) >= 1.2 ? 3 : 4;
+  const pages = layout === "produtos" ? paginateFeaturedItems(quote.itens, featuredPageSize) : paginateItems(quote.itens, pageCapacity);
   let itemOffset = 0;
 
   return (
@@ -83,7 +92,8 @@ export function QuotePrintLayout({
         itemOffset += itens.length;
         return (
           <div className="quote-print-page" key={pageIndex}>
-            {layout === "moderno" ? <QuotePrintLayoutModerno {...props} /> :
+            {layout === "produtos" ? <QuotePrintLayoutProdutos {...props} /> :
+             layout === "moderno" ? <QuotePrintLayoutModerno {...props} /> :
              layout === "minimalista" ? <QuotePrintLayoutMinimalista {...props} /> :
              <QuotePrintLayoutClassico {...props} />}
           </div>

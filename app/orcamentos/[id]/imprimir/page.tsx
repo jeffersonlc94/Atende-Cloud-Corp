@@ -138,7 +138,7 @@ export default function ImprimirOrcamentoPage({
             <Pencil className="mr-2 h-4 w-4" /> Editar
           </Link>
           <Select value={layout} onValueChange={(v) => setLayout(v as QuotePrintLayoutId)}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-52">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
