@@ -53,6 +53,7 @@ export default function ImprimirOrcamentoPage({
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfSizeDialogOpen, setPdfSizeDialogOpen] = useState(false);
   const [layout, setLayout] = useState<QuotePrintLayoutId>("classico");
+  const [featuredItemsPerPage, setFeaturedItemsPerPage] = useState("7");
   const [fontFamilyKey, setFontFamilyKey] = useState<(typeof fontFamilyOptions)[number]["value"]>("default");
   const [fontSizeKey, setFontSizeKey] = useState<(typeof fontSizeOptions)[number]["value"]>("1");
 
@@ -80,7 +81,8 @@ export default function ImprimirOrcamentoPage({
       for (let index = 0; index < pages.length; index++) {
         const page = pages[index];
         const canvas = await html2canvas(page, {
-          scale: reduced ? 1.25 : 2,
+          // 3.125 x 96 CSS DPI = aproximadamente 300 DPI no A4.
+          scale: reduced ? 1.25 : 3.125,
           useCORS: true,
           backgroundColor: "#ffffff",
           width: page.scrollWidth,
@@ -149,6 +151,20 @@ export default function ImprimirOrcamentoPage({
               ))}
             </SelectContent>
           </Select>
+          {layout === "produtos" && (
+            <Select value={featuredItemsPerPage} onValueChange={(v) => v && setFeaturedItemsPerPage(v)}>
+              <SelectTrigger className="w-48" title="Máximo de 7 itens por página">
+                <SelectValue>{(value) => `${value} ${value === "1" ? "item" : "itens"} por página`}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7].map((amount) => (
+                  <SelectItem key={amount} value={String(amount)}>
+                    {amount} {amount === 1 ? "item" : "itens"} por página
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={fontFamilyKey} onValueChange={(v) => setFontFamilyKey(v as typeof fontFamilyKey)}>
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -193,6 +209,7 @@ export default function ImprimirOrcamentoPage({
             layout={layout}
             fontFamily={fontFamilyOptions.find((opt) => opt.value === fontFamilyKey)?.css || undefined}
             fontScale={Number(fontSizeKey)}
+            featuredItemsPerPage={Number(featuredItemsPerPage)}
             company={quote.company}
             quote={{
               numero: quote.numero,
@@ -229,7 +246,7 @@ export default function ImprimirOrcamentoPage({
           <div className="grid gap-3 py-2 sm:grid-cols-2">
             <Button variant="outline" className="h-auto flex-col items-start gap-1 p-4 text-left" onClick={() => handleGeneratePdf("standard")}>
               <span className="font-semibold">Tamanho padrão</span>
-              <span className="whitespace-normal text-xs font-normal text-muted-foreground">Maior qualidade e arquivo mais pesado.</span>
+              <span className="whitespace-normal text-xs font-normal text-muted-foreground">Alta qualidade para impressão (aprox. 300 DPI).</span>
             </Button>
             <Button className="h-auto flex-col items-start gap-1 p-4 text-left" onClick={() => handleGeneratePdf("reduced")}>
               <span className="font-semibold">Tamanho reduzido</span>

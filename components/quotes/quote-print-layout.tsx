@@ -60,6 +60,7 @@ export function QuotePrintLayout({
   layout = "classico",
   fontFamily,
   fontScale,
+  featuredItemsPerPage = 7,
 }: {
   company: QuotePrintCompany | null | undefined;
   quote: QuotePrintData;
@@ -67,6 +68,7 @@ export function QuotePrintLayout({
   layout?: QuotePrintLayoutId;
   fontFamily?: string;
   fontScale?: number;
+  featuredItemsPerPage?: number;
 }) {
   const baseCapacity = layout === "classico" ? 24 : layout === "minimalista" ? 20 : 14;
   const pageCapacity = (fontScale ?? 1) >= 1.2
@@ -74,7 +76,7 @@ export function QuotePrintLayout({
     : (fontScale ?? 1) >= 1.1
       ? Math.floor(baseCapacity * 0.84)
       : baseCapacity;
-  const featuredPageSize = (fontScale ?? 1) >= 1.2 ? 3 : 4;
+  const featuredPageSize = Math.min(7, Math.max(1, Math.trunc(featuredItemsPerPage)));
   const pages = layout === "produtos" ? paginateFeaturedItems(quote.itens, featuredPageSize) : paginateItems(quote.itens, pageCapacity);
   let itemOffset = 0;
 
