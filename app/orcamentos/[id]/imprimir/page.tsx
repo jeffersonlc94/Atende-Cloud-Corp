@@ -53,6 +53,7 @@ export default function ImprimirOrcamentoPage({
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfSizeDialogOpen, setPdfSizeDialogOpen] = useState(false);
   const [layout, setLayout] = useState<QuotePrintLayoutId>("classico");
+  const [featuredItemsPerPage, setFeaturedItemsPerPage] = useState("7");
   const [fontFamilyKey, setFontFamilyKey] = useState<(typeof fontFamilyOptions)[number]["value"]>("default");
   const [fontSizeKey, setFontSizeKey] = useState<(typeof fontSizeOptions)[number]["value"]>("1");
 
@@ -150,6 +151,20 @@ export default function ImprimirOrcamentoPage({
               ))}
             </SelectContent>
           </Select>
+          {layout === "produtos" && (
+            <Select value={featuredItemsPerPage} onValueChange={(v) => v && setFeaturedItemsPerPage(v)}>
+              <SelectTrigger className="w-48" title="Máximo de 7 itens por página">
+                <SelectValue>{(value) => `${value} ${value === "1" ? "item" : "itens"} por página`}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5, 6, 7].map((amount) => (
+                  <SelectItem key={amount} value={String(amount)}>
+                    {amount} {amount === 1 ? "item" : "itens"} por página
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={fontFamilyKey} onValueChange={(v) => setFontFamilyKey(v as typeof fontFamilyKey)}>
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -194,6 +209,7 @@ export default function ImprimirOrcamentoPage({
             layout={layout}
             fontFamily={fontFamilyOptions.find((opt) => opt.value === fontFamilyKey)?.css || undefined}
             fontScale={Number(fontSizeKey)}
+            featuredItemsPerPage={Number(featuredItemsPerPage)}
             company={quote.company}
             quote={{
               numero: quote.numero,
