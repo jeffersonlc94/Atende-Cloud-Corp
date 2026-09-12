@@ -80,7 +80,8 @@ export default function ImprimirOrcamentoPage({
       for (let index = 0; index < pages.length; index++) {
         const page = pages[index];
         const canvas = await html2canvas(page, {
-          scale: reduced ? 1.25 : 2,
+          // 3.125 x 96 CSS DPI = aproximadamente 300 DPI no A4.
+          scale: reduced ? 1.25 : 3.125,
           useCORS: true,
           backgroundColor: "#ffffff",
           width: page.scrollWidth,
@@ -229,7 +230,7 @@ export default function ImprimirOrcamentoPage({
           <div className="grid gap-3 py-2 sm:grid-cols-2">
             <Button variant="outline" className="h-auto flex-col items-start gap-1 p-4 text-left" onClick={() => handleGeneratePdf("standard")}>
               <span className="font-semibold">Tamanho padrão</span>
-              <span className="whitespace-normal text-xs font-normal text-muted-foreground">Maior qualidade e arquivo mais pesado.</span>
+              <span className="whitespace-normal text-xs font-normal text-muted-foreground">Alta qualidade para impressão (aprox. 300 DPI).</span>
             </Button>
             <Button className="h-auto flex-col items-start gap-1 p-4 text-left" onClick={() => handleGeneratePdf("reduced")}>
               <span className="font-semibold">Tamanho reduzido</span>

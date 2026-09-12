@@ -74,7 +74,7 @@ export function QuotePrintLayout({
     : (fontScale ?? 1) >= 1.1
       ? Math.floor(baseCapacity * 0.84)
       : baseCapacity;
-  const featuredPageSize = (fontScale ?? 1) >= 1.2 ? 3 : 4;
+  const featuredPageSize = (fontScale ?? 1) >= 1.2 ? 4 : 5;
   const pages = layout === "produtos" ? paginateFeaturedItems(quote.itens, featuredPageSize) : paginateItems(quote.itens, pageCapacity);
   let itemOffset = 0;
 
