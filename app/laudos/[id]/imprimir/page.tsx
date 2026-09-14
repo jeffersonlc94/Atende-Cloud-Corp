@@ -23,8 +23,11 @@ export default function TechnicalReportPrintPage({ params }: { params: Promise<{
       const canvas = await html2canvas(areaRef.current, { scale: 3.125, useCORS: true, backgroundColor: "#ffffff", windowWidth: areaRef.current.scrollWidth, windowHeight: areaRef.current.scrollHeight });
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
       const pageWidth = pdf.internal.pageSize.getWidth(); const pageHeight = pdf.internal.pageSize.getHeight();
-      const renderedHeight = canvas.height * pageWidth / canvas.width;
-      for (let y = 0, page = 0; y < renderedHeight; y += pageHeight, page++) { if (page) pdf.addPage(); pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, -y, pageWidth, renderedHeight, undefined, "FAST"); }
+      const naturalHeight = canvas.height * pageWidth / canvas.width;
+      const renderedHeight = Math.min(naturalHeight, pageHeight);
+      const renderedWidth = canvas.width * renderedHeight / canvas.height;
+      const offsetX = (pageWidth - renderedWidth) / 2;
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", offsetX, 0, renderedWidth, renderedHeight, undefined, "FAST");
       pdf.save(`laudo-${report.numero}.pdf`);
     } catch { toast.error("Erro ao gerar PDF"); } finally { setGenerating(false); }
   }
