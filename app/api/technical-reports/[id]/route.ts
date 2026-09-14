@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canAccessModule } from "@/lib/permissions";
 import { getRequestIp, registerAudit } from "@/lib/audit";
+import { Prisma } from "@prisma/client";
 
 type Params = { params: Promise<{ id: string }> };
 const include = { company: true, createdByUser: { select: { id: true, name: true } }, updatedByUser: { select: { id: true, name: true } } } as const;
@@ -28,10 +29,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
     dataEmissao: new Date(String(body.dataEmissao || current.dataEmissao)), status: body.status === "Finalizado" ? "Finalizado" as const : "Rascunho" as const,
     companyId: String(body.companyId || ""), clienteCodigo: text(body.clienteCodigo, 40), clienteNome: String(body.clienteNome || "").trim().slice(0, 200),
     clienteFantasia: text(body.clienteFantasia, 200), clienteEndereco: text(body.clienteEndereco, 250), clienteNumero: text(body.clienteNumero, 30), clienteBairro: text(body.clienteBairro, 100), clienteCidade: text(body.clienteCidade, 100), clienteUf: text(body.clienteUf, 2)?.toUpperCase() || null, clienteTelefone: text(body.clienteTelefone, 40), clienteDocumento: text(body.clienteDocumento, 30),
-    equipamento: String(body.equipamento || "").trim().slice(0, 200), numeroSerie: text(body.numeroSerie, 120), modelo: text(body.modelo, 160), equipamentoObservacao: text(body.equipamentoObservacao, 500), problema: text(body.problema, 300), problemaRelatado: text(body.problemaRelatado), problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), updatedByUserId: session.user.id,
+    numero: String(body.numero || current.numero).trim().slice(0, 30), equipamento: String(body.equipamento || "").trim().slice(0, 200), numeroSerie: text(body.numeroSerie, 120), modelo: text(body.modelo, 160), equipamentoObservacao: text(body.equipamentoObservacao, 500), problema: text(body.problema, 300), problemaRelatado: text(body.problemaRelatado), problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), conclusao: text(body.conclusao), updatedByUserId: session.user.id,
   };
   if (!data.companyId || !data.clienteNome || !data.equipamento) return NextResponse.json({ error: "Informe empresa, cliente e equipamento" }, { status: 400 });
-  const item = await prisma.technicalReport.update({ where: { id }, data, include });
+  let item;
+  try { item = await prisma.technicalReport.update({ where: { id }, data, include }); }
+  catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return NextResponse.json({ error: "Já existe um laudo com esse número" }, { status: 409 });
+    throw error;
+  }
   await registerAudit({ userId: session.user.id, acao: "update", entidade: "TechnicalReport", entidadeId: id, detalhes: { numero: item.numero }, ip: getRequestIp(req) });
   return NextResponse.json(item);
 }
