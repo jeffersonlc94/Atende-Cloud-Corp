@@ -25,11 +25,12 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const current = await prisma.technicalReport.findUnique({ where: { id } });
   if (!current) return NextResponse.json({ error: "Laudo não encontrado" }, { status: 404 });
   const body = await req.json();
+  const fotos = Array.isArray(body.fotos) ? body.fotos.filter((foto: unknown): foto is string => typeof foto === "string" && foto.startsWith("/uploads/")).slice(0, 3) : [];
   const data = {
     dataEmissao: new Date(String(body.dataEmissao || current.dataEmissao)), status: body.status === "Finalizado" ? "Finalizado" as const : "Rascunho" as const,
     companyId: String(body.companyId || ""), clienteCodigo: text(body.clienteCodigo, 40), clienteNome: String(body.clienteNome || "").trim().slice(0, 200),
     clienteFantasia: text(body.clienteFantasia, 200), clienteEndereco: text(body.clienteEndereco, 250), clienteNumero: text(body.clienteNumero, 30), clienteBairro: text(body.clienteBairro, 100), clienteCidade: text(body.clienteCidade, 100), clienteUf: text(body.clienteUf, 2)?.toUpperCase() || null, clienteTelefone: text(body.clienteTelefone, 40), clienteDocumento: text(body.clienteDocumento, 30),
-    numero: String(body.numero || current.numero).trim().slice(0, 30), equipamento: String(body.equipamento || "").trim().slice(0, 200), numeroSerie: text(body.numeroSerie, 120), modelo: text(body.modelo, 160), equipamentoObservacao: text(body.equipamentoObservacao, 500), problema: text(body.problema, 300), problemaRelatado: text(body.problemaRelatado), problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), conclusao: text(body.conclusao), updatedByUserId: session.user.id,
+    numero: String(body.numero || current.numero).trim().slice(0, 30), equipamento: String(body.equipamento || "").trim().slice(0, 200), numeroSerie: text(body.numeroSerie, 120), modelo: text(body.modelo, 160), equipamentoObservacao: text(body.equipamentoObservacao, 500), problema: text(body.problema, 300), problemaRelatado: text(body.problemaRelatado), problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), conclusao: text(body.conclusao), fotos, updatedByUserId: session.user.id,
   };
   if (!data.companyId || !data.clienteNome || !data.equipamento) return NextResponse.json({ error: "Informe empresa, cliente e equipamento" }, { status: 400 });
   let item;

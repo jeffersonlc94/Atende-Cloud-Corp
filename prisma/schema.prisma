@@ -357,6 +357,7 @@ model TechnicalReport {
   problemasEncontrados    String?
   procedimentosRealizados String?
   conclusao               String?
+  fotos                   Json                  @default("[]")
   createdByUserId         String
   createdByUser           User                  @relation("TechnicalReportCreatedBy", fields: [createdByUserId], references: [id])
   updatedByUserId         String?

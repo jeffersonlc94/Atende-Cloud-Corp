@@ -12,6 +12,7 @@ export type TechnicalReportPrintData = {
   clienteUf?: string | null; clienteTelefone?: string | null; clienteDocumento?: string | null; equipamento: string;
   numeroSerie?: string | null; modelo?: string | null; equipamentoObservacao?: string | null; problema?: string | null;
   problemaRelatado?: string | null; problemasEncontrados?: string | null; procedimentosRealizados?: string | null; conclusao?: string | null;
+  fotos?: string[] | null;
   createdByUser?: { name: string } | null;
   company: { razaoSocial: string; nomeFantasia?: string | null; cnpj?: string | null; inscricaoEstadual?: string | null; endereco?: string | null; cidade?: string | null; estado?: string | null; cep?: string | null; telefone1?: string | null; email?: string | null; logoUrl?: string | null; nomeResponsavel?: string | null };
 };
@@ -20,7 +21,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return <section className="mt-2 break-inside-avoid rounded-lg border border-black"><h2 className="border-b border-black px-3 py-0.5 text-center text-[0.74em] font-bold uppercase">{title}</h2><div className="whitespace-pre-wrap break-words px-3 py-1.5 text-[0.7em] leading-snug [overflow-wrap:anywhere]">{children || "—"}</div></section>;
 }
 
-export function TechnicalReportPrint({ report, id = "technical-report-print" }: { report: TechnicalReportPrintData; id?: string }) {
+export function TechnicalReportPrint({ report, id = "technical-report-print", layout = "classico" }: { report: TechnicalReportPrintData; id?: string; layout?: "classico" | "fotos" }) {
   const [logoError, setLogoError] = useState(false);
   const company = report.company;
   const address = [company.endereco, company.cidade && company.estado ? `${company.cidade}/${company.estado}` : company.cidade].filter(Boolean).join(" - ");
@@ -33,6 +34,7 @@ export function TechnicalReportPrint({ report, id = "technical-report-print" }: 
     <Section title="Problemas encontrados">{report.problemasEncontrados}</Section>
     <Section title="Procedimentos realizados">{report.procedimentosRealizados}</Section>
     <Section title="Conclusão do laudo">{report.conclusao}</Section>
+    {layout === "fotos" && !!report.fotos?.length && <section data-technical-report-photos className="mt-3 break-before-page rounded-lg border border-black"><h2 className="border-b border-black px-3 py-1 text-center text-[0.78em] font-bold uppercase">Registro fotográfico</h2><div className="grid grid-cols-2 gap-3 p-3">{report.fotos.slice(0, 3).map((url, index) => <figure key={`${url}-${index}`} className={report.fotos?.length === 3 && index === 2 ? "col-span-2" : ""}><img src={url} alt={`Registro fotográfico ${index + 1}`} className="mx-auto h-[82mm] max-w-full object-contain" /><figcaption className="mt-1 text-center text-[0.68em] font-semibold">Foto {index + 1}</figcaption></figure>)}</div></section>}
     <footer className="break-inside-avoid pt-6 text-center text-[0.68em]"><div className="mx-auto w-72 border-t border-black pt-1"><p className="font-semibold uppercase">{report.createdByUser?.name || company.nomeResponsavel || "Responsável técnico"}</p><p>TÉCNICO</p><p className="font-bold italic">{company.cidade || "—"} - {company.estado || "—"}</p></div></footer>
   </div>;
 }

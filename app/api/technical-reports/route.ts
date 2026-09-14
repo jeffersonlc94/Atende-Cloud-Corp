@@ -11,6 +11,7 @@ function text(value: unknown, max = 5000) {
 }
 
 function reportData(body: Record<string, unknown>) {
+  const fotos = Array.isArray(body.fotos) ? body.fotos.filter((foto): foto is string => typeof foto === "string" && foto.startsWith("/uploads/")).slice(0, 3) : [];
   return {
     dataEmissao: new Date(String(body.dataEmissao || new Date().toISOString())),
     status: body.status === "Finalizado" ? "Finalizado" as const : "Rascunho" as const,
@@ -23,7 +24,7 @@ function reportData(body: Record<string, unknown>) {
     equipamento: String(body.equipamento || "").trim().slice(0, 200), numeroSerie: text(body.numeroSerie, 120),
     modelo: text(body.modelo, 160), equipamentoObservacao: text(body.equipamentoObservacao, 500),
     problema: text(body.problema, 300), problemaRelatado: text(body.problemaRelatado),
-    problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), conclusao: text(body.conclusao),
+    problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), conclusao: text(body.conclusao), fotos,
   };
 }
 
