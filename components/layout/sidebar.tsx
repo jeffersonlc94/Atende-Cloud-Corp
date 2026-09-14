@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { navItems, orcamentosNavItems, cotacoesNavItems, frotaNavItems, type NavItem } from "./nav-items";
 import { useSystemSettings } from "@/hooks/use-settings";
-import { ChevronDown, Leaf, FileText, ShoppingCart, Truck, Boxes, GraduationCap, HardDriveDownload, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
+import { ChevronDown, Leaf, FileText, ShoppingCart, Truck, Boxes, GraduationCap, HardDriveDownload, ClipboardCheck, PanelLeftClose, PanelLeftOpen, type LucideIcon } from "lucide-react";
 
 const DEFAULT_SYSTEM_NAME = "Atende Cloud Corp";
 
@@ -103,6 +103,8 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
             }
           />
         )}
+
+        {canOrcamentos && <NavLink href="/laudos" label="Laudos Técnicos" Icon={ClipboardCheck} active={pathname.startsWith("/laudos")} onNavigate={onNavigate} collapsed={collapsed} />}
 
         {canFrota && (
           <NavGroup
