@@ -8,6 +8,7 @@ import { Prisma } from "@prisma/client";
 type Params = { params: Promise<{ id: string }> };
 const include = { company: true, createdByUser: { select: { id: true, name: true } }, updatedByUser: { select: { id: true, name: true } } } as const;
 function text(value: unknown, max = 5000) { const valueText = String(value ?? "").trim(); return valueText ? valueText.slice(0, max) : null; }
+function reportPhotos(value: unknown) { if (!Array.isArray(value)) return []; return value.map((photo) => typeof photo === "string" ? { url: photo, legenda: "" } : photo).filter((photo): photo is { url: string; legenda?: unknown } => !!photo && typeof photo === "object" && typeof photo.url === "string" && photo.url.startsWith("/uploads/")).slice(0, 3).map((photo) => ({ url: photo.url, legenda: String(photo.legenda || "").trim().slice(0, 200) })); }
 
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth();
@@ -25,7 +26,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const current = await prisma.technicalReport.findUnique({ where: { id } });
   if (!current) return NextResponse.json({ error: "Laudo não encontrado" }, { status: 404 });
   const body = await req.json();
-  const fotos = Array.isArray(body.fotos) ? body.fotos.filter((foto: unknown): foto is string => typeof foto === "string" && foto.startsWith("/uploads/")).slice(0, 3) : [];
+  const fotos = reportPhotos(body.fotos);
   const data = {
     dataEmissao: new Date(String(body.dataEmissao || current.dataEmissao)), status: body.status === "Finalizado" ? "Finalizado" as const : "Rascunho" as const,
     companyId: String(body.companyId || ""), clienteCodigo: text(body.clienteCodigo, 40), clienteNome: String(body.clienteNome || "").trim().slice(0, 200),

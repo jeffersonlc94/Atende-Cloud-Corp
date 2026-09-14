@@ -10,8 +10,15 @@ function text(value: unknown, max = 5000) {
   return normalized ? normalized.slice(0, max) : null;
 }
 
+function reportPhotos(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((photo) => typeof photo === "string" ? { url: photo, legenda: "" } : photo)
+    .filter((photo): photo is { url: string; legenda?: unknown } => !!photo && typeof photo === "object" && typeof photo.url === "string" && photo.url.startsWith("/uploads/"))
+    .slice(0, 3).map((photo) => ({ url: photo.url, legenda: String(photo.legenda || "").trim().slice(0, 200) }));
+}
+
 function reportData(body: Record<string, unknown>) {
-  const fotos = Array.isArray(body.fotos) ? body.fotos.filter((foto): foto is string => typeof foto === "string" && foto.startsWith("/uploads/")).slice(0, 3) : [];
+  const fotos = reportPhotos(body.fotos);
   return {
     dataEmissao: new Date(String(body.dataEmissao || new Date().toISOString())),
     status: body.status === "Finalizado" ? "Finalizado" as const : "Rascunho" as const,

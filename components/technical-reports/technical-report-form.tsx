@@ -13,7 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { TechnicalReportPhotos } from "./technical-report-photos";
 
 type Company = { id: string; razaoSocial: string; nomeFantasia?: string | null; isDefault?: boolean };
-type FormState = { numero: string; companyId: string; dataEmissao: string; status: "Rascunho" | "Finalizado"; clienteCodigo: string; clienteNome: string; clienteFantasia: string; clienteEndereco: string; clienteNumero: string; clienteBairro: string; clienteCidade: string; clienteUf: string; clienteTelefone: string; clienteDocumento: string; equipamento: string; numeroSerie: string; modelo: string; equipamentoObservacao: string; problema: string; problemaRelatado: string; problemasEncontrados: string; procedimentosRealizados: string; conclusao: string; fotos: string[] };
+type ReportPhoto = { url: string; legenda: string };
+type FormState = { numero: string; companyId: string; dataEmissao: string; status: "Rascunho" | "Finalizado"; clienteCodigo: string; clienteNome: string; clienteFantasia: string; clienteEndereco: string; clienteNumero: string; clienteBairro: string; clienteCidade: string; clienteUf: string; clienteTelefone: string; clienteDocumento: string; equipamento: string; numeroSerie: string; modelo: string; equipamentoObservacao: string; problema: string; problemaRelatado: string; problemasEncontrados: string; procedimentosRealizados: string; conclusao: string; fotos: ReportPhoto[] };
 const today = () => new Date().toISOString().slice(0, 10);
 const blank: FormState = { numero: "", companyId: "", dataEmissao: today(), status: "Rascunho", clienteCodigo: "", clienteNome: "", clienteFantasia: "", clienteEndereco: "", clienteNumero: "", clienteBairro: "", clienteCidade: "", clienteUf: "", clienteTelefone: "", clienteDocumento: "", equipamento: "", numeroSerie: "", modelo: "", equipamentoObservacao: "", problema: "", problemaRelatado: "", problemasEncontrados: "", procedimentosRealizados: "", conclusao: "", fotos: [] };
 
@@ -35,7 +36,7 @@ export function TechnicalReportForm({ reportId }: { reportId?: string }) {
       reportId ? fetch(`/api/technical-reports/${reportId}`, { cache: "no-store" }).then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error); return body as FormState; }) : Promise.resolve(null),
     ]).then(([companyList, report]) => {
       setCompanies(companyList);
-      if (report) setForm({ ...blank, ...report, dataEmissao: String(report.dataEmissao).slice(0, 10) });
+      if (report) setForm({ ...blank, ...report, dataEmissao: String(report.dataEmissao).slice(0, 10), fotos: Array.isArray(report.fotos) ? report.fotos.map((photo) => typeof photo === "string" ? { url: photo, legenda: "" } : photo).filter((photo): photo is ReportPhoto => !!photo?.url).slice(0, 3) : [] });
       else setForm((current) => ({ ...current, companyId: companyList.find((company) => company.isDefault)?.id || companyList[0]?.id || "" }));
     }).catch(() => toast.error("Não foi possível carregar o formulário")).finally(() => setLoading(false));
   }, [reportId]);
