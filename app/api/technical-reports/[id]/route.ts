@@ -12,7 +12,7 @@ function text(value: unknown, max = 5000) { const valueText = String(value ?? ""
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canAccessModule(session, "orcamentos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
+  if (!canAccessModule(session, "laudos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
   const item = await prisma.technicalReport.findUnique({ where: { id: (await params).id }, include });
   return item ? NextResponse.json(item) : NextResponse.json({ error: "Laudo não encontrado" }, { status: 404 });
 }
@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 export async function PUT(req: NextRequest, { params }: Params) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canAccessModule(session, "orcamentos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
+  if (!canAccessModule(session, "laudos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
   const id = (await params).id;
   const current = await prisma.technicalReport.findUnique({ where: { id } });
   if (!current) return NextResponse.json({ error: "Laudo não encontrado" }, { status: 404 });

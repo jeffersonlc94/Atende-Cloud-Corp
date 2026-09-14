@@ -44,6 +44,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           canAccessTreinamentos: user.canAccessTreinamentos,
           canAccessCotacoes: user.canAccessCotacoes,
           canAccessArquivosTecnicos: user.canAccessArquivosTecnicos,
+          canAccessLaudos: user.canAccessLaudos,
         };
       },
     }),
@@ -63,6 +64,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.canAccessTreinamentos = fresh.canAccessTreinamentos;
           token.canAccessCotacoes = fresh.canAccessCotacoes;
           token.canAccessArquivosTecnicos = fresh.canAccessArquivosTecnicos;
+          token.canAccessLaudos = fresh.canAccessLaudos;
           token.picture = fresh.avatarUrl ?? null;
           token.name = fresh.name;
           token.email = fresh.email;
@@ -80,6 +82,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           canAccessTreinamentos?: boolean;
           canAccessCotacoes?: boolean;
           canAccessArquivosTecnicos?: boolean;
+          canAccessLaudos?: boolean;
         };
         token.role = u.role;
         token.cargo = u.cargo ?? null;
@@ -89,6 +92,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.canAccessTreinamentos = u.canAccessTreinamentos ?? true;
         token.canAccessCotacoes = u.canAccessCotacoes ?? true;
         token.canAccessArquivosTecnicos = u.canAccessArquivosTecnicos ?? true;
+        token.canAccessLaudos = u.canAccessLaudos ?? true;
         token.id = user.id;
         token.picture = user.image ?? null;
       }
@@ -105,6 +109,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.canAccessTreinamentos = (token.canAccessTreinamentos as boolean | undefined) ?? true;
         session.user.canAccessCotacoes = (token.canAccessCotacoes as boolean | undefined) ?? true;
         session.user.canAccessArquivosTecnicos = (token.canAccessArquivosTecnicos as boolean | undefined) ?? true;
+        session.user.canAccessLaudos = (token.canAccessLaudos as boolean | undefined) ?? true;
         session.user.image = (token.picture as string | null) ?? null;
       }
       return session;

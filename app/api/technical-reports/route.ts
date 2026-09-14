@@ -30,7 +30,7 @@ function reportData(body: Record<string, unknown>) {
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canAccessModule(session, "orcamentos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
+  if (!canAccessModule(session, "laudos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
   const params = req.nextUrl.searchParams;
   const numero = params.get("numero")?.trim();
   const cliente = params.get("cliente")?.trim();
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canAccessModule(session, "orcamentos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
+  if (!canAccessModule(session, "laudos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
   const body = await req.json();
   const data = reportData(body);
   if (!data.companyId || !data.clienteNome || !data.equipamento) return NextResponse.json({ error: "Informe empresa, cliente e equipamento" }, { status: 400 });

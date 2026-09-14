@@ -48,6 +48,7 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
   const canTreinamentos = isAdmin || session?.user?.canAccessTreinamentos !== false;
   const canCotacoes = isAdmin || session?.user?.canAccessCotacoes !== false;
   const canArquivosTecnicos = isAdmin || session?.user?.canAccessArquivosTecnicos !== false;
+  const canLaudos = isAdmin || session?.user?.canAccessLaudos !== false;
 
   const usuariosItem = navItems.find((i) => i.href === "/usuarios");
   const auditoriaItem = navItems.find((i) => i.href === "/auditoria");
@@ -104,7 +105,7 @@ export function SidebarNav({ onNavigate, collapsed = false, onToggle, onExpand }
           />
         )}
 
-        {canOrcamentos && <NavLink href="/laudos" label="Laudos Técnicos" Icon={ClipboardCheck} active={pathname.startsWith("/laudos")} onNavigate={onNavigate} collapsed={collapsed} />}
+        {canLaudos && <NavLink href="/laudos" label="Laudos Técnicos" Icon={ClipboardCheck} active={pathname.startsWith("/laudos")} onNavigate={onNavigate} collapsed={collapsed} />}
 
         {canFrota && (
           <NavGroup

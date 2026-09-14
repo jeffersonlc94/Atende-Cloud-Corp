@@ -40,6 +40,7 @@ import {
   GraduationCap,
   ShoppingCart,
   HardDriveDownload,
+  ClipboardCheck,
   BellRing,
   Send,
   type LucideIcon,
@@ -87,6 +88,7 @@ const emptyValues: UserFormValues = {
   canAccessTreinamentos: true,
   canAccessCotacoes: true,
   canAccessArquivosTecnicos: true,
+  canAccessLaudos: true,
   receiveNotifications: true,
   telegramChatId: "",
 };
@@ -119,6 +121,7 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
   const canAccessTreinamentos = watch("canAccessTreinamentos");
   const canAccessCotacoes = watch("canAccessCotacoes");
   const canAccessArquivosTecnicos = watch("canAccessArquivosTecnicos");
+  const canAccessLaudos = watch("canAccessLaudos");
   const receiveNotifications = watch("receiveNotifications");
   const isEditing = !!initialData;
 
@@ -298,6 +301,14 @@ export function UserForm({ initialData }: { initialData?: AppUser }) {
               />
               <HardDriveDownload className="h-4 w-4 text-muted-foreground" />
               Drivers e Arquivos Técnicos
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium">
+              <Checkbox
+                checked={!!canAccessLaudos}
+                onCheckedChange={(v) => setValue("canAccessLaudos", v === true)}
+              />
+              <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+              Laudos Técnicos
             </label>
             <label className="flex items-center gap-2 rounded-lg border p-3 text-sm font-medium sm:col-span-2">
               <Checkbox

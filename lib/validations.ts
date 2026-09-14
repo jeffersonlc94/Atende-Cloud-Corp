@@ -361,6 +361,7 @@ export const userSchema = z.object({
   canAccessTreinamentos: z.boolean().optional().default(true),
   canAccessCotacoes: z.boolean().optional().default(true),
   canAccessArquivosTecnicos: z.boolean().optional().default(true),
+  canAccessLaudos: z.boolean().optional().default(true),
   receiveNotifications: z.boolean().optional().default(true),
   telegramChatId: z.string().optional().default(""),
 });
