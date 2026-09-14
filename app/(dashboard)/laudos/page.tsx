@@ -32,7 +32,7 @@ export default function TechnicalReportsPage() {
   const isAdmin = session?.user?.role === "ADMIN";
   const [items, setItems] = useState<Report[]>([]); const [companies, setCompanies] = useState<Company[]>([]);
   const [filters, setFilters] = useState<Filters>(emptyFilters); const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [loading, setLoading] = useState(true); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Report | null>(null);
+  const [loading, setLoading] = useState(true); const [open, setOpen] = useState(false); const [editing] = useState<Report | null>(null);
   const [form, setForm] = useState<FormState>(blank); const [saving, setSaving] = useState(false); const [deleting, setDeleting] = useState<Report | null>(null);
 
   useEffect(() => { try { const saved = JSON.parse(localStorage.getItem("laudos:filtros") || "null"); if (saved) setFilters({ ...emptyFilters, ...saved }); } catch { /* ignora */ } setViewMode(localStorage.getItem("laudos:visualizacao") === "grid" ? "grid" : "table"); }, []);
@@ -43,7 +43,7 @@ export default function TechnicalReportsPage() {
   useEffect(() => { fetch("/api/companies").then((response) => response.json()).then((data: Company[]) => { setCompanies(data); setForm((current) => ({ ...current, companyId: current.companyId || data.find((company) => company.isDefault)?.id || data[0]?.id || "" })); }).catch(() => toast.error("Erro ao carregar empresas")); }, []);
   function field<K extends keyof FormState>(key: K, value: FormState[K]) { setForm((current) => ({ ...current, [key]: value })); }
   function filter(key: keyof Filters, value: string) { setFilters((current) => ({ ...current, [key]: value })); }
-  function showForm(item?: Report) { setEditing(item || null); setForm(item ? { ...blank, ...Object.fromEntries(Object.keys(blank).map((key) => [key, item[key as keyof FormState] ?? ""])) } as FormState : { ...blank, companyId: companies.find((company) => company.isDefault)?.id || companies[0]?.id || "" }); setOpen(true); }
+  function showForm(item?: Report) { router.push(item ? `/laudos/${item.id}` : "/laudos/novo"); }
   async function save() { if (!form.companyId || !form.clienteNome.trim() || !form.equipamento.trim()) return toast.error("Informe empresa, cliente e equipamento"); setSaving(true); try { const response = await fetch(editing ? `/api/technical-reports/${editing.id}` : "/api/technical-reports", { method: editing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); const body = await response.json(); if (!response.ok) throw new Error(body.error || "Erro ao salvar laudo"); toast.success(editing ? "Laudo atualizado" : `Laudo Nº ${body.numero} criado`); setOpen(false); await load(); } catch (error) { toast.error(error instanceof Error ? error.message : "Erro ao salvar laudo"); } finally { setSaving(false); } }
   const actions = (item: Report) => <div className="flex gap-1"><Button variant="ghost" size="icon-sm" title="Visualizar e imprimir" onClick={() => router.push(`/laudos/${item.id}/imprimir`)}><Eye className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" title="Editar" onClick={() => showForm(item)}><Pencil className="h-4 w-4" /></Button>{isAdmin && <Button variant="ghost" size="icon-sm" className="text-destructive" title="Excluir" onClick={() => setDeleting(item)}><Trash2 className="h-4 w-4" /></Button>}</div>;
 
