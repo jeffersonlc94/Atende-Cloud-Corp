@@ -44,6 +44,8 @@ model User {
   quoteDrafts               QuoteDraft[]
   trainingContents          TrainingContent[]
   technicalFiles            TechnicalFile[]
+  technicalReports          TechnicalReport[]   @relation("TechnicalReportCreatedBy")
+  updatedTechnicalReports   TechnicalReport[]   @relation("TechnicalReportUpdatedBy")
   readFleetAlerts           ReadFleetAlert[]
   presence                  UserPresence?
   updatedQuotes             Quote[]             @relation("QuoteUpdatedBy")
@@ -92,6 +94,7 @@ model Company {
 
   quotes             Quote[]
   supplierQuotations SupplierQuotation[]
+  technicalReports   TechnicalReport[]
   vehicles           Vehicle[]
 
   @@map("companies")
@@ -320,6 +323,56 @@ model QuoteCounter {
   lastNum Int    @default(0)
 
   @@map("quote_counter")
+}
+
+enum TechnicalReportStatus {
+  Rascunho
+  Finalizado
+}
+
+model TechnicalReport {
+  id                      String                @id @default(cuid())
+  numero                  String                @unique
+  dataEmissao             DateTime              @default(now())
+  status                  TechnicalReportStatus @default(Rascunho)
+  companyId               String
+  company                 Company               @relation(fields: [companyId], references: [id])
+  clienteCodigo           String?
+  clienteNome             String
+  clienteFantasia         String?
+  clienteEndereco         String?
+  clienteNumero           String?
+  clienteBairro           String?
+  clienteCidade           String?
+  clienteUf               String?
+  clienteTelefone         String?
+  clienteDocumento        String?
+  equipamento             String
+  numeroSerie             String?
+  modelo                  String?
+  equipamentoObservacao   String?
+  problema                String?
+  problemaRelatado        String?
+  problemasEncontrados    String?
+  procedimentosRealizados String?
+  createdByUserId         String
+  createdByUser           User                  @relation("TechnicalReportCreatedBy", fields: [createdByUserId], references: [id])
+  updatedByUserId         String?
+  updatedByUser           User?                 @relation("TechnicalReportUpdatedBy", fields: [updatedByUserId], references: [id])
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  @@index([dataEmissao])
+  @@index([clienteNome])
+  @@index([createdByUserId])
+  @@map("technical_reports")
+}
+
+model TechnicalReportCounter {
+  id      String @id @default("default")
+  lastNum Int    @default(0)
+
+  @@map("technical_report_counter")
 }
 
 enum SupplierQuotationType {
