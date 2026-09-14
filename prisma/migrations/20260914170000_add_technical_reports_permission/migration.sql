@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "canAccessLaudos" BOOLEAN NOT NULL DEFAULT true;

@@ -15,7 +15,7 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     where: { hidden: false },
-    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, canAccessEstoque: true, canAccessTreinamentos: true, canAccessCotacoes: true, canAccessArquivosTecnicos: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, canAccessEstoque: true, canAccessTreinamentos: true, canAccessCotacoes: true, canAccessArquivosTecnicos: true, canAccessLaudos: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
     orderBy: { name: "asc" },
   });
 
@@ -63,10 +63,11 @@ export async function POST(req: NextRequest) {
       canAccessTreinamentos: data.canAccessTreinamentos ?? true,
       canAccessCotacoes: data.canAccessCotacoes ?? true,
       canAccessArquivosTecnicos: data.canAccessArquivosTecnicos ?? true,
+      canAccessLaudos: data.canAccessLaudos ?? true,
       receiveNotifications: data.receiveNotifications ?? true,
       telegramChatId: data.telegramChatId || null,
     },
-    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, canAccessEstoque: true, canAccessTreinamentos: true, canAccessCotacoes: true, canAccessArquivosTecnicos: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
+    select: { id: true, name: true, email: true, role: true, cargo: true, canAccessOrcamentos: true, canAccessFrota: true, canAccessEstoque: true, canAccessTreinamentos: true, canAccessCotacoes: true, canAccessArquivosTecnicos: true, canAccessLaudos: true, receiveNotifications: true, telegramChatId: true, hidden: true, avatarUrl: true, createdAt: true, updatedAt: true },
   });
 
   await registerAudit({

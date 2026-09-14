@@ -35,6 +35,7 @@ model User {
   canAccessTreinamentos     Boolean  @default(true)
   canAccessCotacoes         Boolean  @default(true)
   canAccessArquivosTecnicos Boolean  @default(true)
+  canAccessLaudos           Boolean  @default(true)
   telegramChatId            String?
   hidden                    Boolean  @default(false)
   createdAt                 DateTime @default(now())
@@ -356,6 +357,7 @@ model TechnicalReport {
   problemasEncontrados    String?
   procedimentosRealizados String?
   conclusao               String?
+  fotos                   Json                  @default("[]")
   createdByUserId         String
   createdByUser           User                  @relation("TechnicalReportCreatedBy", fields: [createdByUserId], references: [id])
   updatedByUserId         String?

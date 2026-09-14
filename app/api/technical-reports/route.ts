@@ -10,7 +10,15 @@ function text(value: unknown, max = 5000) {
   return normalized ? normalized.slice(0, max) : null;
 }
 
+function reportPhotos(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((photo) => typeof photo === "string" ? { url: photo, legenda: "" } : photo)
+    .filter((photo): photo is { url: string; legenda?: unknown } => !!photo && typeof photo === "object" && typeof photo.url === "string" && photo.url.startsWith("/uploads/"))
+    .slice(0, 3).map((photo) => ({ url: photo.url, legenda: String(photo.legenda || "").trim().slice(0, 200) }));
+}
+
 function reportData(body: Record<string, unknown>) {
+  const fotos = reportPhotos(body.fotos);
   return {
     dataEmissao: new Date(String(body.dataEmissao || new Date().toISOString())),
     status: body.status === "Finalizado" ? "Finalizado" as const : "Rascunho" as const,
@@ -23,14 +31,14 @@ function reportData(body: Record<string, unknown>) {
     equipamento: String(body.equipamento || "").trim().slice(0, 200), numeroSerie: text(body.numeroSerie, 120),
     modelo: text(body.modelo, 160), equipamentoObservacao: text(body.equipamentoObservacao, 500),
     problema: text(body.problema, 300), problemaRelatado: text(body.problemaRelatado),
-    problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), conclusao: text(body.conclusao),
+    problemasEncontrados: text(body.problemasEncontrados), procedimentosRealizados: text(body.procedimentosRealizados), conclusao: text(body.conclusao), fotos,
   };
 }
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canAccessModule(session, "orcamentos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
+  if (!canAccessModule(session, "laudos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
   const params = req.nextUrl.searchParams;
   const numero = params.get("numero")?.trim();
   const cliente = params.get("cliente")?.trim();
@@ -63,7 +71,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!canAccessModule(session, "orcamentos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
+  if (!canAccessModule(session, "laudos")) return NextResponse.json({ error: "Acesso não autorizado" }, { status: 403 });
   const body = await req.json();
   const data = reportData(body);
   if (!data.companyId || !data.clienteNome || !data.equipamento) return NextResponse.json({ error: "Informe empresa, cliente e equipamento" }, { status: 400 });
